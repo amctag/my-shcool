@@ -1,0 +1,13 @@
+# Easypanel uses Nixpacks. Next.js needs Node 20+ and build-time
+# devDependencies (typescript, tailwind, react compiler).
+[variables]
+NIXPACKS_NODE_VERSION = "22"
+NIXPACKS_PATH = "/app/node_modules/.bin"
+NPM_CONFIG_PRODUCTION = "false"
+NEXT_TELEMETRY_DISABLED = "1"
+
+[phases.install]
+cmds = ["npm ci --include=dev"]
+
+[phases.build]
+cmds = ["npm run build"]
