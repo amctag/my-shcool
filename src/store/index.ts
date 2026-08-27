@@ -14,6 +14,7 @@ import "@/features/school/api/childrenApi";
 import "@/features/school/api/studentsApi";
 import "@/features/school/api/lookupsApi";
 import "@/features/school/api/teachersApi";
+import "@/features/school/api/classesApi";
 
 export const makeStore = () =>
   configureStore({

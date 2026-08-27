@@ -263,3 +263,13 @@ export type SaveStudentBody = {
   motherPhone?: string;
 };
 
+export type DashboardClass = {
+  id: number;
+  className: string;
+  classLevel: number;
+  position: number;
+  stageId: number;
+  stageTitle: string;
+};
+
+
