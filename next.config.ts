@@ -5,6 +5,7 @@ const apiOrigin =
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  allowedDevOrigins: ["amctag-admin-school.38f0fz.easypanel.host"],
   async rewrites() {
     return {
       afterFiles: [
