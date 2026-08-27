@@ -185,10 +185,16 @@ function LookupSelect({
   );
 }
 
-export function ParentForm({ parentId }: { parentId?: number }) {
+export function ParentForm({
+  parentId,
+  readOnly = false,
+}: {
+  parentId?: number;
+  readOnly?: boolean;
+}) {
   const router = useRouter();
   const authReady = useAppSelector(selectAuthReady);
-  const isEdit = Boolean(parentId);
+  const isEdit = Boolean(parentId) && !readOnly;
   const [form, setForm] = useState<ParentFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [createdAt, setCreatedAt] = useState(todayInputDate);
@@ -220,7 +226,7 @@ export function ParentForm({ parentId }: { parentId?: number }) {
   const saving = createState.isLoading || updateState.isLoading;
 
   useEffect(() => {
-    if (isEdit || form.nationalityId) {
+    if (isEdit || readOnly || form.nationalityId) {
       return;
     }
 
@@ -234,7 +240,7 @@ export function ParentForm({ parentId }: { parentId?: number }) {
         ? current
         : { ...current, nationalityId: String(defaultNationality.id) },
     );
-  }, [form.nationalityId, isEdit, nationalities]);
+  }, [form.nationalityId, isEdit, nationalities, readOnly]);
 
   useEffect(() => {
     if (!parent) {
@@ -300,7 +306,7 @@ export function ParentForm({ parentId }: { parentId?: number }) {
     }
   }
 
-  if (isEdit && parentLoading) {
+  if (parentId && parentLoading) {
     return (
       <p className="rounded-3xl border border-border bg-white p-8 text-sm text-muted">
         Loading parent…
@@ -313,13 +319,19 @@ export function ParentForm({ parentId }: { parentId?: number }) {
       className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8"
       onSubmit={(event) => {
         event.preventDefault();
-        void onSave(false);
+        if (!readOnly) {
+          void onSave(false);
+        }
       }}
     >
       <h1 className="mb-8 text-center text-3xl font-semibold tracking-tight text-foreground">
-        {isEdit ? "Edit Parent" : "Add New Parent"}
+        {readOnly ? "View Parent" : isEdit ? "Edit Parent" : "Add New Parent"}
       </h1>
 
+      <fieldset
+        disabled={readOnly}
+        className="min-w-0 border-0 p-0 disabled:[&_input]:bg-stone-50 disabled:[&_select]:bg-stone-50 disabled:[&_textarea]:bg-stone-50 disabled:[&_input]:text-muted disabled:[&_select]:text-muted disabled:[&_textarea]:text-muted disabled:[&_label]:cursor-not-allowed"
+      >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Field id="firstName" label="First Name" required>
           <input
@@ -549,6 +561,7 @@ export function ParentForm({ parentId }: { parentId?: number }) {
             className={`${inputClass} sm:w-48`}
           />
         </label>
+        {readOnly ? null : (
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -575,7 +588,9 @@ export function ParentForm({ parentId }: { parentId?: number }) {
             </button>
           )}
         </div>
+        )}
       </div>
+      </fieldset>
     </form>
   );
 }

@@ -25,8 +25,9 @@ export const parentsApi = baseApi.injectEndpoints({
             ]
           : [{ type: "Parents", id: "LIST" }],
     }),
-    getParentOptions: builder.query<DashboardParentOption[], void>({
-      query: () => "/dashboard/parents/options",
+    getParentOptions: builder.query<DashboardParentOption[], string>({
+      query: (search) =>
+        `/dashboard/parents/options${toQueryString({ search })}`,
       providesTags: [{ type: "Parents", id: "OPTIONS" }],
     }),
     getParent: builder.query<DashboardParentDetail, number>({

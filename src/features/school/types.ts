@@ -95,6 +95,8 @@ export type RegionItem = LookupItem & {
 export type DashboardParentOption = {
   id: number;
   fullName: string;
+  firstName?: string;
+  middleName?: string;
   lastName: string;
 };
 
@@ -140,6 +142,75 @@ export type SaveParentBody = {
   village?: string;
   placeOfBirth?: string;
   description?: string;
+  birthday?: string;
+};
+
+export type TeachersSortBy = "id" | "name" | "phone" | "address" | "birthday";
+export type TeachersSortOrder = "asc" | "desc";
+
+export type DashboardTeacher = {
+  id: number;
+  fullName: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber: string | null;
+  address: string | null;
+  birthday?: string | null;
+};
+
+export type DashboardTeachersQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  name?: string;
+  id?: number;
+  sortBy?: TeachersSortBy;
+  sortOrder?: TeachersSortOrder;
+};
+
+export type DashboardTeachersResponse = {
+  items: DashboardTeacher[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardTeacherDetail = {
+  id: number;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  gender: number | null;
+  nationalityId: number | null;
+  governorateId: number | null;
+  registerId: number | null;
+  regionId: number | null;
+  identityNumber: string | null;
+  email: string | null;
+  phoneNumber: string | null;
+  urgentNumber: string | null;
+  landline: string | null;
+  address: string | null;
+  village: string | null;
+  placeOfBirth: string | null;
+  birthday: string | null;
+};
+
+export type SaveTeacherBody = {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  gender?: number;
+  nationalityId?: number;
+  governorateId?: number;
+  registerId?: number | null;
+  regionId?: number;
+  identityNumber?: string;
+  email?: string;
+  phoneNumber: string;
+  urgentNumber?: string;
+  landline?: string;
+  address?: string;
+  village?: string;
+  placeOfBirth?: string;
   birthday?: string;
 };
 

@@ -2,30 +2,40 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Eye,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
-  studentsApi,
-  useDeleteStudentMutation,
-  useGetStudentsQuery,
-} from "@/features/school/api/studentsApi";
+  teachersApi,
+  useDeleteTeacherMutation,
+  useGetTeachersQuery,
+} from "@/features/school/api/teachersApi";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 import type {
-  DashboardChildrenQuery,
-  StudentsSortBy,
-  StudentsSortOrder,
+  DashboardTeachersQuery,
+  TeachersSortBy,
+  TeachersSortOrder,
 } from "@/features/school/types";
 
-function buildStudentsQuery(
+function buildTeachersQuery(
   page: number,
   limit: number,
   appliedSearch: string,
-  sortBy: StudentsSortBy,
-  sortOrder: StudentsSortOrder,
-): DashboardChildrenQuery {
-  const query: DashboardChildrenQuery = { page, limit, sortBy, sortOrder };
+  sortBy: TeachersSortBy,
+  sortOrder: TeachersSortOrder,
+): DashboardTeachersQuery {
+  const query: DashboardTeachersQuery = { page, limit, sortBy, sortOrder };
 
   if (appliedSearch) {
     query.search = appliedSearch;
@@ -34,12 +44,20 @@ function buildStudentsQuery(
   return query;
 }
 
-function studentName(firstName?: string, lastName?: string, fullName?: string): string {
+function teacherName(
+  firstName?: string,
+  lastName?: string,
+  fullName?: string,
+): string {
   const combined = `${firstName?.trim() ?? ""} ${lastName?.trim() ?? ""}`.trim();
   return combined || fullName?.trim() || "—";
 }
 
-function studentInitials(firstName?: string, lastName?: string, fullName?: string): string {
+function teacherInitials(
+  firstName?: string,
+  lastName?: string,
+  fullName?: string,
+): string {
   const first = firstName?.trim().charAt(0);
   const last = lastName?.trim().charAt(0);
   if (first || last) {
@@ -92,10 +110,10 @@ function SortHeader({
   onSort,
 }: {
   label: string;
-  column: StudentsSortBy;
-  sortBy: StudentsSortBy;
-  sortOrder: StudentsSortOrder;
-  onSort: (column: StudentsSortBy) => void;
+  column: TeachersSortBy;
+  sortBy: TeachersSortBy;
+  sortOrder: TeachersSortOrder;
+  onSort: (column: TeachersSortBy) => void;
 }) {
   const active = sortBy === column;
   const nextOrder = active && sortOrder === "asc" ? "descending" : "ascending";
@@ -129,24 +147,24 @@ function SortHeader({
   );
 }
 
-export function StudentsTable() {
+export function TeachersTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState<StudentsSortBy>("id");
-  const [sortOrder, setSortOrder] = useState<StudentsSortOrder>("asc");
+  const [sortBy, setSortBy] = useState<TeachersSortBy>("id");
+  const [sortOrder, setSortOrder] = useState<TeachersSortOrder>("asc");
   const limit = 10;
-  const prefetchStudents = studentsApi.usePrefetch("getStudents");
-  const [deleteStudent, deleteState] = useDeleteStudentMutation();
+  const prefetchTeachers = teachersApi.usePrefetch("getTeachers");
+  const [deleteTeacher, deleteState] = useDeleteTeacherMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
     id: number;
     name: string;
   } | null>(null);
   const canFetch = ready && Boolean(accessToken);
-  const query = buildStudentsQuery(
+  const query = buildTeachersQuery(
     page,
     limit,
     appliedSearch,
@@ -154,7 +172,7 @@ export function StudentsTable() {
     sortOrder,
   );
 
-  const { data, error, isLoading, isFetching } = useGetStudentsQuery(query, {
+  const { data, error, isLoading, isFetching } = useGetTeachersQuery(query, {
     skip: !canFetch,
   });
 
@@ -176,8 +194,8 @@ export function StudentsTable() {
       return;
     }
 
-    prefetchStudents(
-      buildStudentsQuery(page + 1, limit, appliedSearch, sortBy, sortOrder),
+    prefetchTeachers(
+      buildTeachersQuery(page + 1, limit, appliedSearch, sortBy, sortOrder),
     );
   }, [
     appliedSearch,
@@ -185,12 +203,12 @@ export function StudentsTable() {
     data?.pagination.totalPages,
     limit,
     page,
-    prefetchStudents,
+    prefetchTeachers,
     sortBy,
     sortOrder,
   ]);
 
-  function onSort(column: StudentsSortBy) {
+  function onSort(column: TeachersSortBy) {
     setPage(1);
     if (sortBy === column) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -201,11 +219,11 @@ export function StudentsTable() {
     setSortOrder("asc");
   }
 
-  const students = data?.items ?? [];
+  const teachers = data?.items ?? [];
   const pagination = data?.pagination;
   const totalPages = pagination?.totalPages ?? 0;
 
-  function askDeleteStudent(student: {
+  function askDeleteTeacher(teacher: {
     id: number;
     firstName?: string;
     lastName?: string;
@@ -213,22 +231,22 @@ export function StudentsTable() {
   }) {
     setDeleteError(null);
     setPendingDelete({
-      id: student.id,
-      name: studentName(student.firstName, student.lastName, student.fullName),
+      id: teacher.id,
+      name: teacherName(teacher.firstName, teacher.lastName, teacher.fullName),
     });
   }
 
-  async function confirmDeleteStudent() {
+  async function confirmDeleteTeacher() {
     if (!pendingDelete) {
       return;
     }
 
     setDeleteError(null);
     try {
-      await deleteStudent(pendingDelete.id).unwrap();
+      await deleteTeacher(pendingDelete.id).unwrap();
       setPendingDelete(null);
     } catch (caught) {
-      setDeleteError(getApiErrorMessage(caught, "Could not delete student"));
+      setDeleteError(getApiErrorMessage(caught, "Could not delete teacher"));
     }
   }
 
@@ -236,7 +254,7 @@ export function StudentsTable() {
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <label className="relative w-full max-w-md sm:w-96">
-          <span className="sr-only">Search students</span>
+          <span className="sr-only">Search teachers</span>
           <Search
             aria-hidden
             className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted"
@@ -245,12 +263,12 @@ export function StudentsTable() {
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search by name or id"
+            placeholder="Search by name, id, or phone"
             className="h-11 w-full rounded-lg border border-border bg-white pr-3 pl-10 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           />
         </label>
         <Link
-          href="/students/add"
+          href="/teachers/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <Plus aria-hidden className="h-4 w-4" />
@@ -277,22 +295,8 @@ export function StudentsTable() {
                   onSort={onSort}
                 />
                 <SortHeader
-                  label="Parent"
-                  column="parent"
-                  sortBy={sortBy}
-                  sortOrder={sortOrder}
-                  onSort={onSort}
-                />
-                <SortHeader
                   label="Phone"
                   column="phone"
-                  sortBy={sortBy}
-                  sortOrder={sortOrder}
-                  onSort={onSort}
-                />
-                <SortHeader
-                  label="Class"
-                  column="class"
                   sortBy={sortBy}
                   sortOrder={sortOrder}
                   onSort={onSort}
@@ -320,35 +324,35 @@ export function StudentsTable() {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
-                    Loading students…
+                    Loading teachers…
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
-                    {getApiErrorMessage(error, "Could not load students")}
+                    {getApiErrorMessage(error, "Could not load teachers")}
                   </td>
                 </tr>
-              ) : students.length === 0 ? (
+              ) : teachers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
-                    No students match this search.
+                    No teachers match this search.
                   </td>
                 </tr>
               ) : (
-                students.map((student) => (
+                teachers.map((teacher) => (
                   <tr
-                    key={student.id}
+                    key={teacher.id}
                     className={`border-b border-stone-100 last:border-b-0 ${
                       isFetching ? "opacity-70" : ""
                     }`}
@@ -356,41 +360,35 @@ export function StudentsTable() {
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
                       <span className="inline-flex items-center gap-3">
                         <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-bold tracking-wide text-on-primary">
-                          {studentInitials(
-                            student.firstName,
-                            student.lastName,
-                            student.fullName,
+                          {teacherInitials(
+                            teacher.firstName,
+                            teacher.lastName,
+                            teacher.fullName,
                           )}
                         </span>
-                        {student.id}
+                        {teacher.id}
                       </span>
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
-                      {studentName(
-                        student.firstName,
-                        student.lastName,
-                        student.fullName,
+                      {teacherName(
+                        teacher.firstName,
+                        teacher.lastName,
+                        teacher.fullName,
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-5 py-4 text-foreground">
-                      {student.parentName ?? "—"}
-                    </td>
                     <td className="whitespace-nowrap px-5 py-4 tabular-nums text-foreground">
-                      {student.phoneNumber ?? "—"}
-                    </td>
-                    <td className="whitespace-nowrap px-5 py-4 text-foreground">
-                      {student.className ?? "—"}
+                      {teacher.phoneNumber ?? "—"}
                     </td>
                     <td className="px-5 py-4 text-foreground">
-                      {student.address ?? "—"}
+                      {teacher.address ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-foreground">
-                      {formatBirthday(student.birthday)}
+                      {formatBirthday(teacher.birthday)}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <Link
-                          href={`/students/${student.id}`}
+                          href={`/teachers/${teacher.id}`}
                           aria-label="View"
                           title="View"
                           className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -398,7 +396,7 @@ export function StudentsTable() {
                           <Eye aria-hidden className="h-4 w-4" />
                         </Link>
                         <Link
-                          href={`/students/${student.id}/edit`}
+                          href={`/teachers/${teacher.id}/edit`}
                           aria-label="Edit"
                           title="Edit"
                           className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -410,7 +408,7 @@ export function StudentsTable() {
                           aria-label="Delete"
                           title="Delete"
                           disabled={deleteState.isLoading}
-                          onClick={() => askDeleteStudent(student)}
+                          onClick={() => askDeleteTeacher(teacher)}
                           className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 transition-colors duration-200 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Trash2 aria-hidden className="h-4 w-4" />
@@ -427,7 +425,7 @@ export function StudentsTable() {
           <div className="flex items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
             <p className="text-sm text-muted">
               Page {pagination.page} of {totalPages} · {pagination.total}{" "}
-              students
+              teachers
             </p>
             <div className="flex gap-2">
               <button
@@ -444,8 +442,8 @@ export function StudentsTable() {
                 disabled={page >= totalPages || isFetching}
                 onMouseEnter={() => {
                   if (page < totalPages) {
-                    prefetchStudents(
-                      buildStudentsQuery(
+                    prefetchTeachers(
+                      buildTeachersQuery(
                         page + 1,
                         limit,
                         appliedSearch,
@@ -477,7 +475,7 @@ export function StudentsTable() {
               setDeleteError(null);
             }
           }}
-          onConfirm={() => void confirmDeleteStudent()}
+          onConfirm={() => void confirmDeleteTeacher()}
         />
       ) : null}
     </>

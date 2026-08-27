@@ -618,9 +618,14 @@ export function ParentsTable() {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <ActionButton label="Details">
+                        <Link
+                          href={`/parents/${parent.id}`}
+                          aria-label="View"
+                          title="View"
+                          className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        >
                           <Eye aria-hidden className="h-4 w-4" />
-                        </ActionButton>
+                        </Link>
                         <Link
                           href={`/parents/${parent.id}/edit`}
                           aria-label="Edit"

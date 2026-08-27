@@ -20,7 +20,11 @@ import {
   useGetRegionsQuery,
 } from "@/features/school/api/lookupsApi";
 import { useAppSelector } from "@/store/hooks";
-import type { LookupItem, SaveStudentBody } from "@/features/school/types";
+import type {
+  DashboardParentOption,
+  LookupItem,
+  SaveStudentBody,
+} from "@/features/school/types";
 
 const inputClass =
   "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted/80 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -193,16 +197,177 @@ function LookupSelect({
   );
 }
 
+function formatParentLabel(parent: {
+  firstName?: string | null;
+  middleName?: string | null;
+  lastName?: string | null;
+  fullName?: string | null;
+}): string {
+  const combined = [parent.firstName, parent.middleName, parent.lastName]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" ");
+  return combined || parent.fullName?.trim() || "";
+}
+
+function parentMatches(parent: DashboardParentOption, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) {
+    return false;
+  }
+
+  return [
+    parent.fullName,
+    parent.firstName,
+    parent.middleName,
+    parent.lastName,
+  ].some((part) => part?.toLowerCase().includes(needle));
+}
+
+function ParentPicker({
+  id,
+  parentId,
+  disabled,
+  selectedParent,
+  onSelect,
+}: {
+  id: string;
+  parentId: string;
+  disabled?: boolean;
+  selectedParent?: {
+    id: number;
+    firstName: string;
+    middleName: string;
+    lastName: string;
+  };
+  onSelect: (parentId: string) => void;
+}) {
+  const authReady = useAppSelector(selectAuthReady);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [query, setQuery] = useState("");
+  const [debounced, setDebounced] = useState("");
+  const [open, setOpen] = useState(false);
+  const canSearch = authReady && open && debounced.trim().length >= 1;
+  const { data: options = [], isFetching } = useGetParentOptionsQuery(
+    debounced.trim(),
+    { skip: !canSearch },
+  );
+  const matches = useMemo(
+    () => options.filter((parent) => parentMatches(parent, debounced)),
+    [debounced, options],
+  );
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(query), 250);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    if (open) {
+      return;
+    }
+
+    if (selectedParent && String(selectedParent.id) === parentId) {
+      setQuery(formatParentLabel(selectedParent));
+      return;
+    }
+
+    if (!parentId) {
+      setQuery("");
+    }
+  }, [open, parentId, selectedParent]);
+
+  useEffect(() => {
+    function onPointerDown(event: MouseEvent) {
+      if (!boxRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", onPointerDown);
+    return () => document.removeEventListener("mousedown", onPointerDown);
+  }, []);
+
+  function pick(parent: DashboardParentOption) {
+    onSelect(String(parent.id));
+    setQuery(parent.fullName);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={boxRef} className="relative">
+      <input
+        id={id}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        autoComplete="off"
+        disabled={disabled}
+        required={!parentId}
+        value={query}
+        placeholder="Type parent first, middle, or last name*"
+        onFocus={() => {
+          if (!disabled) {
+            setOpen(true);
+          }
+        }}
+        onChange={(event) => {
+          const next = event.target.value;
+          setQuery(next);
+          setOpen(true);
+          if (parentId) {
+            onSelect("");
+          }
+        }}
+        className={inputClass}
+      />
+      {open && !disabled ? (
+        <ul
+          id={`${id}-list`}
+          role="listbox"
+          className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-border bg-white py-1 shadow-[0_8px_30px_rgb(0,0,0,0.08)]"
+        >
+          {debounced.trim().length < 1 ? (
+            <li className="px-3 py-3 text-sm text-muted">
+              Type a first, middle, or last name
+            </li>
+          ) : isFetching ? (
+            <li className="px-3 py-3 text-sm text-muted">Searching…</li>
+          ) : matches.length === 0 ? (
+            <li className="px-3 py-3 text-sm text-muted">No parents match</li>
+          ) : (
+            matches.map((parent) => (
+              <li key={parent.id} role="option" aria-selected={parentId === String(parent.id)}>
+                <button
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => pick(parent)}
+                  className="flex min-h-11 w-full cursor-pointer items-center px-3 text-left text-sm text-foreground hover:bg-primary-soft"
+                >
+                  {parent.fullName}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 export function StudentForm({
   studentId,
   initialParentId,
+  readOnly = false,
 }: {
   studentId?: number;
   initialParentId?: number;
+  readOnly?: boolean;
 }) {
   const router = useRouter();
   const authReady = useAppSelector(selectAuthReady);
-  const isEdit = Boolean(studentId);
+  const isEdit = Boolean(studentId) && !readOnly;
   const [form, setForm] = useState<StudentFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [createdAt, setCreatedAt] = useState(todayInputDate);
@@ -211,9 +376,6 @@ export function StudentForm({
     studentId ?? 0,
     { skip: !authReady || !studentId },
   );
-  const { data: parentOptions = [] } = useGetParentOptionsQuery(undefined, {
-    skip: !authReady,
-  });
   const selectedParentId = optionalNumber(form.parentId);
   const { data: selectedParent } = useGetParentQuery(selectedParentId ?? 0, {
     skip: !authReady || !selectedParentId,
@@ -358,7 +520,7 @@ export function StudentForm({
     }
   }
 
-  if (isEdit && studentLoading) {
+  if (studentId && studentLoading) {
     return (
       <p className="rounded-3xl border border-border bg-white p-8 text-sm text-muted">
         Loading student…
@@ -371,13 +533,19 @@ export function StudentForm({
       className="rounded-3xl border border-border bg-white p-6 shadow-sm sm:p-8"
       onSubmit={(event) => {
         event.preventDefault();
-        void onSave(false);
+        if (!readOnly) {
+          void onSave(false);
+        }
       }}
     >
       <h1 className="mb-8 text-center text-3xl font-semibold tracking-tight text-foreground">
-        {isEdit ? "Edit Student" : "Add New Student"}
+        {readOnly ? "View Student" : isEdit ? "Edit Student" : "Add New Student"}
       </h1>
 
+      <fieldset
+        disabled={readOnly}
+        className="min-w-0 border-0 p-0 disabled:[&_input]:bg-stone-50 disabled:[&_select]:bg-stone-50 disabled:[&_input]:text-muted disabled:[&_select]:text-muted disabled:[&_label]:cursor-not-allowed"
+      >
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Field id="firstName" label="First Name" required>
           <input
@@ -390,20 +558,13 @@ export function StudentForm({
           />
         </Field>
         <Field id="parentId" label="Parent" required>
-          <select
+          <ParentPicker
             id="parentId"
-            required
-            value={form.parentId}
-            onChange={(event) => update("parentId", event.target.value)}
-            className={`${inputClass} cursor-pointer`}
-          >
-            <option value="">Choose parent*</option>
-            {parentOptions.map((parent) => (
-              <option key={parent.id} value={String(parent.id)}>
-                {parent.fullName}
-              </option>
-            ))}
-          </select>
+            parentId={form.parentId}
+            disabled={readOnly}
+            selectedParent={selectedParent}
+            onSelect={(parentId) => update("parentId", parentId)}
+          />
         </Field>
         <div>
           <span className="sr-only">Photo</span>
@@ -616,6 +777,7 @@ export function StudentForm({
             className={`${inputClass} sm:w-48`}
           />
         </label>
+        {readOnly ? null : (
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
@@ -642,7 +804,9 @@ export function StudentForm({
             </button>
           )}
         </div>
+        )}
       </div>
+      </fieldset>
     </form>
   );
 }
