@@ -16,6 +16,8 @@ export const apiTagTypes = [
   "Lookups",
   "Teachers",
   "Classes",
+  "Courses",
+  "Teaches",
   "Sections",
 ] as const;
 

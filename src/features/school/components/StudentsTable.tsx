@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
+import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -298,14 +299,7 @@ export function StudentsTable() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="px-5 py-10 text-center text-sm text-muted"
-                  >
-                    Loading students…
-                  </td>
-                </tr>
+                <TableLoadingRow colSpan={8} label="Loading students" />
               ) : error ? (
                 <tr>
                   <td

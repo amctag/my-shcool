@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { StatusFilterSelect } from "@/components/dashboard/StatusFilterSelect";
+import { LoadingDots, TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -247,9 +248,7 @@ function ChildrenDrawer({
         </div>
         <div className="overflow-hidden rounded-2xl border border-border bg-white">
           {isLoading ? (
-            <p className="px-5 py-8 text-center text-sm text-muted">
-              Loading children…
-            </p>
+            <LoadingDots label="Loading children" />
           ) : error ? (
             <p className="px-5 py-8 text-center text-sm text-red-600" role="alert">
               {getApiErrorMessage(error, "Could not load children")}
@@ -521,14 +520,7 @@ export function ParentsTable() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="px-5 py-10 text-center text-sm text-muted"
-                  >
-                    Loading parents…
-                  </td>
-                </tr>
+                <TableLoadingRow colSpan={8} label="Loading parents" />
               ) : error ? (
                 <tr>
                   <td

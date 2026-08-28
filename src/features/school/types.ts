@@ -343,5 +343,112 @@ export type SaveSectionBody = {
   status?: number;
 };
 
+export type DashboardCourse = {
+  id: number;
+  title: string;
+  description: string | null;
+  status: boolean;
+  classCourseCount: number;
+};
+
+export type SaveCourseBody = {
+  title: string;
+  description?: string;
+  status?: boolean;
+};
+
+export type ClassCoursesSortBy = "id" | "class" | "course" | "year" | "hours";
+export type ClassCoursesSortOrder = "asc" | "desc";
+
+export type DashboardClassCourse = {
+  id: number;
+  classId: number;
+  className: string;
+  courseId: number;
+  courseTitle: string;
+  yearId: number;
+  yearTitle: string;
+  isCurrentYear: boolean;
+  coefficient: number;
+  numberOfHours: number | null;
+  status: boolean;
+};
+
+export type DashboardClassCoursesQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  classId?: number;
+  courseId?: number;
+  yearId?: number;
+  sortBy?: ClassCoursesSortBy;
+  sortOrder?: ClassCoursesSortOrder;
+};
+
+export type DashboardClassCoursesResponse = {
+  items: DashboardClassCourse[];
+  pagination: PaginationMeta;
+};
+
+export type SaveClassCourseBody = {
+  classId: number;
+  courseId: number;
+  yearId?: number;
+  coefficient?: number;
+  numberOfHours?: number | null;
+  status?: boolean;
+};
+
+export type TeachesSortBy =
+  | "id"
+  | "teacher"
+  | "class"
+  | "section"
+  | "course"
+  | "year";
+export type TeachesSortOrder = "asc" | "desc";
+
+export type DashboardTeach = {
+  id: number;
+  teacherId: number;
+  teacherName: string;
+  classId: number;
+  className: string;
+  sectionId: number;
+  sectionTitle: string;
+  courseId: number;
+  courseTitle: string;
+  yearId: number;
+  yearTitle: string;
+  isCurrentYear: boolean;
+};
+
+export type DashboardTeachesQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  classId?: number;
+  sectionId?: number;
+  courseId?: number;
+  teacherId?: number;
+  yearId?: number;
+  sortBy?: TeachesSortBy;
+  sortOrder?: TeachesSortOrder;
+};
+
+export type DashboardTeachesResponse = {
+  items: DashboardTeach[];
+  pagination: PaginationMeta;
+};
+
+export type SaveTeachBody = {
+  teacherId: number;
+  sectionId: number;
+  courseId: number;
+  yearId?: number;
+};
+
+
+
 
 

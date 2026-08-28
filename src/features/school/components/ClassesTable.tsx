@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
@@ -80,14 +81,7 @@ export function ClassesTable() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-5 py-10 text-center text-sm text-muted"
-                  >
-                    Loading classes…
-                  </td>
-                </tr>
+                <TableLoadingRow colSpan={4} label="Loading classes" />
               ) : error ? (
                 <tr>
                   <td

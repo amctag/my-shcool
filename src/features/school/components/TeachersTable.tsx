@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { StatusFilterSelect } from "@/components/dashboard/StatusFilterSelect";
+import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -364,14 +365,7 @@ export function TeachersTable() {
             </thead>
             <tbody>
               {isLoading ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-5 py-10 text-center text-sm text-muted"
-                  >
-                    Loading teachers…
-                  </td>
-                </tr>
+                <TableLoadingRow colSpan={7} label="Loading teachers" />
               ) : error ? (
                 <tr>
                   <td
