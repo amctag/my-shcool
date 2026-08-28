@@ -70,7 +70,17 @@ export const coursesApi = baseApi.injectEndpoints({
       DashboardClassCoursesResponse,
       DashboardClassCoursesQuery
     >({
-      query: ({ page, limit, search, classId, courseId, yearId, sortBy, sortOrder }) =>
+      query: ({
+        page,
+        limit,
+        search,
+        classId,
+        courseId,
+        yearId,
+        status,
+        sortBy,
+        sortOrder,
+      }) =>
         `/dashboard/class-courses${toQueryString({
           page,
           limit,
@@ -78,6 +88,7 @@ export const coursesApi = baseApi.injectEndpoints({
           classId,
           courseId,
           yearId,
+          status,
           sortBy,
           sortOrder,
         })}`,

@@ -381,6 +381,7 @@ export type DashboardClassCoursesQuery = {
   classId?: number;
   courseId?: number;
   yearId?: number;
+  status?: "active" | "inactive";
   sortBy?: ClassCoursesSortBy;
   sortOrder?: ClassCoursesSortOrder;
 };

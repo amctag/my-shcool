@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { selectAuthReady } from "@/features/auth/authSlice";
@@ -10,6 +10,7 @@ import { useGetSectionsQuery, useGetYearsQuery } from "@/features/school/api/sec
 import { useGetTeachersQuery } from "@/features/school/api/teachersApi";
 import {
   useCreateTeachMutation,
+  useGetTeachesQuery,
   useGetTeachQuery,
   useUpdateTeachMutation,
 } from "@/features/school/api/teachesApi";
@@ -83,6 +84,7 @@ export function TeachForm({
 
   const yearId = Number(form.yearId) || 0;
   const classId = Number(form.classId) || 0;
+  const sectionId = Number(form.sectionId) || 0;
 
   const { data: item, isLoading } = useGetTeachQuery(teachId ?? 0, {
     skip: !authReady || !teachId,
@@ -111,11 +113,32 @@ export function TeachForm({
     },
     { skip: !authReady || !classId || !yearId },
   );
+  const { data: sectionTeaches } = useGetTeachesQuery(
+    {
+      page: 1,
+      limit: 100,
+      sectionId,
+      yearId,
+      sortBy: "id",
+      sortOrder: "asc",
+    },
+    { skip: !authReady || !sectionId || !yearId },
+  );
   const [createTeach, createState] = useCreateTeachMutation();
   const [updateTeach, updateState] = useUpdateTeachMutation();
   const saving = createState.isLoading || updateState.isLoading;
   const teachers = teachersData?.items ?? [];
   const sections = sectionsData?.items ?? [];
+  const usedCourseIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const row of sectionTeaches?.items ?? []) {
+      if (teachId && row.id === teachId) {
+        continue;
+      }
+      ids.add(row.courseId);
+    }
+    return ids;
+  }, [sectionTeaches?.items, teachId]);
 
   useEffect(() => {
     if (teachId || form.yearId) {
@@ -153,6 +176,10 @@ export function TeachForm({
     const selectedYearId = Number(form.yearId);
     if (!teacherId || !sectionId || !courseId || !selectedYearId || !classId) {
       setFormError("Teacher, class, section, course, and year are required");
+      return;
+    }
+    if (usedCourseIds.has(courseId)) {
+      setFormError("This section already has a teacher for that course this year");
       return;
     }
 
@@ -279,11 +306,18 @@ export function TeachForm({
               className={`${inputClass} cursor-pointer`}
             >
               <option value="">Choose course</option>
-              {courses.map((course) => (
-                <option key={course.id} value={String(course.id)}>
-                  {course.title}
-                </option>
-              ))}
+              {courses.map((course) => {
+                const used = usedCourseIds.has(course.id);
+                return (
+                  <option
+                    key={course.id}
+                    value={String(course.id)}
+                    disabled={used}
+                  >
+                    {used ? `${course.title} (used)` : course.title}
+                  </option>
+                );
+              })}
             </select>
           </Field>
           <Field id="teacherId" label="Teacher" required>

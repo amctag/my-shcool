@@ -132,6 +132,8 @@ export function TeachesTable() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [draftFilters, setDraftFilters] = useState<TeachFilters>(emptyFilters);
   const [appliedFilters, setAppliedFilters] = useState<TeachFilters>(emptyFilters);
+  const [draftYearId, setDraftYearId] = useState<number | null>(null);
+  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<TeachesSortBy>("id");
   const [sortOrder, setSortOrder] = useState<TeachesSortOrder>("asc");
@@ -143,18 +145,18 @@ export function TeachesTable() {
   const limit = 10;
   const prefetch = teachesApi.usePrefetch("getTeaches");
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId, setYearId } = useSchoolYearFilter(canFetch);
+  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
   const query = buildQuery(
     page,
     limit,
     appliedSearch,
     sortBy,
     sortOrder,
-    yearId,
+    appliedYearId,
     appliedFilters,
   );
   const { data, error, isLoading, isFetching } = useGetTeachesQuery(query, {
-    skip: !canFetch || !yearId,
+    skip: !canFetch || !appliedYearId,
   });
   const { data: classes = [] } = useGetClassesQuery(undefined, {
     skip: !canFetch,
@@ -171,30 +173,36 @@ export function TeachesTable() {
       page: 1,
       limit: 100,
       classId: draftFilters.classId,
-      yearId: yearId ?? 0,
+      yearId: draftYearId ?? 0,
       sortBy: "section",
       sortOrder: "asc",
     },
-    { skip: !canFetch || !draftFilters.classId || !yearId },
+    { skip: !canFetch || !draftFilters.classId || !draftYearId },
   );
   const [deleteTeach, deleteState] = useDeleteTeachMutation();
   const teachers = teachersData?.items ?? [];
   const sections = sectionsData?.items ?? [];
 
+  useEffect(() => {
+    if (!defaultYearId) {
+      return;
+    }
+    setDraftYearId((current) => current ?? defaultYearId);
+    setAppliedYearId((current) => current ?? defaultYearId);
+  }, [defaultYearId]);
+
   function applySearch() {
     const next = searchInput.trim();
-    if (next === appliedSearch) {
+    if (
+      next === appliedSearch &&
+      draftYearId === appliedYearId &&
+      filtersEqual(draftFilters, appliedFilters)
+    ) {
       return;
     }
     setPage(1);
     setAppliedSearch(next);
-  }
-
-  function applyFilters() {
-    if (filtersEqual(draftFilters, appliedFilters)) {
-      return;
-    }
-    setPage(1);
+    setAppliedYearId(draftYearId);
     setAppliedFilters(draftFilters);
   }
 
@@ -210,20 +218,20 @@ export function TeachesTable() {
         appliedSearch,
         sortBy,
         sortOrder,
-        yearId,
+        appliedYearId,
         appliedFilters,
       ),
     );
   }, [
     appliedFilters,
     appliedSearch,
+    appliedYearId,
     canFetch,
     data?.pagination.totalPages,
     page,
     prefetch,
     sortBy,
     sortOrder,
-    yearId,
   ]);
 
   function onSort(column: TeachesSortBy) {
@@ -255,42 +263,23 @@ export function TeachesTable() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-            <TableSearchBar
-              label="Search teach"
-              placeholder="Search by teacher, class, section, or course"
-              value={searchInput}
-              onChange={setSearchInput}
-              onSearch={applySearch}
-            />
-            <YearFilterSelect
-              years={years}
-              value={yearId}
-              onChange={(nextYearId) => {
-                setPage(1);
-                setYearId(nextYearId);
-                setDraftFilters((current) => ({ ...current, sectionId: 0 }));
-                setAppliedFilters((current) => ({ ...current, sectionId: 0 }));
-              }}
-            />
-          </div>
-          <Link
-            href="/teaches/add"
-            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
-          >
-            <Plus aria-hidden className="h-4 w-4" />
-            Add
-          </Link>
-        </div>
-        <form
-          className="flex flex-wrap items-center gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            applyFilters();
-          }}
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <TableSearchBar
+          label="Search teach"
+          placeholder="Search"
+          value={searchInput}
+          onChange={setSearchInput}
+          onSearch={applySearch}
+          compact
         >
+          <YearFilterSelect
+            years={years}
+            value={draftYearId}
+            onChange={(nextYearId) => {
+              setDraftYearId(nextYearId);
+              setDraftFilters((current) => ({ ...current, sectionId: 0 }));
+            }}
+          />
           <FilterSelect
             label="Filter by class"
             value={draftFilters.classId}
@@ -314,7 +303,10 @@ export function TeachesTable() {
             value={draftFilters.sectionId}
             disabled={!draftFilters.classId}
             options={[
-              { value: 0, label: draftFilters.classId ? "All sections" : "Choose class first" },
+              {
+                value: 0,
+                label: draftFilters.classId ? "All sections" : "Choose class first",
+              },
               ...sections.map((section) => ({
                 value: section.id,
                 label: section.sectionTitle,
@@ -354,13 +346,14 @@ export function TeachesTable() {
               setDraftFilters((current) => ({ ...current, teacherId }))
             }
           />
-          <button
-            type="submit"
-            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-foreground px-4 text-sm font-medium text-white transition-colors duration-200 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            Filter
-          </button>
-        </form>
+        </TableSearchBar>
+        <Link
+          href="/teaches/add"
+          className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
+        >
+          <Plus aria-hidden className="h-4 w-4" />
+          Add
+        </Link>
       </div>
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="overflow-x-auto">
@@ -379,7 +372,7 @@ export function TeachesTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !yearId ? (
+              {isLoading || !appliedYearId ? (
                 <TableLoadingRow colSpan={7} label="Loading teach" />
               ) : error ? (
                 <tr>

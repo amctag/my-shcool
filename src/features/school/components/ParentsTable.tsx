@@ -514,7 +514,9 @@ export function ParentsTable() {
                   <Pause aria-hidden className="h-4 w-4" />
                 </IconColumnHeader>
                 <IconColumnHeader label="Has children">
-                  <User aria-hidden className="h-4 w-4" />
+                  <span aria-hidden className="text-base font-semibold">
+                    $
+                  </span>
                 </IconColumnHeader>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted">
                   Action
@@ -625,7 +627,9 @@ export function ParentsTable() {
                             : "text-muted/40"
                         }`}
                       >
-                        <User aria-hidden className="h-5 w-5" />
+                        <span aria-hidden className="text-lg font-semibold leading-none">
+                          $
+                        </span>
                       </span>
                     </td>
                     <td className="px-5 py-4">
