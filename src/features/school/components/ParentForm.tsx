@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { selectAuthReady } from "@/features/auth/authSlice";
@@ -31,7 +31,6 @@ type ParentFormState = {
   firstName: string;
   middleName: string;
   lastName: string;
-  picture: File | null;
   gender: string;
   nationalityId: string;
   registerId: string;
@@ -48,6 +47,7 @@ type ParentFormState = {
   regionId: string;
   address: string;
   description: string;
+  status: string;
 };
 
 function todayInputDate() {
@@ -62,7 +62,6 @@ function emptyForm(): ParentFormState {
     firstName: "",
     middleName: "",
     lastName: "",
-    picture: null,
     gender: "",
     nationalityId: "",
     registerId: "",
@@ -79,6 +78,7 @@ function emptyForm(): ParentFormState {
     regionId: "",
     address: "",
     description: "",
+    status: "1",
   };
 }
 
@@ -121,6 +121,7 @@ function toBody(form: ParentFormState): SaveParentBody {
     address: form.address.trim() || undefined,
     description: form.description.trim() || undefined,
     birthday: form.birthday || undefined,
+    status: form.status === "0" ? false : true,
   };
 }
 
@@ -218,11 +219,6 @@ export function ParentForm({
 
   const [createParent, createState] = useCreateParentMutation();
   const [updateParent, updateState] = useUpdateParentMutation();
-
-  const fileName = useMemo(
-    () => form.picture?.name ?? "No file chosen",
-    [form.picture],
-  );
   const saving = createState.isLoading || updateState.isLoading;
 
   useEffect(() => {
@@ -268,6 +264,7 @@ export function ParentForm({
       regionId: parent.regionId ? String(parent.regionId) : "",
       address: parent.address ?? "",
       description: parent.description ?? "",
+      status: parent.status === false ? "0" : "1",
     });
   }, [parent]);
 
@@ -362,24 +359,6 @@ export function ParentForm({
             className={inputClass}
           />
         </Field>
-        <div>
-          <span className="sr-only">Photo</span>
-          <label className="flex h-11 cursor-pointer items-center overflow-hidden rounded-xl border border-border bg-white">
-            <span className="inline-flex h-full shrink-0 items-center bg-primary-soft px-3 text-sm font-medium text-primary">
-              Choose File
-            </span>
-            <span className="truncate px-3 text-sm text-muted">{fileName}</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(event) =>
-                update("picture", event.target.files?.[0] ?? null)
-              }
-            />
-          </label>
-        </div>
-
         <Field id="gender" label="Gender">
           <select
             id="gender"
@@ -509,6 +488,17 @@ export function ParentForm({
             placeholder="Telephone"
             className={inputClass}
           />
+        </Field>
+        <Field id="status" label="Status">
+          <select
+            id="status"
+            value={form.status}
+            onChange={(event) => update("status", event.target.value)}
+            className={`${inputClass} cursor-pointer`}
+          >
+            <option value="1">Active</option>
+            <option value="0">Inactive</option>
+          </select>
         </Field>
         <LookupSelect
           id="jobId"

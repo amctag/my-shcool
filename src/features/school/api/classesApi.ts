@@ -1,10 +1,14 @@
 import { baseApi } from "@/store/api/baseApi";
-import type { DashboardClass } from "@/features/school/types";
+import { toQueryString } from "@/lib/toQueryString";
+import type {
+  DashboardClass,
+  DashboardClassesQuery,
+} from "@/features/school/types";
 
 export const classesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getClasses: builder.query<DashboardClass[], void>({
-      query: () => "/dashboard/classes",
+    getClasses: builder.query<DashboardClass[], DashboardClassesQuery | void>({
+      query: (arg) => `/dashboard/classes${toQueryString(arg ?? {})}`,
       keepUnusedDataFor: 120,
       providesTags: (result) =>
         result

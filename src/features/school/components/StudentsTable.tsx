@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
+import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
+import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   studentsApi,
@@ -37,18 +39,6 @@ function buildStudentsQuery(
 function studentName(firstName?: string, lastName?: string, fullName?: string): string {
   const combined = `${firstName?.trim() ?? ""} ${lastName?.trim() ?? ""}`.trim();
   return combined || fullName?.trim() || "—";
-}
-
-function studentInitials(firstName?: string, lastName?: string, fullName?: string): string {
-  const first = firstName?.trim().charAt(0);
-  const last = lastName?.trim().charAt(0);
-  if (first || last) {
-    return `${first ?? ""}${last ?? ""}`.toUpperCase();
-  }
-
-  const parts = fullName?.trim().split(/\s+/).filter(Boolean) ?? [];
-  const fromFull = `${parts[0]?.charAt(0) ?? ""}${parts.at(-1)?.charAt(0) ?? ""}`;
-  return fromFull.toUpperCase() || "?";
 }
 
 const MONTHS = [
@@ -158,17 +148,14 @@ export function StudentsTable() {
     skip: !canFetch,
   });
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const next = searchInput.trim();
-      if (next !== appliedSearch) {
-        setPage(1);
-        setAppliedSearch(next);
-      }
-    }, 300);
-
-    return () => window.clearTimeout(timer);
-  }, [appliedSearch, searchInput]);
+  function applySearch() {
+    const next = searchInput.trim();
+    if (next === appliedSearch) {
+      return;
+    }
+    setPage(1);
+    setAppliedSearch(next);
+  }
 
   useEffect(() => {
     const totalPages = data?.pagination.totalPages ?? 0;
@@ -235,20 +222,13 @@ export function StudentsTable() {
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="relative w-full max-w-md sm:w-96">
-          <span className="sr-only">Search students</span>
-          <Search
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted"
-          />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search by name or id"
-            className="h-11 w-full rounded-lg border border-border bg-white pr-3 pl-10 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          />
-        </label>
+        <TableSearchBar
+          label="Search students"
+          placeholder="Search by name or id"
+          value={searchInput}
+          onChange={setSearchInput}
+          onSearch={applySearch}
+        />
         <Link
           href="/students/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -354,23 +334,18 @@ export function StudentsTable() {
                     }`}
                   >
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
-                      <span className="inline-flex items-center gap-3">
-                        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-bold tracking-wide text-on-primary">
-                          {studentInitials(
-                            student.firstName,
-                            student.lastName,
-                            student.fullName,
-                          )}
-                        </span>
-                        {student.id}
-                      </span>
+                      {student.id}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
-                      {studentName(
-                        student.firstName,
-                        student.lastName,
-                        student.fullName,
-                      )}
+                      <NameWithInitials
+                        firstName={student.firstName}
+                        lastName={student.lastName}
+                        name={studentName(
+                          student.firstName,
+                          student.lastName,
+                          student.fullName,
+                        )}
+                      />
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-foreground">
                       {student.parentName ?? "—"}

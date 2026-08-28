@@ -10,8 +10,8 @@ import type {
 export const teachersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getTeachers: builder.query<DashboardTeachersResponse, DashboardTeachersQuery>({
-      query: ({ page, limit, search, name, id, sortBy, sortOrder }) =>
-        `/dashboard/teachers${toQueryString({ page, limit, search, name, id, sortBy, sortOrder })}`,
+      query: ({ page, limit, search, name, id, status, sortBy, sortOrder }) =>
+        `/dashboard/teachers${toQueryString({ page, limit, search, name, id, status, sortBy, sortOrder })}`,
       keepUnusedDataFor: 120,
       providesTags: (result) =>
         result
@@ -50,6 +50,20 @@ export const teachersApi = baseApi.injectEndpoints({
         { type: "Teachers", id: "LIST" },
       ],
     }),
+    updateTeacherStatus: builder.mutation<
+      { id: number; status: boolean },
+      { id: number; status: boolean }
+    >({
+      query: ({ id, status }) => ({
+        url: `/dashboard/teachers/${id}/status`,
+        method: "PATCH",
+        body: { status },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Teachers", id },
+        { type: "Teachers", id: "LIST" },
+      ],
+    }),
     deleteTeacher: builder.mutation<void, number>({
       query: (id) => ({
         url: `/dashboard/teachers/${id}`,
@@ -69,5 +83,6 @@ export const {
   useGetTeacherQuery,
   useCreateTeacherMutation,
   useUpdateTeacherMutation,
+  useUpdateTeacherStatusMutation,
   useDeleteTeacherMutation,
 } = teachersApi;

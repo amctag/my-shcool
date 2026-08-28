@@ -13,8 +13,8 @@ import type {
 export const sectionsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getSections: builder.query<DashboardSectionsResponse, DashboardSectionsQuery>({
-      query: ({ page, limit, search, classId, sortBy, sortOrder }) =>
-        `/dashboard/sections${toQueryString({ page, limit, search, classId, sortBy, sortOrder })}`,
+      query: ({ page, limit, search, classId, yearId, sortBy, sortOrder }) =>
+        `/dashboard/sections${toQueryString({ page, limit, search, classId, yearId, sortBy, sortOrder })}`,
       keepUnusedDataFor: 120,
       providesTags: (result) =>
         result
@@ -35,8 +35,9 @@ export const sectionsApi = baseApi.injectEndpoints({
       query: () => "/dashboard/years",
       providesTags: [{ type: "Sections", id: "YEARS" }],
     }),
-    getSectionTitles: builder.query<DashboardSectionTitle[], void>({
-      query: () => "/dashboard/section-titles",
+    getSectionTitles: builder.query<DashboardSectionTitle[], number | void>({
+      query: (yearId) =>
+        `/dashboard/section-titles${toQueryString({ yearId })}`,
       providesTags: (result) =>
         result
           ? [

@@ -38,7 +38,6 @@ const GENDERS = [
 type StudentFormState = {
   parentId: string;
   firstName: string;
-  picture: File | null;
   gender: string;
   nationalityId: string;
   bloodTypeId: string;
@@ -70,7 +69,6 @@ function emptyForm(): StudentFormState {
   return {
     parentId: "",
     firstName: "",
-    picture: null,
     gender: "",
     nationalityId: "",
     bloodTypeId: "",
@@ -398,11 +396,6 @@ export function StudentForm({
   const appliedParentId = useRef<number | null>(null);
   const [createStudent, createState] = useCreateStudentMutation();
   const [updateStudent, updateState] = useUpdateStudentMutation();
-
-  const fileName = useMemo(
-    () => form.picture?.name ?? "No file chosen",
-    [form.picture],
-  );
   const saving = createState.isLoading || updateState.isLoading;
 
   useEffect(() => {
@@ -566,24 +559,6 @@ export function StudentForm({
             onSelect={(parentId) => update("parentId", parentId)}
           />
         </Field>
-        <div>
-          <span className="sr-only">Photo</span>
-          <label className="flex h-11 cursor-pointer items-center overflow-hidden rounded-xl border border-border bg-white">
-            <span className="inline-flex h-full shrink-0 items-center bg-primary-soft px-3 text-sm font-medium text-primary">
-              Choose File
-            </span>
-            <span className="truncate px-3 text-sm text-muted">{fileName}</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(event) =>
-                update("picture", event.target.files?.[0] ?? null)
-              }
-            />
-          </label>
-        </div>
-
         <Field id="gender" label="Gender">
           <select
             id="gender"

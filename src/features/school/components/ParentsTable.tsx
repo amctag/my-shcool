@@ -3,21 +3,26 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
+  User,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
   Eye,
+  Pause,
   Pencil,
   Plus,
-  Search,
   Trash2,
   X,
 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
+import { StatusFilterSelect } from "@/components/dashboard/StatusFilterSelect";
+import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
+import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
-import { childrenApi, useGetChildrenQuery } from "@/features/school/api/childrenApi";
-import { parentsApi, useDeleteParentMutation, useGetParentsQuery } from "@/features/school/api/parentsApi";
+import { useGetChildrenQuery } from "@/features/school/api/childrenApi";
+import { parentsApi, useDeleteParentMutation, useGetParentsQuery, useUpdateParentStatusMutation } from "@/features/school/api/parentsApi";
 import {
   applyParentsSearch,
   clearSelectedParent,
@@ -28,10 +33,12 @@ import {
   selectParentsSearchInput,
   selectParentsSortBy,
   selectParentsSortOrder,
+  selectParentsStatusFilter,
   selectSelectedParentId,
   setParentsPage,
   setParentsSearchInput,
   setParentsSort,
+  setParentsStatusFilter,
 } from "@/features/school/parentsSlice";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -39,6 +46,7 @@ import type {
   DashboardParentsQuery,
   ParentsSortBy,
   ParentsSortOrder,
+  PersonStatusFilter,
 } from "@/features/school/types";
 
 function buildParentsQuery(
@@ -47,14 +55,42 @@ function buildParentsQuery(
   appliedSearch: string,
   sortBy: ParentsSortBy,
   sortOrder: ParentsSortOrder,
+  statusFilter: PersonStatusFilter,
 ): DashboardParentsQuery {
   const query: DashboardParentsQuery = { page, limit, sortBy, sortOrder };
 
   if (appliedSearch) {
     query.search = appliedSearch;
   }
+  if (statusFilter !== "all") {
+    query.status = statusFilter;
+  }
 
   return query;
+}
+
+function isParentActive(status?: boolean) {
+  return status !== false;
+}
+
+function IconColumnHeader({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <th className="w-14 px-2 py-3.5 text-center">
+      <span
+        className="inline-flex min-h-11 min-w-11 items-center justify-center text-muted"
+        title={label}
+        aria-label={label}
+      >
+        {children}
+      </span>
+    </th>
+  );
 }
 
 function SortHeader({
@@ -144,18 +180,11 @@ function ChildrenDrawer({
   childrenCount?: number;
   onClose: () => void;
 }) {
-  const [page, setPage] = useState(1);
-  const limit = 10;
-  const prefetchChildren = childrenApi.usePrefetch("getChildren");
   const { data, error, isLoading, isFetching } = useGetChildrenQuery({
     parentId,
-    page,
-    limit,
+    page: 1,
+    limit: 100,
   });
-
-  useEffect(() => {
-    setPage(1);
-  }, [parentId]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -175,16 +204,8 @@ function ChildrenDrawer({
   }, [onClose]);
 
   const items = data?.items ?? [];
-  const pagination = data?.pagination;
-  const totalPages = pagination?.totalPages ?? 0;
-  const total = pagination?.total ?? childrenCount ?? 0;
+  const total = data?.pagination.total ?? childrenCount ?? items.length;
   const title = items[0]?.parentName ?? parentName ?? "Parent";
-
-  useEffect(() => {
-    if (totalPages >= page + 1) {
-      prefetchChildren({ parentId, page: page + 1, limit });
-    }
-  }, [limit, page, parentId, prefetchChildren, totalPages]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -273,7 +294,11 @@ function ChildrenDrawer({
                           href={`/students/${child.id}/edit`}
                           className="text-primary underline-offset-2 hover:underline"
                         >
-                          {child.fullName}
+                          <NameWithInitials
+                            firstName={child.firstName}
+                            lastName={child.lastName}
+                            name={child.fullName}
+                          />
                         </Link>
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-foreground">
@@ -291,38 +316,6 @@ function ChildrenDrawer({
               </table>
             </div>
           )}
-          {pagination && totalPages > 0 ? (
-            <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-4">
-              <p className="text-sm text-muted">
-                Page {pagination.page} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={page <= 1 || isFetching}
-                  onClick={() => setPage(page - 1)}
-                  className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <ChevronLeft aria-hidden className="h-4 w-4" />
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  disabled={page >= totalPages || isFetching}
-                  onMouseEnter={() => {
-                    if (page < totalPages) {
-                      prefetchChildren({ parentId, page: page + 1, limit });
-                    }
-                  }}
-                  onClick={() => setPage(page + 1)}
-                  className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Next
-                  <ChevronRight aria-hidden className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ) : null}
           <div className="border-t border-border p-4">
             <Link
               href={`/students/add?parentId=${parentId}`}
@@ -338,48 +331,6 @@ function ChildrenDrawer({
   );
 }
 
-function parentInitials(firstName?: string, lastName?: string, fullName?: string): string {
-  const first = firstName?.trim().charAt(0);
-  const last = lastName?.trim().charAt(0);
-  if (first || last) {
-    return `${first ?? ""}${last ?? ""}`.toUpperCase();
-  }
-
-  const parts = fullName?.trim().split(/\s+/).filter(Boolean) ?? [];
-  const fromFull = `${parts[0]?.charAt(0) ?? ""}${parts.at(-1)?.charAt(0) ?? ""}`;
-  return fromFull.toUpperCase() || "?";
-}
-
-function ParentAvatar({
-  firstName,
-  lastName,
-  fullName,
-  picture,
-}: {
-  firstName?: string;
-  lastName?: string;
-  fullName?: string;
-  picture?: string | null;
-}) {
-  const [failed, setFailed] = useState(false);
-  const showImage = Boolean(picture) && !failed;
-
-  return (
-    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-bold tracking-wide text-on-primary">
-      {showImage ? (
-        <img
-          src={picture ?? ""}
-          alt=""
-          className="h-full w-full object-cover"
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        parentInitials(firstName, lastName, fullName)
-      )}
-    </span>
-  );
-}
-
 export function ParentsTable() {
   const dispatch = useAppDispatch();
   const ready = useAppSelector(selectAuthReady);
@@ -390,10 +341,13 @@ export function ParentsTable() {
   const limit = useAppSelector(selectParentsLimit);
   const sortBy = useAppSelector(selectParentsSortBy);
   const sortOrder = useAppSelector(selectParentsSortOrder);
+  const statusFilter = useAppSelector(selectParentsStatusFilter);
   const selectedParentId = useAppSelector(selectSelectedParentId);
   const prefetchParents = parentsApi.usePrefetch("getParents");
   const [deleteParent, deleteState] = useDeleteParentMutation();
+  const [updateParentStatus, statusState] = useUpdateParentStatusMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
     id: number;
     fullName: string;
@@ -406,20 +360,13 @@ export function ParentsTable() {
     appliedSearch,
     sortBy,
     sortOrder,
+    statusFilter,
   );
   const canFetch = ready && Boolean(accessToken);
 
   const { data, error, isLoading, isFetching } = useGetParentsQuery(query, {
     skip: !canFetch,
   });
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      dispatch(applyParentsSearch());
-    }, 300);
-
-    return () => window.clearTimeout(timer);
-  }, [dispatch, searchInput]);
 
   useEffect(() => {
     const totalPages = data?.pagination.totalPages ?? 0;
@@ -434,6 +381,7 @@ export function ParentsTable() {
         appliedSearch,
         sortBy,
         sortOrder,
+        statusFilter,
       ),
     );
   }, [
@@ -445,6 +393,7 @@ export function ParentsTable() {
     prefetchParents,
     sortBy,
     sortOrder,
+    statusFilter,
   ]);
 
   const parents = data?.items ?? [];
@@ -478,25 +427,34 @@ export function ParentsTable() {
     }
   }
 
+  async function toggleParentStatus(parent: { id: number; status?: boolean }) {
+    setStatusError(null);
+    try {
+      await updateParentStatus({
+        id: parent.id,
+        status: !isParentActive(parent.status),
+      }).unwrap();
+    } catch (caught) {
+      setStatusError(getApiErrorMessage(caught, "Could not update parent status"));
+    }
+  }
+
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="relative w-full max-w-md sm:w-96">
-            <span className="sr-only">Search parents</span>
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted"
-            />
-            <input
-              type="search"
-              value={searchInput}
-              onChange={(event) =>
-                dispatch(setParentsSearchInput(event.target.value))
-              }
-              placeholder="Search by name or id"
-              className="h-11 w-full rounded-lg border border-border bg-white pr-3 pl-10 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            />
-          </label>
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+          <TableSearchBar
+            label="Search parents"
+            placeholder="Search by name or id"
+            value={searchInput}
+            onChange={(value) => dispatch(setParentsSearchInput(value))}
+            onSearch={() => dispatch(applyParentsSearch())}
+          />
+          <StatusFilterSelect
+            value={statusFilter}
+            onChange={(next) => dispatch(setParentsStatusFilter(next))}
+          />
+        </div>
         <Link
           href="/parents/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -505,6 +463,11 @@ export function ParentsTable() {
           Add
         </Link>
       </div>
+      {statusError ? (
+        <p className="mb-4 text-sm text-red-600" role="alert">
+          {statusError}
+        </p>
+      ) : null}
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
@@ -545,6 +508,12 @@ export function ParentsTable() {
                   sortOrder={sortOrder}
                   onSort={(column) => dispatch(setParentsSort(column))}
                 />
+                <IconColumnHeader label="Status">
+                  <Pause aria-hidden className="h-4 w-4" />
+                </IconColumnHeader>
+                <IconColumnHeader label="Has children">
+                  <User aria-hidden className="h-4 w-4" />
+                </IconColumnHeader>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted">
                   Action
                 </th>
@@ -554,7 +523,7 @@ export function ParentsTable() {
               {isLoading ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={8}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     Loading parents…
@@ -563,7 +532,7 @@ export function ParentsTable() {
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={8}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
@@ -573,7 +542,7 @@ export function ParentsTable() {
               ) : parents.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={8}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     No parents match this search.
@@ -583,23 +552,19 @@ export function ParentsTable() {
                 parents.map((parent) => (
                   <tr
                     key={parent.id}
-                    className={`border-b border-stone-100 last:border-b-0 ${
+                    className={`border-b border-stone-100 last:border-b-0 odd:bg-white even:bg-primary-soft/50 ${
                       isFetching ? "opacity-70" : ""
                     }`}
                   >
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
-                      <span className="inline-flex items-center gap-3">
-                        <ParentAvatar
-                          firstName={parent.firstName}
-                          lastName={parent.lastName}
-                          fullName={parent.fullName}
-                          picture={parent.picture}
-                        />
-                        {parent.id}
-                      </span>
+                      {parent.id}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
-                      {parent.fullName}
+                      <NameWithInitials
+                        firstName={parent.firstName}
+                        lastName={parent.lastName}
+                        name={parent.fullName}
+                      />
                     </td>
                     <td className="px-5 py-4 text-foreground">
                       {parent.address ?? "—"}
@@ -611,10 +576,62 @@ export function ParentsTable() {
                       <button
                         type="button"
                         onClick={() => dispatch(selectParent(parent.id))}
-                        className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-xl px-2 font-semibold tabular-nums text-primary underline-offset-2 transition-colors duration-200 hover:bg-primary-soft hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-2 font-semibold tabular-nums text-primary underline-offset-2 transition-colors duration-200 hover:bg-primary-soft hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                       >
-                        {parent.childrenCount}
+                        <User aria-hidden className="h-4 w-4" />
+                        ({parent.childrenCount})
                       </button>
+                    </td>
+                    <td className="px-2 py-4 text-center">
+                      <button
+                        type="button"
+                        aria-pressed={isParentActive(parent.status)}
+                        aria-label={
+                          isParentActive(parent.status)
+                            ? "Active — click to close"
+                            : "Closed — click to activate"
+                        }
+                        title={
+                          isParentActive(parent.status)
+                            ? "Active — click to close"
+                            : "Closed — click to activate"
+                        }
+                        disabled={statusState.isLoading}
+                        onClick={() => void toggleParentStatus(parent)}
+                        className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isParentActive(parent.status) ? (
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white">
+                            <Check aria-hidden className="h-4 w-4" strokeWidth={3} />
+                          </span>
+                        ) : (
+                          <span className="relative inline-flex h-5 w-5 items-center justify-center">
+                            <span className="h-5 w-5 rounded-full bg-primary" />
+                            <span className="absolute h-2 w-2 rounded-full bg-white" />
+                          </span>
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-2 py-4 text-center">
+                      <span
+                        aria-label={
+                          parent.childrenCount > 0
+                            ? `${parent.childrenCount} children`
+                            : "No children"
+                        }
+                        title={
+                          parent.childrenCount > 0
+                            ? `${parent.childrenCount} children in school`
+                            : "No children"
+                        }
+                        className={`inline-flex h-11 w-11 items-center justify-center ${
+                          parent.childrenCount > 0
+                            ? "text-emerald-600"
+                            : "text-muted/40"
+                        }`}
+                      >
+                        <User aria-hidden className="h-5 w-5" />
+                      </span>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
@@ -677,6 +694,7 @@ export function ParentsTable() {
                         appliedSearch,
                         sortBy,
                         sortOrder,
+                        statusFilter,
                       ),
                     );
                   }

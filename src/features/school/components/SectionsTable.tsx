@@ -10,13 +10,15 @@ import {
   Eye,
   Pencil,
   Plus,
-  Search,
 } from "lucide-react";
+import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
+import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   sectionsApi,
   useGetSectionsQuery,
 } from "@/features/school/api/sectionsApi";
+import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 import type {
@@ -31,10 +33,14 @@ function buildQuery(
   appliedSearch: string,
   sortBy: SectionsSortBy,
   sortOrder: SectionsSortOrder,
+  yearId?: number | null,
 ): DashboardSectionsQuery {
   const query: DashboardSectionsQuery = { page, limit, sortBy, sortOrder };
   if (appliedSearch) {
     query.search = appliedSearch;
+  }
+  if (yearId) {
+    query.yearId = yearId;
   }
   return query;
 }
@@ -85,28 +91,27 @@ export function SectionsTable() {
   const limit = 10;
   const prefetch = sectionsApi.usePrefetch("getSections");
   const canFetch = ready && Boolean(accessToken);
-  const query = buildQuery(page, limit, appliedSearch, sortBy, sortOrder);
+  const { years, yearId, setYearId } = useSchoolYearFilter(canFetch);
+  const query = buildQuery(page, limit, appliedSearch, sortBy, sortOrder, yearId);
   const { data, error, isLoading, isFetching } = useGetSectionsQuery(query, {
-    skip: !canFetch,
+    skip: !canFetch || !yearId,
   });
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const next = searchInput.trim();
-      if (next !== appliedSearch) {
-        setPage(1);
-        setAppliedSearch(next);
-      }
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [appliedSearch, searchInput]);
+  function applySearch() {
+    const next = searchInput.trim();
+    if (next === appliedSearch) {
+      return;
+    }
+    setPage(1);
+    setAppliedSearch(next);
+  }
 
   useEffect(() => {
     const totalPages = data?.pagination.totalPages ?? 0;
     if (!canFetch || totalPages < page + 1) {
       return;
     }
-    prefetch(buildQuery(page + 1, limit, appliedSearch, sortBy, sortOrder));
+    prefetch(buildQuery(page + 1, limit, appliedSearch, sortBy, sortOrder, yearId));
   }, [
     appliedSearch,
     canFetch,
@@ -115,6 +120,7 @@ export function SectionsTable() {
     prefetch,
     sortBy,
     sortOrder,
+    yearId,
   ]);
 
   function onSort(column: SectionsSortBy) {
@@ -134,20 +140,23 @@ export function SectionsTable() {
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="relative w-full max-w-md sm:w-96">
-          <span className="sr-only">Search sections</span>
-          <Search
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted"
-          />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+          <TableSearchBar
+            label="Search sections"
             placeholder="Search by class, section, or year"
-            className="h-11 w-full rounded-lg border border-border bg-white pr-3 pl-10 text-sm outline-none focus:border-primary"
+            value={searchInput}
+            onChange={setSearchInput}
+            onSearch={applySearch}
           />
-        </label>
+          <YearFilterSelect
+            years={years}
+            value={yearId}
+            onChange={(nextYearId) => {
+              setPage(1);
+              setYearId(nextYearId);
+            }}
+          />
+        </div>
         <Link
           href="/sections/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
@@ -175,7 +184,7 @@ export function SectionsTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
+              {isLoading || !yearId ? (
                 <tr>
                   <td colSpan={7} className="px-5 py-10 text-center text-sm text-muted">
                     Loading sections…

@@ -3,10 +3,10 @@ export type DashboardParent = {
   fullName: string;
   firstName?: string;
   lastName?: string;
-  picture?: string | null;
   address: string | null;
   phoneNumber: string | null;
   childrenCount: number;
+  status?: boolean;
 };
 
 export type PaginationMeta = {
@@ -72,12 +72,15 @@ export type DashboardChildrenResponse = {
   pagination: PaginationMeta;
 };
 
+export type PersonStatusFilter = "all" | "active" | "closed";
+
 export type DashboardParentsQuery = {
   page: number;
   limit: number;
   search?: string;
   name?: string;
   id?: number;
+  status?: "active" | "closed";
   sortBy?: ParentsSortBy;
   sortOrder?: ParentsSortOrder;
 };
@@ -121,6 +124,7 @@ export type DashboardParentDetail = {
   placeOfBirth: string | null;
   description: string | null;
   birthday: string | null;
+  status: boolean;
 };
 
 export type SaveParentBody = {
@@ -143,6 +147,7 @@ export type SaveParentBody = {
   placeOfBirth?: string;
   description?: string;
   birthday?: string;
+  status?: boolean;
 };
 
 export type TeachersSortBy = "id" | "name" | "phone" | "address" | "birthday";
@@ -156,6 +161,7 @@ export type DashboardTeacher = {
   phoneNumber: string | null;
   address: string | null;
   birthday?: string | null;
+  status?: boolean;
 };
 
 export type DashboardTeachersQuery = {
@@ -164,6 +170,7 @@ export type DashboardTeachersQuery = {
   search?: string;
   name?: string;
   id?: number;
+  status?: "active" | "closed";
   sortBy?: TeachersSortBy;
   sortOrder?: TeachersSortOrder;
 };
@@ -192,6 +199,7 @@ export type DashboardTeacherDetail = {
   village: string | null;
   placeOfBirth: string | null;
   birthday: string | null;
+  status: boolean;
 };
 
 export type SaveTeacherBody = {
@@ -263,6 +271,13 @@ export type SaveStudentBody = {
   motherPhone?: string;
 };
 
+export type ClassesSortOrder = "asc" | "desc";
+
+export type DashboardClassesQuery = {
+  search?: string;
+  sortOrder?: ClassesSortOrder;
+};
+
 export type DashboardClass = {
   id: number;
   className: string;
@@ -270,7 +285,6 @@ export type DashboardClass = {
   position: number;
   stageId: number;
   stageTitle: string;
-  studentCount: number;
 };
 
 export type SectionsSortBy = "id" | "class" | "section" | "year" | "students";
@@ -294,6 +308,7 @@ export type DashboardSectionsQuery = {
   limit: number;
   search?: string;
   classId?: number;
+  yearId?: number;
   sortBy?: SectionsSortBy;
   sortOrder?: SectionsSortOrder;
 };

@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
+import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
+import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useDeleteSectionTitleMutation,
   useGetSectionTitlesQuery,
 } from "@/features/school/api/sectionsApi";
+import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 
@@ -16,6 +19,7 @@ export function SectionTitlesTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
+  const { years, yearId, setYearId } = useSchoolYearFilter(canFetch);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -25,15 +29,14 @@ export function SectionTitlesTable() {
   } | null>(null);
 
   const { data: titles = [], error, isLoading, isFetching } =
-    useGetSectionTitlesQuery(undefined, { skip: !canFetch });
+    useGetSectionTitlesQuery(yearId ?? undefined, {
+      skip: !canFetch || !yearId,
+    });
   const [deleteTitle, deleteState] = useDeleteSectionTitleMutation();
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setAppliedSearch(searchInput.trim());
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [searchInput]);
+  function applySearch() {
+    setAppliedSearch(searchInput.trim());
+  }
 
   const filtered = useMemo(() => {
     const query = appliedSearch.toLowerCase();
@@ -59,20 +62,16 @@ export function SectionTitlesTable() {
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="relative w-full max-w-md sm:w-96">
-          <span className="sr-only">Search section titles</span>
-          <Search
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted"
-          />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
+        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+          <TableSearchBar
+            label="Search section titles"
             placeholder="Search by title"
-            className="h-11 w-full rounded-lg border border-border bg-white pr-3 pl-10 text-sm outline-none focus:border-primary"
+            value={searchInput}
+            onChange={setSearchInput}
+            onSearch={applySearch}
           />
-        </label>
+          <YearFilterSelect years={years} value={yearId} onChange={setYearId} />
+        </div>
         <Link
           href="/section-titles/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
@@ -93,9 +92,6 @@ export function SectionTitlesTable() {
                   Title
                 </th>
                 <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Sections
-                </th>
-                <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
                   Status
                 </th>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted">
@@ -104,16 +100,16 @@ export function SectionTitlesTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
+              {isLoading || !yearId ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted">
+                  <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted">
                     Loading section titles…
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={4}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
@@ -122,7 +118,7 @@ export function SectionTitlesTable() {
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted">
+                  <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted">
                     No section titles match this search.
                   </td>
                 </tr>
@@ -134,9 +130,6 @@ export function SectionTitlesTable() {
                   >
                     <td className="whitespace-nowrap px-5 py-4 font-semibold">{item.id}</td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold">{item.title}</td>
-                    <td className="whitespace-nowrap px-5 py-4 tabular-nums">
-                      {item.sectionCount}
-                    </td>
                     <td className="whitespace-nowrap px-5 py-4">
                       {item.status === 1 ? "Active" : "Inactive"}
                     </td>

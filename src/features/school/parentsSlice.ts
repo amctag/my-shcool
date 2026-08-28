@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { ParentsSortBy, ParentsSortOrder } from "@/features/school/types";
+import type { ParentsSortBy, ParentsSortOrder, PersonStatusFilter } from "@/features/school/types";
 
 export type ParentsUiState = {
   searchInput: string;
@@ -8,6 +8,7 @@ export type ParentsUiState = {
   limit: number;
   sortBy: ParentsSortBy;
   sortOrder: ParentsSortOrder;
+  statusFilter: PersonStatusFilter;
   selectedParentId: number | null;
 };
 
@@ -18,6 +19,7 @@ const initialState: ParentsUiState = {
   limit: 10,
   sortBy: "id",
   sortOrder: "asc",
+  statusFilter: "all",
   selectedParentId: null,
 };
 
@@ -52,6 +54,13 @@ const parentsSlice = createSlice({
       }
       state.page = 1;
     },
+    setParentsStatusFilter(state, action: PayloadAction<PersonStatusFilter>) {
+      if (state.statusFilter === action.payload) {
+        return;
+      }
+      state.statusFilter = action.payload;
+      state.page = 1;
+    },
     selectParent(state, action: PayloadAction<number>) {
       state.selectedParentId = action.payload;
     },
@@ -67,6 +76,7 @@ export const {
   setParentsPage,
   setParentsLimit,
   setParentsSort,
+  setParentsStatusFilter,
   selectParent,
   clearSelectedParent,
 } = parentsSlice.actions;
@@ -84,6 +94,9 @@ export const selectParentsSortBy = (state: { parents: ParentsUiState }) =>
   state.parents.sortBy;
 export const selectParentsSortOrder = (state: { parents: ParentsUiState }) =>
   state.parents.sortOrder;
+export const selectParentsStatusFilter = (state: {
+  parents: ParentsUiState;
+}) => state.parents.statusFilter;
 export const selectSelectedParentId = (state: { parents: ParentsUiState }) =>
   state.parents.selectedParentId;
 
