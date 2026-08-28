@@ -32,13 +32,16 @@ export function ClassesTable() {
               <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
                 Level
               </th>
+              <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted">
+                Students
+              </th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-5 py-10 text-center text-sm text-muted"
                 >
                   Loading classes…
@@ -47,7 +50,7 @@ export function ClassesTable() {
             ) : error ? (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-5 py-10 text-center text-sm text-red-600"
                   role="alert"
                 >
@@ -57,7 +60,7 @@ export function ClassesTable() {
             ) : classes.length === 0 ? (
               <tr>
                 <td
-                  colSpan={4}
+                  colSpan={5}
                   className="px-5 py-10 text-center text-sm text-muted"
                 >
                   No classes are set up for this school.
@@ -80,6 +83,9 @@ export function ClassesTable() {
                   </td>
                   <td className="whitespace-nowrap px-5 py-4 text-foreground">
                     {item.classLevel}
+                  </td>
+                  <td className="whitespace-nowrap px-5 py-4 text-right font-semibold tabular-nums text-foreground">
+                    {item.studentCount ?? 0}
                   </td>
                 </tr>
               ))

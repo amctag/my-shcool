@@ -16,6 +16,7 @@ export const apiTagTypes = [
   "Lookups",
   "Teachers",
   "Classes",
+  "Sections",
 ] as const;
 
 export type ApiTagType = (typeof apiTagTypes)[number];

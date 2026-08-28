@@ -13,6 +13,8 @@ import {
   UserRound,
   Users,
   Presentation,
+  Rows3,
+  Tags,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -48,6 +50,8 @@ export const navGroups: NavGroup[] = [
     title: "Academics",
     items: [
       { href: "/classes", label: "Classes", icon: School },
+      { href: "/section-titles", label: "Section titles", icon: Tags },
+      { href: "/sections", label: "Sections", icon: Rows3 },
       { href: "/schedule", label: "Weekly schedule", icon: CalendarDays },
       { href: "/grades", label: "Grades", icon: GraduationCap },
       { href: "/exams", label: "Exam schedules", icon: BookOpen },

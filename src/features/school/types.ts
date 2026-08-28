@@ -270,6 +270,63 @@ export type DashboardClass = {
   position: number;
   stageId: number;
   stageTitle: string;
+  studentCount: number;
 };
+
+export type SectionsSortBy = "id" | "class" | "section" | "year" | "students";
+export type SectionsSortOrder = "asc" | "desc";
+
+export type DashboardSection = {
+  id: number;
+  classId: number;
+  className: string;
+  sectionTitleId: number;
+  sectionTitle: string;
+  yearId: number;
+  yearTitle: string;
+  isCurrentYear: boolean;
+  status: number;
+  studentCount: number;
+};
+
+export type DashboardSectionsQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  classId?: number;
+  sortBy?: SectionsSortBy;
+  sortOrder?: SectionsSortOrder;
+};
+
+export type DashboardSectionsResponse = {
+  items: DashboardSection[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardYear = {
+  id: number;
+  title: string;
+  isCurrent: boolean;
+};
+
+export type DashboardSectionTitle = {
+  id: number;
+  title: string;
+  status: number;
+  sectionCount: number;
+};
+
+export type SaveSectionTitleBody = {
+  title: string;
+  status?: number;
+};
+
+export type SaveSectionBody = {
+  classId: number;
+  sectionTitleId: number;
+  yearId?: number;
+  status?: number;
+};
+
 
 
