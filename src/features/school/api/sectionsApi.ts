@@ -37,7 +37,9 @@ export const sectionsApi = baseApi.injectEndpoints({
     }),
     getSectionTitles: builder.query<DashboardSectionTitle[], number | void>({
       query: (yearId) =>
-        `/dashboard/section-titles${toQueryString({ yearId })}`,
+        `/dashboard/section-titles${toQueryString({
+          yearId: typeof yearId === "number" ? yearId : undefined,
+        })}`,
       providesTags: (result) =>
         result
           ? [
