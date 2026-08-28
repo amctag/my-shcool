@@ -66,7 +66,7 @@ function buildQuery(
   sortBy: TeachesSortBy,
   sortOrder: TeachesSortOrder,
   yearId: number | null | undefined,
-  filters: TeachFilters,
+  filters: TeachFilters = emptyFilters,
 ): DashboardTeachesQuery {
   const query: DashboardTeachesQuery = { page, limit, sortBy, sortOrder };
   if (appliedSearch) {

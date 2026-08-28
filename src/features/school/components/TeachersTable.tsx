@@ -174,6 +174,8 @@ export function TeachersTable() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<TeachersSortBy>("id");
   const [sortOrder, setSortOrder] = useState<TeachersSortOrder>("asc");
+  const [statusFilterInput, setStatusFilterInput] =
+    useState<PersonStatusFilter>("all");
   const [statusFilter, setStatusFilter] = useState<PersonStatusFilter>("all");
   const limit = 10;
   const prefetchTeachers = teachersApi.usePrefetch("getTeachers");
@@ -201,11 +203,12 @@ export function TeachersTable() {
 
   function applySearch() {
     const next = searchInput.trim();
-    if (next === appliedSearch) {
+    if (next === appliedSearch && statusFilterInput === statusFilter) {
       return;
     }
     setPage(1);
     setAppliedSearch(next);
+    setStatusFilter(statusFilterInput);
   }
 
   useEffect(() => {
@@ -293,14 +296,12 @@ export function TeachersTable() {
             value={searchInput}
             onChange={setSearchInput}
             onSearch={applySearch}
-          />
-          <StatusFilterSelect
-            value={statusFilter}
-            onChange={(next) => {
-              setPage(1);
-              setStatusFilter(next);
-            }}
-          />
+          >
+            <StatusFilterSelect
+              value={statusFilterInput}
+              onChange={setStatusFilterInput}
+            />
+          </TableSearchBar>
         </div>
         <Link
           href="/teachers/add"

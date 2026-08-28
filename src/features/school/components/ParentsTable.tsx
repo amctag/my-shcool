@@ -35,11 +35,12 @@ import {
   selectParentsSortBy,
   selectParentsSortOrder,
   selectParentsStatusFilter,
+  selectParentsStatusFilterInput,
   selectSelectedParentId,
   setParentsPage,
   setParentsSearchInput,
   setParentsSort,
-  setParentsStatusFilter,
+  setParentsStatusFilterInput,
 } from "@/features/school/parentsSlice";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -340,6 +341,7 @@ export function ParentsTable() {
   const limit = useAppSelector(selectParentsLimit);
   const sortBy = useAppSelector(selectParentsSortBy);
   const sortOrder = useAppSelector(selectParentsSortOrder);
+  const statusFilterInput = useAppSelector(selectParentsStatusFilterInput);
   const statusFilter = useAppSelector(selectParentsStatusFilter);
   const selectedParentId = useAppSelector(selectSelectedParentId);
   const prefetchParents = parentsApi.usePrefetch("getParents");
@@ -448,11 +450,12 @@ export function ParentsTable() {
             value={searchInput}
             onChange={(value) => dispatch(setParentsSearchInput(value))}
             onSearch={() => dispatch(applyParentsSearch())}
-          />
-          <StatusFilterSelect
-            value={statusFilter}
-            onChange={(next) => dispatch(setParentsStatusFilter(next))}
-          />
+          >
+            <StatusFilterSelect
+              value={statusFilterInput}
+              onChange={(next) => dispatch(setParentsStatusFilterInput(next))}
+            />
+          </TableSearchBar>
         </div>
         <Link
           href="/parents/add"

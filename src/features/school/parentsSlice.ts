@@ -8,6 +8,7 @@ export type ParentsUiState = {
   limit: number;
   sortBy: ParentsSortBy;
   sortOrder: ParentsSortOrder;
+  statusFilterInput: PersonStatusFilter;
   statusFilter: PersonStatusFilter;
   selectedParentId: number | null;
 };
@@ -19,6 +20,7 @@ const initialState: ParentsUiState = {
   limit: 10,
   sortBy: "id",
   sortOrder: "asc",
+  statusFilterInput: "all",
   statusFilter: "all",
   selectedParentId: null,
 };
@@ -31,11 +33,16 @@ const parentsSlice = createSlice({
       state.searchInput = action.payload;
     },
     applyParentsSearch(state) {
-      const next = state.searchInput.trim();
-      if (next === state.appliedSearch) {
+      const nextSearch = state.searchInput.trim();
+      const nextStatus = state.statusFilterInput;
+      if (
+        nextSearch === state.appliedSearch &&
+        nextStatus === state.statusFilter
+      ) {
         return;
       }
-      state.appliedSearch = next;
+      state.appliedSearch = nextSearch;
+      state.statusFilter = nextStatus;
       state.page = 1;
     },
     setParentsPage(state, action: PayloadAction<number>) {
@@ -54,12 +61,11 @@ const parentsSlice = createSlice({
       }
       state.page = 1;
     },
-    setParentsStatusFilter(state, action: PayloadAction<PersonStatusFilter>) {
-      if (state.statusFilter === action.payload) {
-        return;
-      }
-      state.statusFilter = action.payload;
-      state.page = 1;
+    setParentsStatusFilterInput(
+      state,
+      action: PayloadAction<PersonStatusFilter>,
+    ) {
+      state.statusFilterInput = action.payload;
     },
     selectParent(state, action: PayloadAction<number>) {
       state.selectedParentId = action.payload;
@@ -76,7 +82,7 @@ export const {
   setParentsPage,
   setParentsLimit,
   setParentsSort,
-  setParentsStatusFilter,
+  setParentsStatusFilterInput,
   selectParent,
   clearSelectedParent,
 } = parentsSlice.actions;
@@ -94,6 +100,9 @@ export const selectParentsSortBy = (state: { parents: ParentsUiState }) =>
   state.parents.sortBy;
 export const selectParentsSortOrder = (state: { parents: ParentsUiState }) =>
   state.parents.sortOrder;
+export const selectParentsStatusFilterInput = (state: {
+  parents: ParentsUiState;
+}) => state.parents.statusFilterInput;
 export const selectParentsStatusFilter = (state: {
   parents: ParentsUiState;
 }) => state.parents.statusFilter;
