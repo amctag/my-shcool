@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
+import { TeacherFilterSearch } from "@/components/dashboard/TeacherFilterSearch";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
@@ -21,7 +22,6 @@ import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import { useGetCoursesQuery } from "@/features/school/api/coursesApi";
 import { useGetSectionsQuery } from "@/features/school/api/sectionsApi";
-import { useGetTeachersQuery } from "@/features/school/api/teachersApi";
 import {
   teachesApi,
   useDeleteTeachMutation,
@@ -165,10 +165,6 @@ export function TeachesTable() {
   const { data: courses = [] } = useGetCoursesQuery(undefined, {
     skip: !canFetch,
   });
-  const { data: teachersData } = useGetTeachersQuery(
-    { page: 1, limit: 100, sortBy: "name", sortOrder: "asc" },
-    { skip: !canFetch },
-  );
   const { data: sectionsData } = useGetSectionsQuery(
     {
       page: 1,
@@ -181,7 +177,6 @@ export function TeachesTable() {
     { skip: !canFetch || !draftFilters.classId || !draftYearId },
   );
   const [deleteTeach, deleteState] = useDeleteTeachMutation();
-  const teachers = teachersData?.items ?? [];
   const sections = sectionsData?.items ?? [];
   const classes = classesData?.items ?? [];
 
@@ -332,18 +327,8 @@ export function TeachesTable() {
               setDraftFilters((current) => ({ ...current, courseId }))
             }
           />
-          <FilterSelect
-            label="Filter by teacher"
+          <TeacherFilterSearch
             value={draftFilters.teacherId}
-            options={[
-              { value: 0, label: "All teachers" },
-              ...teachers.map((teacher) => ({
-                value: teacher.id,
-                label:
-                  `${teacher.firstName ?? ""} ${teacher.lastName ?? ""}`.trim() ||
-                  teacher.fullName,
-              })),
-            ]}
             onChange={(teacherId) =>
               setDraftFilters((current) => ({ ...current, teacherId }))
             }
