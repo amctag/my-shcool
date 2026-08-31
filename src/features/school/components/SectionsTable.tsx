@@ -191,7 +191,7 @@ export function SectionsTable() {
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <TableSearchBar
           label="Search sections"
-          placeholder="Search"
+          placeholder="Search class or section name"
           value={searchInput}
           onChange={setSearchInput}
           onSearch={applySearch}
