@@ -20,7 +20,13 @@ export function TableSearchBar({
   compact?: boolean;
 }) {
   const searchField = (
-    <label className={compact ? "relative w-56 shrink-0" : "relative min-w-0 flex-1"}>
+    <label
+      className={
+        compact
+          ? "relative w-56 shrink-0"
+          : "relative w-full min-w-0 shrink-0 sm:w-1/2"
+      }
+    >
       <span className="sr-only">{label}</span>
       <input
         type="search"
