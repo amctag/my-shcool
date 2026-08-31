@@ -499,4 +499,105 @@ export type SaveAnnouncementBody = {
   sectionId?: number;
 };
 
+export type DashboardWeeklySchedule = {
+  id: number;
+  sectionId: number;
+  classId: number;
+  yearId: number;
+  className: string;
+  sectionTitle: string;
+  yearTitle: string;
+  createdAt: string;
+  createdByName: string | null;
+};
+
+export type WeeklySchedulesSortBy =
+  | "id"
+  | "year"
+  | "class"
+  | "section"
+  | "person"
+  | "date";
+
+export type WeeklySchedulesSortOrder = "asc" | "desc";
+
+export type DashboardWeeklySchedulesQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  yearId?: number;
+  classId?: number;
+  sectionId?: number;
+  sortBy: WeeklySchedulesSortBy;
+  sortOrder: WeeklySchedulesSortOrder;
+};
+
+export type DashboardWeeklySchedulesResponse = {
+  items: DashboardWeeklySchedule[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardWeeklyScheduleGridQuery = {
+  sectionId: number;
+  yearId?: number;
+  classId?: number;
+};
+
+export type DashboardWeeklySchedulesGridsQuery = {
+  yearId?: number;
+  classId?: number;
+  sectionId?: number;
+};
+
+export type DashboardWeeklySchedulesGridsResponse = {
+  items: DashboardWeeklyScheduleGridResponse[];
+};
+
+export type DashboardWeeklyScheduleGridDay = {
+  id: number;
+  dayName: string;
+  position: number;
+};
+
+export type DashboardWeeklyScheduleGridSession = {
+  id: number;
+  sessionName: string;
+  position: number;
+};
+
+export type DashboardWeeklyScheduleGridCell = {
+  dayId: number;
+  sessionId: number;
+  detailId: number | null;
+  courseId: number | null;
+  courseTitle: string | null;
+  personId: number | null;
+  createdByName: string | null;
+};
+
+export type DashboardWeeklyScheduleGridResponse = {
+  scheduleId: number | null;
+  sectionId: number;
+  classId: number;
+  yearId: number;
+  yearTitle: string;
+  className: string;
+  sectionTitle: string;
+  days: DashboardWeeklyScheduleGridDay[];
+  sessions: DashboardWeeklyScheduleGridSession[];
+  cells: DashboardWeeklyScheduleGridCell[];
+};
+
+export type SaveWeeklyScheduleEntry = {
+  dayId: number;
+  sessionId: number;
+  courseId: number;
+};
+
+export type SaveWeeklyScheduleBody = {
+  sectionId: number;
+  yearId?: number;
+  classId?: number;
+  entries: SaveWeeklyScheduleEntry[];
+};
 

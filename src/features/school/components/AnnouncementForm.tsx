@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useCreateDashboardAnnouncementMutation } from "@/features/school/api/announcementsApi";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
@@ -33,7 +32,6 @@ type AnnouncementFormState = {
   title: string;
   content: string;
   audienceTargets: AnnouncementAudienceTarget[];
-  yearId: number | null;
   classId: number;
   sectionId: number;
 };
@@ -43,7 +41,6 @@ function emptyForm(): AnnouncementFormState {
     title: "",
     content: "",
     audienceTargets: ["parent"],
-    yearId: null,
     classId: 0,
     sectionId: 0,
   };
@@ -78,7 +75,7 @@ export function AnnouncementForm() {
   const canFetch = ready && Boolean(accessToken);
   const [form, setForm] = useState<AnnouncementFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId: defaultYearId } = useSchoolYearFilter(canFetch);
   const [createAnnouncement, createState] =
     useCreateDashboardAnnouncementMutation();
 
@@ -94,23 +91,14 @@ export function AnnouncementForm() {
     {
       page: 1,
       limit: 100,
-      yearId: form.yearId ?? undefined,
+      yearId: defaultYearId ?? undefined,
       classId: form.classId,
       sortBy: "section",
       sortOrder: "asc",
     },
-    { skip: !canFetch || !form.yearId || !classSelected },
+    { skip: !canFetch || !defaultYearId || !classSelected },
   );
   const sections = sectionsData?.items ?? [];
-
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setForm((current) =>
-      current.yearId ? current : { ...current, yearId: defaultYearId },
-    );
-  }, [defaultYearId]);
 
   function toggleAudience(target: AnnouncementAudienceTarget) {
     setForm((current) => {
@@ -247,21 +235,7 @@ export function AnnouncementForm() {
           </div>
         </Field>
 
-        <div className="grid gap-5 sm:grid-cols-3">
-          <Field id="announcement-year" label="Year">
-            <YearFilterSelect
-              years={years}
-              value={form.yearId}
-              onChange={(yearId) =>
-                setForm((current) => ({
-                  ...current,
-                  yearId,
-                  sectionId: 0,
-                }))
-              }
-            />
-          </Field>
-
+        <div className="grid gap-5 sm:grid-cols-2">
           <Field id="announcement-class" label="Class">
             <FilterSelect
               label="Class"
