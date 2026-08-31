@@ -250,7 +250,7 @@ export function WeeklySchedulesTable() {
         </p>
       ) : null}
 
-      <div className="mb-5 flex flex-wrap items-center gap-2">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <TableSearchBar
           label="Search weekly schedule"
           placeholder="Search class or section"

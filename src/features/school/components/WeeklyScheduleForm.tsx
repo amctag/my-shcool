@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, Pencil } from "lucide-react";
 import { ConfirmWarningDialog } from "@/components/dashboard/ConfirmWarningDialog";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
+import { ScheduleCourseDrawer } from "@/features/school/components/ScheduleCourseDrawer";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassCoursesQuery } from "@/features/school/api/coursesApi";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
@@ -23,12 +24,30 @@ import {
   getCourseHourUsageSummary,
 } from "@/features/school/weeklyScheduleHours";
 
-const cellSelectClass =
-  "h-9 w-full min-w-[7rem] cursor-pointer rounded-lg border border-border bg-white px-2 text-center text-xs text-foreground outline-none transition-colors focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
-
 function cellKey(dayId: number, sessionId: number): string {
   return `${dayId}:${sessionId}`;
 }
+
+const readOnlyFieldClass =
+  "flex h-11 min-w-44 items-center rounded-xl border border-border bg-stone-50 px-3 text-sm text-foreground";
+
+function ReadOnlyFilter({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-44">
+      <span className="sr-only">{label}</span>
+      <div className={readOnlyFieldClass} aria-readonly="true">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+type EditingCell = {
+  dayId: number;
+  sessionId: number;
+  dayName: string;
+  sessionPosition: number;
+};
 
 export function WeeklyScheduleForm() {
   const router = useRouter();
@@ -42,6 +61,8 @@ export function WeeklyScheduleForm() {
   const [cellCourses, setCellCourses] = useState<Record<string, number>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [showHoursWarning, setShowHoursWarning] = useState(false);
+  const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
+  const [drawerCourseId, setDrawerCourseId] = useState(0);
   const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
 
   const canLoadGrid =
@@ -133,15 +154,42 @@ export function WeeklyScheduleForm() {
   const days = gridData?.days ?? [];
   const sessions = gridData?.sessions ?? [];
   const isEditing = Boolean(gridData?.scheduleId);
+  const querySectionId = Number(searchParams.get("sectionId"));
+  const queryClassId = Number(searchParams.get("classId"));
+  const isSelectionReadOnly =
+    isEditing || (querySectionId > 0 && queryClassId > 0);
+
+  const selectedYear = years.find((year) => year.id === yearId);
+  const yearLabel = selectedYear
+    ? selectedYear.isCurrent
+      ? `${selectedYear.title} (current)`
+      : selectedYear.title
+    : gridData?.yearTitle ?? "—";
+  const classLabel =
+    classes.find((item) => item.id === classId)?.className ??
+    gridData?.className ??
+    "—";
+  const sectionLabel =
+    sections.find((item) => item.id === sectionId)?.sectionTitle ??
+    gridData?.sectionTitle ??
+    "—";
 
   const courseOptions = useMemo(
     () =>
       classCourses.map((item) => ({
-        value: item.courseId,
-        label: item.courseTitle,
+        courseId: item.courseId,
+        courseTitle: item.courseTitle,
       })),
     [classCourses],
   );
+
+  const courseTitleById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const course of courseOptions) {
+      map.set(course.courseId, course.courseTitle);
+    }
+    return map;
+  }, [courseOptions]);
 
   const hourViolations = useMemo(
     () => getCourseHourViolations(cellCourses, classCourses),
@@ -197,6 +245,28 @@ export function WeeklyScheduleForm() {
     });
   }
 
+  function openCellEditor(
+    day: { id: number; dayName: string },
+    session: { id: number; position: number },
+  ) {
+    const key = cellKey(day.id, session.id);
+    setEditingCell({
+      dayId: day.id,
+      sessionId: session.id,
+      dayName: day.dayName,
+      sessionPosition: session.position,
+    });
+    setDrawerCourseId(cellCourses[key] ?? 0);
+  }
+
+  function saveDrawerCourse() {
+    if (!editingCell) {
+      return;
+    }
+    updateCell(editingCell.dayId, editingCell.sessionId, drawerCourseId);
+    setEditingCell(null);
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
@@ -218,54 +288,64 @@ export function WeeklyScheduleForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       <article className="rounded-2xl border border-border bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="flex flex-wrap items-end gap-2">
-          <YearFilterSelect
-            years={years}
-            value={yearId}
-            onChange={(nextYearId) => {
-              setYearId(nextYearId);
-              setClassId(0);
-              setSectionId(0);
-              setCellCourses({});
-            }}
-          />
-          <FilterSelect
-            label="Class"
-            value={classId}
-            options={[
-              { value: 0, label: "Select class" },
-              ...classes.map((itemClass) => ({
-                value: itemClass.id,
-                label: itemClass.className,
-              })),
-            ]}
-            onChange={(nextClassId) => {
-              setClassId(nextClassId);
-              setSectionId(0);
-              setCellCourses({});
-            }}
-          />
-          <FilterSelect
-            label="Section"
-            value={sectionId}
-            disabled={!classSelected}
-            options={
-              !classSelected
-                ? [{ value: 0, label: "Select a class first" }]
-                : sectionsLoading
-                  ? [{ value: 0, label: "Loading sections…" }]
-                  : [
-                      { value: 0, label: "Select section" },
-                      ...sections.map((section) => ({
-                        value: section.id,
-                        label: section.sectionTitle,
-                      })),
-                    ]
-            }
-            onChange={(nextSectionId) => {
-              setSectionId(nextSectionId);
-              setCellCourses({});
-            }}
-          />
+          {isSelectionReadOnly ? (
+            <>
+              <ReadOnlyFilter label="Year" value={yearLabel} />
+              <ReadOnlyFilter label="Class" value={classLabel} />
+              <ReadOnlyFilter label="Section" value={sectionLabel} />
+            </>
+          ) : (
+            <>
+              <YearFilterSelect
+                years={years}
+                value={yearId}
+                onChange={(nextYearId) => {
+                  setYearId(nextYearId);
+                  setClassId(0);
+                  setSectionId(0);
+                  setCellCourses({});
+                }}
+              />
+              <FilterSelect
+                label="Class"
+                value={classId}
+                options={[
+                  { value: 0, label: "Select class" },
+                  ...classes.map((itemClass) => ({
+                    value: itemClass.id,
+                    label: itemClass.className,
+                  })),
+                ]}
+                onChange={(nextClassId) => {
+                  setClassId(nextClassId);
+                  setSectionId(0);
+                  setCellCourses({});
+                }}
+              />
+              <FilterSelect
+                label="Section"
+                value={sectionId}
+                disabled={!classSelected}
+                options={
+                  !classSelected
+                    ? [{ value: 0, label: "Select a class first" }]
+                    : sectionsLoading
+                      ? [{ value: 0, label: "Loading sections…" }]
+                      : [
+                          { value: 0, label: "Select section" },
+                          ...sections.map((section) => ({
+                            value: section.id,
+                            label: section.sectionTitle,
+                          })),
+                        ]
+                }
+                onChange={(nextSectionId) => {
+                  setSectionId(nextSectionId);
+                  setCellCourses({});
+                }}
+              />
+            </>
+          )}
         </div>
       </article>
 
@@ -377,35 +457,31 @@ export function WeeklyScheduleForm() {
                         </td>
                         {days.map((day) => {
                           const key = cellKey(day.id, session.id);
-                          const value = cellCourses[key] ?? 0;
+                          const courseId = cellCourses[key] ?? 0;
+                          const courseTitle = courseId
+                            ? courseTitleById.get(courseId)
+                            : null;
 
                           return (
                             <td
                               key={`${session.id}-${day.id}`}
                               className="border border-stone-200 px-2 py-3 align-middle"
                             >
-                              <select
-                                value={value}
-                                onChange={(event) =>
-                                  updateCell(
-                                    day.id,
-                                    session.id,
-                                    Number(event.target.value),
-                                  )
-                                }
-                                className={cellSelectClass}
-                                aria-label={`Course for ${day.dayName}, period ${session.position}`}
-                              >
-                                <option value={0}>/</option>
-                                {courseOptions.map((course) => (
-                                  <option
-                                    key={course.value}
-                                    value={course.value}
-                                  >
-                                    {course.label}
-                                  </option>
-                                ))}
-                              </select>
+                              <div className="flex flex-col items-center justify-center gap-1.5 min-h-[3.5rem]">
+                                {courseTitle ? (
+                                  <span className="text-sm font-medium text-foreground">
+                                    {courseTitle}
+                                  </span>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  onClick={() => openCellEditor(day, session)}
+                                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted transition-colors hover:bg-primary-soft hover:text-primary"
+                                  aria-label={`Edit course for ${day.dayName}, period ${session.position}`}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" aria-hidden />
+                                </button>
+                              </div>
                             </td>
                           );
                         })}
@@ -455,6 +531,18 @@ export function WeeklyScheduleForm() {
             ))}
           </ul>
         </ConfirmWarningDialog>
+      ) : null}
+
+      {editingCell ? (
+        <ScheduleCourseDrawer
+          dayName={editingCell.dayName}
+          sessionLabel={String(editingCell.sessionPosition)}
+          courses={courseOptions}
+          selectedCourseId={drawerCourseId}
+          onSelectCourse={setDrawerCourseId}
+          onSave={saveDrawerCourse}
+          onClose={() => setEditingCell(null)}
+        />
       ) : null}
     </form>
   );

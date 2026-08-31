@@ -111,9 +111,7 @@ export function WeeklyScheduleView({
                         <span className="text-sm font-medium text-foreground">
                           {cell.courseTitle}
                         </span>
-                      ) : (
-                        <span className="text-sm text-muted">/</span>
-                      )}
+                      ) : null}
                     </td>
                   );
                 })}
