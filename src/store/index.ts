@@ -20,6 +20,7 @@ import "@/features/school/api/sectionsApi";
 import "@/features/school/api/teachesApi";
 import "@/features/school/api/announcementsApi";
 import "@/features/school/api/weeklySchedulesApi";
+import "@/features/school/api/examSchedulesApi";
 
 export const makeStore = () =>
   configureStore({

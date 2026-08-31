@@ -601,3 +601,102 @@ export type SaveWeeklyScheduleBody = {
   entries: SaveWeeklyScheduleEntry[];
 };
 
+export type DashboardExamSchedule = {
+  id: number;
+  title: string;
+  classId: number;
+  className: string;
+  yearId: number;
+  yearTitle: string;
+  gradeTypeId: number;
+  gradeTypeTitle: string;
+  examDate: string | null;
+  createdAt: string;
+  createdByName: string | null;
+};
+
+export type ExamSchedulesSortBy =
+  | "id"
+  | "title"
+  | "class"
+  | "gradeType"
+  | "year"
+  | "date";
+
+export type ExamSchedulesSortOrder = "asc" | "desc";
+
+export type DashboardExamSchedulesQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  yearId?: number;
+  classId?: number;
+  sortBy: ExamSchedulesSortBy;
+  sortOrder: ExamSchedulesSortOrder;
+};
+
+export type DashboardExamSchedulesResponse = {
+  items: DashboardExamSchedule[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardExamScheduleExam = {
+  id: number;
+  courseId: number;
+  courseTitle: string;
+  position: number;
+  startTime: string;
+  duration: number;
+  note: string | null;
+};
+
+export type DashboardExamScheduleDate = {
+  id: number;
+  date: string;
+  exams: DashboardExamScheduleExam[];
+};
+
+export type DashboardExamScheduleDetail = {
+  id: number;
+  title: string;
+  classId: number;
+  className: string;
+  yearId: number;
+  yearTitle: string;
+  gradeTypeId: number;
+  gradeTypeTitle: string;
+  note: string | null;
+  dates: DashboardExamScheduleDate[];
+};
+
+export type DashboardGradeType = {
+  id: number;
+  title: string;
+};
+
+export type DashboardGradeTypesResponse = {
+  items: DashboardGradeType[];
+};
+
+export type SaveExamScheduleExamBody = {
+  courseId: number;
+  position?: number;
+  startTime: string;
+  duration: number;
+  note?: string;
+};
+
+export type SaveExamScheduleDateBody = {
+  date: string;
+  exams: SaveExamScheduleExamBody[];
+};
+
+export type SaveExamScheduleBody = {
+  title: string;
+  classId: number;
+  yearId?: number;
+  gradeTypeId: number;
+  note?: string;
+  dates?: SaveExamScheduleDateBody[];
+};
+

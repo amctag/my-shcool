@@ -11,19 +11,23 @@ export type ScheduleCourseOption = {
 export function ScheduleCourseDrawer({
   dayName,
   sessionLabel,
+  heading,
   courses,
   selectedCourseId,
   onSelectCourse,
   onSave,
   onClose,
+  allowEmpty = true,
 }: {
   dayName: string;
   sessionLabel: string;
+  heading?: string;
   courses: ScheduleCourseOption[];
   selectedCourseId: number;
   onSelectCourse: (courseId: number) => void;
   onSave: () => void;
   onClose: () => void;
+  allowEmpty?: boolean;
 }) {
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -65,7 +69,7 @@ export function ScheduleCourseDrawer({
               id="schedule-course-drawer-title"
               className="mt-1 text-xl font-semibold text-foreground"
             >
-              {dayName} · Period {sessionLabel}
+              {heading ?? `${dayName} · Period ${sessionLabel}`}
             </h2>
           </div>
           <button
@@ -80,22 +84,24 @@ export function ScheduleCourseDrawer({
 
         <div className="flex-1 overflow-y-auto px-5 py-4">
           <ul className="space-y-2">
-            <li>
-              <button
-                type="button"
-                onClick={() => onSelectCourse(0)}
-                className={`flex min-h-11 w-full cursor-pointer items-center justify-between rounded-xl border px-4 text-left text-sm transition-colors ${
-                  selectedCourseId === 0
-                    ? "border-primary bg-primary-soft font-medium text-primary"
-                    : "border-border bg-white text-foreground hover:border-primary/40 hover:bg-primary-soft/60"
-                }`}
-              >
-                <span>Empty slot</span>
-                {selectedCourseId === 0 ? (
-                  <Check aria-hidden className="h-4 w-4" />
-                ) : null}
-              </button>
-            </li>
+            {allowEmpty ? (
+              <li>
+                <button
+                  type="button"
+                  onClick={() => onSelectCourse(0)}
+                  className={`flex min-h-11 w-full cursor-pointer items-center justify-between rounded-xl border px-4 text-left text-sm transition-colors ${
+                    selectedCourseId === 0
+                      ? "border-primary bg-primary-soft font-medium text-primary"
+                      : "border-border bg-white text-foreground hover:border-primary/40 hover:bg-primary-soft/60"
+                  }`}
+                >
+                  <span>Empty slot</span>
+                  {selectedCourseId === 0 ? (
+                    <Check aria-hidden className="h-4 w-4" />
+                  ) : null}
+                </button>
+              </li>
+            ) : null}
             {courses.map((course) => {
               const selected = selectedCourseId === course.courseId;
               return (
