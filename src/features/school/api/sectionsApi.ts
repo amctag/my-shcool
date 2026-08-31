@@ -10,6 +10,21 @@ import type {
   SaveSectionTitleBody,
 } from "@/features/school/types";
 
+function asList<T>(response: unknown): T[] {
+  if (Array.isArray(response)) {
+    return response;
+  }
+  if (
+    response &&
+    typeof response === "object" &&
+    "items" in response &&
+    Array.isArray((response as { items: unknown }).items)
+  ) {
+    return (response as { items: T[] }).items;
+  }
+  return [];
+}
+
 export const sectionsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getSections: builder.query<DashboardSectionsResponse, DashboardSectionsQuery>({
@@ -33,6 +48,7 @@ export const sectionsApi = baseApi.injectEndpoints({
     }),
     getYears: builder.query<DashboardYear[], void>({
       query: () => "/dashboard/years",
+      transformResponse: (response: unknown) => asList<DashboardYear>(response),
       providesTags: [{ type: "Sections", id: "YEARS" }],
     }),
     getSectionTitles: builder.query<DashboardSectionTitle[], number | void>({
@@ -40,8 +56,11 @@ export const sectionsApi = baseApi.injectEndpoints({
         `/dashboard/section-titles${toQueryString({
           yearId: typeof yearId === "number" ? yearId : undefined,
         })}`,
+      transformResponse: (response: unknown) =>
+        asList<DashboardSectionTitle>(response),
+      keepUnusedDataFor: 120,
       providesTags: (result) =>
-        result
+        result && result.length > 0
           ? [
               ...result.map((title) => ({
                 type: "Sections" as const,

@@ -76,9 +76,10 @@ export function ClassCourseForm({
   const { data: item, isLoading } = useGetClassCourseQuery(classCourseId ?? 0, {
     skip: !authReady || !classCourseId,
   });
-  const { data: classes = [] } = useGetClassesQuery(undefined, {
-    skip: !authReady,
-  });
+  const { data: classesData } = useGetClassesQuery(
+    { page: 1, limit: 100 },
+    { skip: !authReady },
+  );
   const { data: courses = [] } = useGetCoursesQuery(undefined, {
     skip: !authReady,
   });
@@ -88,6 +89,7 @@ export function ClassCourseForm({
   const [createItem, createState] = useCreateClassCourseMutation();
   const [updateItem, updateState] = useUpdateClassCourseMutation();
   const saving = createState.isLoading || updateState.isLoading;
+  const classes = classesData?.items ?? [];
   const courseOptions = useMemo(
     () =>
       courses.filter(

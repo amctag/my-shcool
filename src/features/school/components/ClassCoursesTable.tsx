@@ -62,16 +62,12 @@ function filtersEqual(
 function buildQuery(
   page: number,
   limit: number,
-  appliedSearch: string,
   sortBy: ClassCoursesSortBy,
   sortOrder: ClassCoursesSortOrder,
   yearId: number | null | undefined,
   filters: ClassCourseFilters,
 ): DashboardClassCoursesQuery {
   const query: DashboardClassCoursesQuery = { page, limit, sortBy, sortOrder };
-  if (appliedSearch) {
-    query.search = appliedSearch;
-  }
   if (yearId) {
     query.yearId = yearId;
   }
@@ -125,8 +121,6 @@ function SortHeader({
 export function ClassCoursesTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
-  const [searchInput, setSearchInput] = useState("");
-  const [appliedSearch, setAppliedSearch] = useState("");
   const [draftFilters, setDraftFilters] = useState<ClassCourseFilters>(emptyFilters);
   const [appliedFilters, setAppliedFilters] =
     useState<ClassCourseFilters>(emptyFilters);
@@ -147,7 +141,6 @@ export function ClassCoursesTable() {
   const query = buildQuery(
     page,
     limit,
-    appliedSearch,
     sortBy,
     sortOrder,
     appliedYearId,
@@ -156,12 +149,14 @@ export function ClassCoursesTable() {
   const { data, error, isLoading, isFetching } = useGetClassCoursesQuery(query, {
     skip: !canFetch || !appliedYearId,
   });
-  const { data: classes = [] } = useGetClassesQuery(undefined, {
-    skip: !canFetch,
-  });
+  const { data: classesData } = useGetClassesQuery(
+    { page: 1, limit: 100 },
+    { skip: !canFetch },
+  );
   const { data: courses = [] } = useGetCoursesQuery(undefined, {
     skip: !canFetch,
   });
+  const classes = classesData?.items ?? [];
   const [deleteClassCourse, deleteState] = useDeleteClassCourseMutation();
 
   useEffect(() => {
@@ -173,16 +168,13 @@ export function ClassCoursesTable() {
   }, [defaultYearId]);
 
   function applySearch() {
-    const next = searchInput.trim();
     if (
-      next === appliedSearch &&
       draftYearId === appliedYearId &&
       filtersEqual(draftFilters, appliedFilters)
     ) {
       return;
     }
     setPage(1);
-    setAppliedSearch(next);
     setAppliedYearId(draftYearId);
     setAppliedFilters(draftFilters);
   }
@@ -196,7 +188,6 @@ export function ClassCoursesTable() {
       buildQuery(
         page + 1,
         limit,
-        appliedSearch,
         sortBy,
         sortOrder,
         appliedYearId,
@@ -205,7 +196,6 @@ export function ClassCoursesTable() {
     );
   }, [
     appliedFilters,
-    appliedSearch,
     appliedYearId,
     canFetch,
     data?.pagination.totalPages,
@@ -245,14 +235,7 @@ export function ClassCoursesTable() {
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <TableSearchBar
-          label="Search class courses"
-          placeholder="Search"
-          value={searchInput}
-          onChange={setSearchInput}
-          onSearch={applySearch}
-          compact
-        >
+        <TableSearchBar onSearch={applySearch} compact hideInput>
           <YearFilterSelect
             years={years}
             value={draftYearId}

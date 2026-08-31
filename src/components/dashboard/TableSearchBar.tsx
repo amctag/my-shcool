@@ -3,23 +3,25 @@
 import type { ReactNode } from "react";
 
 export function TableSearchBar({
-  value,
+  value = "",
   onChange,
   onSearch,
-  placeholder,
-  label,
+  placeholder = "Search",
+  label = "Search",
   children,
   compact = false,
+  hideInput = false,
 }: {
-  value: string;
-  onChange: (value: string) => void;
+  value?: string;
+  onChange?: (value: string) => void;
   onSearch: () => void;
-  placeholder: string;
-  label: string;
+  placeholder?: string;
+  label?: string;
   children?: ReactNode;
   compact?: boolean;
+  hideInput?: boolean;
 }) {
-  const searchField = (
+  const searchField = hideInput ? null : (
     <label
       className={
         compact
@@ -31,7 +33,7 @@ export function TableSearchBar({
       <input
         type="search"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange?.(event.target.value)}
         placeholder={placeholder}
         className={`h-11 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
           compact ? "w-56" : "w-full min-w-48"

@@ -1,14 +1,46 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+} from "lucide-react";
+import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { useGetClassesQuery } from "@/features/school/api/classesApi";
+import {
+  classesApi,
+  useGetClassesQuery,
+  useGetStagesQuery,
+} from "@/features/school/api/classesApi";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useAppSelector } from "@/store/hooks";
-import type { ClassesSortOrder } from "@/features/school/types";
+import type {
+  ClassesSortOrder,
+  DashboardClassesQuery,
+} from "@/features/school/types";
+
+const ROW_OPTIONS = [10, 25, 50] as const;
+
+function buildQuery(
+  page: number,
+  limit: number,
+  appliedSearch: string,
+  sortOrder: ClassesSortOrder,
+  stageId: number,
+): DashboardClassesQuery {
+  const query: DashboardClassesQuery = { page, limit, sortOrder };
+  if (appliedSearch) {
+    query.search = appliedSearch;
+  }
+  if (stageId) {
+    query.stageId = stageId;
+  }
+  return query;
+}
 
 export function ClassesTable() {
   const ready = useAppSelector(selectAuthReady);
@@ -16,32 +48,85 @@ export function ClassesTable() {
   const canFetch = ready && Boolean(accessToken);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
+  const [draftStageId, setDraftStageId] = useState(0);
+  const [appliedStageId, setAppliedStageId] = useState(0);
   const [sortOrder, setSortOrder] = useState<ClassesSortOrder>("asc");
-  const { data: classes = [], error, isLoading, isFetching } = useGetClassesQuery(
-    {
-      ...(appliedSearch ? { search: appliedSearch } : {}),
-      sortOrder,
-    },
-    { skip: !canFetch },
-  );
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const prefetch = classesApi.usePrefetch("getClasses");
+  const query = buildQuery(page, limit, appliedSearch, sortOrder, appliedStageId);
+  const { data, error, isLoading, isFetching } = useGetClassesQuery(query, {
+    skip: !canFetch,
+  });
+  const { data: stages = [] } = useGetStagesQuery(undefined, {
+    skip: !canFetch,
+  });
 
   function applySearch() {
     const next = searchInput.trim();
-    if (next === appliedSearch) {
+    if (next === appliedSearch && draftStageId === appliedStageId) {
       return;
     }
+    setPage(1);
     setAppliedSearch(next);
+    setAppliedStageId(draftStageId);
   }
+
+  useEffect(() => {
+    const totalPages = data?.pagination.totalPages ?? 0;
+    if (!canFetch || totalPages < page + 1) {
+      return;
+    }
+    prefetch(buildQuery(page + 1, limit, appliedSearch, sortOrder, appliedStageId));
+  }, [
+    appliedSearch,
+    appliedStageId,
+    canFetch,
+    data?.pagination.totalPages,
+    limit,
+    page,
+    prefetch,
+    sortOrder,
+  ]);
+
+  const classes = data?.items ?? [];
+  const pagination = data?.pagination;
+  const totalPages = pagination?.totalPages ?? 0;
 
   return (
     <>
-      <div className="mb-5">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <TableSearchBar
           label="Search classes"
           placeholder="Search by class name"
           value={searchInput}
           onChange={setSearchInput}
           onSearch={applySearch}
+        >
+          <FilterSelect
+            label="Filter by stage"
+            value={draftStageId}
+            options={[
+              { value: 0, label: "All stages" },
+              ...stages.map((stage) => ({
+                value: stage.id,
+                label: stage.title,
+              })),
+            ]}
+            onChange={setDraftStageId}
+          />
+        </TableSearchBar>
+        <FilterSelect
+          label="Rows per page"
+          value={limit}
+          options={ROW_OPTIONS.map((rows) => ({
+            value: rows,
+            label: `${rows} rows`,
+          }))}
+          onChange={(nextLimit) => {
+            setPage(1);
+            setLimit(nextLimit);
+          }}
         />
       </div>
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
@@ -61,9 +146,10 @@ export function ClassesTable() {
                 <th className="px-5 py-3.5">
                   <button
                     type="button"
-                    onClick={() =>
-                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                    }
+                    onClick={() => {
+                      setPage(1);
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    }}
                     className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted hover:text-foreground"
                   >
                     Level
@@ -127,6 +213,33 @@ export function ClassesTable() {
             </tbody>
           </table>
         </div>
+        {pagination && totalPages > 0 ? (
+          <div className="flex flex-col gap-3 border-t border-stone-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted">
+              Page {pagination.page} of {totalPages} · {pagination.total} classes
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={page <= 1 || isFetching}
+                onClick={() => setPage(page - 1)}
+                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:opacity-50"
+              >
+                <ChevronLeft aria-hidden className="h-4 w-4" />
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={page >= totalPages || isFetching}
+                onClick={() => setPage(page + 1)}
+                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:opacity-50"
+              >
+                Next
+                <ChevronRight aria-hidden className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ) : null}
       </article>
     </>
   );

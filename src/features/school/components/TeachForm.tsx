@@ -89,9 +89,10 @@ export function TeachForm({
   const { data: item, isLoading } = useGetTeachQuery(teachId ?? 0, {
     skip: !authReady || !teachId,
   });
-  const { data: classes = [] } = useGetClassesQuery(undefined, {
-    skip: !authReady,
-  });
+  const { data: classesData } = useGetClassesQuery(
+    { page: 1, limit: 100 },
+    { skip: !authReady },
+  );
   const { data: courses = [] } = useGetCoursesQuery(undefined, {
     skip: !authReady,
   });
@@ -129,6 +130,7 @@ export function TeachForm({
   const saving = createState.isLoading || updateState.isLoading;
   const teachers = teachersData?.items ?? [];
   const sections = sectionsData?.items ?? [];
+  const classes = classesData?.items ?? [];
   const usedCourseIds = useMemo(() => {
     const ids = new Set<number>();
     for (const row of sectionTeaches?.items ?? []) {

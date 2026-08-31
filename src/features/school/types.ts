@@ -274,7 +274,10 @@ export type SaveStudentBody = {
 export type ClassesSortOrder = "asc" | "desc";
 
 export type DashboardClassesQuery = {
+  page?: number;
+  limit?: number;
   search?: string;
+  stageId?: number;
   sortOrder?: ClassesSortOrder;
 };
 
@@ -285,6 +288,17 @@ export type DashboardClass = {
   position: number;
   stageId: number;
   stageTitle: string;
+};
+
+export type DashboardClassesResponse = {
+  items: DashboardClass[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardStage = {
+  id: number;
+  title: string;
+  position: number;
 };
 
 export type SectionsSortBy = "id" | "class" | "section" | "year" | "students";

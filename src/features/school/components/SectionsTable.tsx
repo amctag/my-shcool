@@ -11,10 +11,12 @@ import {
   Pencil,
   Plus,
 } from "lucide-react";
+import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
   sectionsApi,
   useGetSectionsQuery,
@@ -35,6 +37,7 @@ function buildQuery(
   sortBy: SectionsSortBy,
   sortOrder: SectionsSortOrder,
   yearId?: number | null,
+  classId?: number,
 ): DashboardSectionsQuery {
   const query: DashboardSectionsQuery = { page, limit, sortBy, sortOrder };
   if (appliedSearch) {
@@ -42,6 +45,9 @@ function buildQuery(
   }
   if (yearId) {
     query.yearId = yearId;
+  }
+  if (classId) {
+    query.classId = classId;
   }
   return query;
 }
@@ -86,25 +92,56 @@ export function SectionsTable() {
   const accessToken = useAppSelector(selectAccessToken);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
+  const [draftClassId, setDraftClassId] = useState(0);
+  const [appliedClassId, setAppliedClassId] = useState(0);
+  const [draftYearId, setDraftYearId] = useState<number | null>(null);
+  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<SectionsSortBy>("id");
   const [sortOrder, setSortOrder] = useState<SectionsSortOrder>("asc");
   const limit = 10;
   const prefetch = sectionsApi.usePrefetch("getSections");
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId, setYearId } = useSchoolYearFilter(canFetch);
-  const query = buildQuery(page, limit, appliedSearch, sortBy, sortOrder, yearId);
+  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const query = buildQuery(
+    page,
+    limit,
+    appliedSearch,
+    sortBy,
+    sortOrder,
+    appliedYearId,
+    appliedClassId,
+  );
   const { data, error, isLoading, isFetching } = useGetSectionsQuery(query, {
-    skip: !canFetch || !yearId,
+    skip: !canFetch || !appliedYearId,
   });
+  const { data: classesData } = useGetClassesQuery(
+    { page: 1, limit: 100 },
+    { skip: !canFetch },
+  );
+  const classes = classesData?.items ?? [];
+
+  useEffect(() => {
+    if (!defaultYearId) {
+      return;
+    }
+    setDraftYearId((current) => current ?? defaultYearId);
+    setAppliedYearId((current) => current ?? defaultYearId);
+  }, [defaultYearId]);
 
   function applySearch() {
     const next = searchInput.trim();
-    if (next === appliedSearch) {
+    if (
+      next === appliedSearch &&
+      draftYearId === appliedYearId &&
+      draftClassId === appliedClassId
+    ) {
       return;
     }
     setPage(1);
     setAppliedSearch(next);
+    setAppliedYearId(draftYearId);
+    setAppliedClassId(draftClassId);
   }
 
   useEffect(() => {
@@ -112,16 +149,27 @@ export function SectionsTable() {
     if (!canFetch || totalPages < page + 1) {
       return;
     }
-    prefetch(buildQuery(page + 1, limit, appliedSearch, sortBy, sortOrder, yearId));
+    prefetch(
+      buildQuery(
+        page + 1,
+        limit,
+        appliedSearch,
+        sortBy,
+        sortOrder,
+        appliedYearId,
+        appliedClassId,
+      ),
+    );
   }, [
+    appliedClassId,
     appliedSearch,
+    appliedYearId,
     canFetch,
     data?.pagination.totalPages,
     page,
     prefetch,
     sortBy,
     sortOrder,
-    yearId,
   ]);
 
   function onSort(column: SectionsSortBy) {
@@ -140,24 +188,33 @@ export function SectionsTable() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-          <TableSearchBar
-            label="Search sections"
-            placeholder="Search by class, section, or year"
-            value={searchInput}
-            onChange={setSearchInput}
-            onSearch={applySearch}
-          />
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <TableSearchBar
+          label="Search sections"
+          placeholder="Search"
+          value={searchInput}
+          onChange={setSearchInput}
+          onSearch={applySearch}
+          compact
+        >
           <YearFilterSelect
             years={years}
-            value={yearId}
-            onChange={(nextYearId) => {
-              setPage(1);
-              setYearId(nextYearId);
-            }}
+            value={draftYearId}
+            onChange={setDraftYearId}
           />
-        </div>
+          <FilterSelect
+            label="Filter by class"
+            value={draftClassId}
+            options={[
+              { value: 0, label: "All classes" },
+              ...classes.map((itemClass) => ({
+                value: itemClass.id,
+                label: itemClass.className,
+              })),
+            ]}
+            onChange={setDraftClassId}
+          />
+        </TableSearchBar>
         <Link
           href="/sections/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
@@ -175,7 +232,6 @@ export function SectionsTable() {
                 <SortHeader label="Class" column="class" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort} />
                 <SortHeader label="Section" column="section" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort} />
                 <SortHeader label="Year" column="year" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort} />
-                <SortHeader label="Students" column="students" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort} />
                 <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
                   Status
                 </th>
@@ -185,17 +241,17 @@ export function SectionsTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !yearId ? (
-                <TableLoadingRow colSpan={7} label="Loading sections" />
+              {isLoading || !appliedYearId ? (
+                <TableLoadingRow colSpan={6} label="Loading sections" />
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-red-600" role="alert">
+                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-red-600" role="alert">
                     {getApiErrorMessage(error, "Could not load sections")}
                   </td>
                 </tr>
               ) : sections.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-muted">
+                  <td colSpan={6} className="px-5 py-10 text-center text-sm text-muted">
                     No sections match this search.
                   </td>
                 </tr>
@@ -209,9 +265,6 @@ export function SectionsTable() {
                     <td className="whitespace-nowrap px-5 py-4 font-semibold">{section.className}</td>
                     <td className="whitespace-nowrap px-5 py-4">{section.sectionTitle}</td>
                     <td className="whitespace-nowrap px-5 py-4">{section.yearTitle}</td>
-                    <td className="whitespace-nowrap px-5 py-4 font-semibold tabular-nums">
-                      {section.studentCount}
-                    </td>
                     <td className="whitespace-nowrap px-5 py-4">
                       {section.status === 1 ? "Active" : "Inactive"}
                     </td>

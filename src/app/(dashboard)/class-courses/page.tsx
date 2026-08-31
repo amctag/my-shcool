@@ -5,7 +5,7 @@ export default function ClassCoursesPage() {
   return (
     <div>
       <PageHeader
-        title="Class courses"
+        title="Classes & Courses"
         description="Courses assigned to each class for a school year"
       />
       <ClassCoursesTable />

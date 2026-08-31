@@ -158,9 +158,10 @@ export function TeachesTable() {
   const { data, error, isLoading, isFetching } = useGetTeachesQuery(query, {
     skip: !canFetch || !appliedYearId,
   });
-  const { data: classes = [] } = useGetClassesQuery(undefined, {
-    skip: !canFetch,
-  });
+  const { data: classesData } = useGetClassesQuery(
+    { page: 1, limit: 100 },
+    { skip: !canFetch },
+  );
   const { data: courses = [] } = useGetCoursesQuery(undefined, {
     skip: !canFetch,
   });
@@ -182,6 +183,7 @@ export function TeachesTable() {
   const [deleteTeach, deleteState] = useDeleteTeachMutation();
   const teachers = teachersData?.items ?? [];
   const sections = sectionsData?.items ?? [];
+  const classes = classesData?.items ?? [];
 
   useEffect(() => {
     if (!defaultYearId) {

@@ -6,13 +6,11 @@ import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useDeleteSectionTitleMutation,
   useGetSectionTitlesQuery,
 } from "@/features/school/api/sectionsApi";
-import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 
@@ -20,7 +18,6 @@ export function SectionTitlesTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId, setYearId } = useSchoolYearFilter(canFetch);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -30,8 +27,8 @@ export function SectionTitlesTable() {
   } | null>(null);
 
   const { data: titles = [], error, isLoading, isFetching } =
-    useGetSectionTitlesQuery(yearId ?? undefined, {
-      skip: !canFetch || !yearId,
+    useGetSectionTitlesQuery(undefined, {
+      skip: !canFetch,
     });
   const [deleteTitle, deleteState] = useDeleteSectionTitleMutation();
 
@@ -63,16 +60,13 @@ export function SectionTitlesTable() {
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-          <TableSearchBar
-            label="Search section titles"
-            placeholder="Search by title"
-            value={searchInput}
-            onChange={setSearchInput}
-            onSearch={applySearch}
-          />
-          <YearFilterSelect years={years} value={yearId} onChange={setYearId} />
-        </div>
+        <TableSearchBar
+          label="Search section titles"
+          placeholder="Search by title"
+          value={searchInput}
+          onChange={setSearchInput}
+          onSearch={applySearch}
+        />
         <Link
           href="/section-titles/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
@@ -101,7 +95,7 @@ export function SectionTitlesTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !yearId ? (
+              {isLoading ? (
                 <TableLoadingRow colSpan={4} label="Loading section titles" />
               ) : error ? (
                 <tr>

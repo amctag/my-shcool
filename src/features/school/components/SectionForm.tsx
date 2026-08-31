@@ -73,9 +73,10 @@ export function SectionForm({
     sectionId ?? 0,
     { skip: !authReady || !sectionId },
   );
-  const { data: classes = [] } = useGetClassesQuery(undefined, {
-    skip: !authReady,
-  });
+  const { data: classesData } = useGetClassesQuery(
+    { page: 1, limit: 100 },
+    { skip: !authReady },
+  );
   const { data: titles = [] } = useGetSectionTitlesQuery(undefined, {
     skip: !authReady,
   });
@@ -85,6 +86,7 @@ export function SectionForm({
   const [createSection, createState] = useCreateSectionMutation();
   const [updateSection, updateState] = useUpdateSectionMutation();
   const saving = createState.isLoading || updateState.isLoading;
+  const classes = classesData?.items ?? [];
   const titleOptions = useMemo(
     () =>
       titles.filter(

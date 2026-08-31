@@ -52,15 +52,15 @@ export const navGroups: NavGroup[] = [
   {
     title: "Academics",
     items: [
-      { href: "/classes", label: "Classes", icon: School },
-      { href: "/courses", label: "Courses", icon: Library },
-      { href: "/class-courses", label: "Class courses", icon: Bookmark },
+      { href: "/class-courses", label: "Classes & Courses", icon: Bookmark },
       { href: "/teaches", label: "Teach", icon: BookUser },
       { href: "/section-titles", label: "Section titles", icon: Tags },
       { href: "/sections", label: "Sections", icon: Rows3 },
       { href: "/schedule", label: "Weekly schedule", icon: CalendarDays },
       { href: "/grades", label: "Grades", icon: GraduationCap },
       { href: "/exams", label: "Exam schedules", icon: BookOpen },
+      { href: "/courses", label: "Courses", icon: Library },
+      { href: "/classes", label: "Classes", icon: School },
     ],
   },
   {
