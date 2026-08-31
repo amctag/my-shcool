@@ -18,7 +18,6 @@ import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
-  sectionsApi,
   useGetSectionsQuery,
 } from "@/features/school/api/sectionsApi";
 import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
@@ -100,7 +99,6 @@ export function SectionsTable() {
   const [sortBy, setSortBy] = useState<SectionsSortBy>("id");
   const [sortOrder, setSortOrder] = useState<SectionsSortOrder>("asc");
   const limit = 10;
-  const prefetch = sectionsApi.usePrefetch("getSections");
   const canFetch = ready && Boolean(accessToken);
   const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
   const query = buildQuery(
@@ -143,34 +141,6 @@ export function SectionsTable() {
     setAppliedYearId(draftYearId);
     setAppliedClassId(draftClassId);
   }
-
-  useEffect(() => {
-    const totalPages = data?.pagination.totalPages ?? 0;
-    if (!canFetch || totalPages < page + 1) {
-      return;
-    }
-    prefetch(
-      buildQuery(
-        page + 1,
-        limit,
-        appliedSearch,
-        sortBy,
-        sortOrder,
-        appliedYearId,
-        appliedClassId,
-      ),
-    );
-  }, [
-    appliedClassId,
-    appliedSearch,
-    appliedYearId,
-    canFetch,
-    data?.pagination.totalPages,
-    page,
-    prefetch,
-    sortBy,
-    sortOrder,
-  ]);
 
   function onSort(column: SectionsSortBy) {
     setPage(1);

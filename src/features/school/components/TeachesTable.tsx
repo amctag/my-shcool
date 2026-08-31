@@ -23,7 +23,6 @@ import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import { useGetCoursesQuery } from "@/features/school/api/coursesApi";
 import { useGetSectionsQuery } from "@/features/school/api/sectionsApi";
 import {
-  teachesApi,
   useDeleteTeachMutation,
   useGetTeachesQuery,
 } from "@/features/school/api/teachesApi";
@@ -143,7 +142,6 @@ export function TeachesTable() {
     label: string;
   } | null>(null);
   const limit = 10;
-  const prefetch = teachesApi.usePrefetch("getTeaches");
   const canFetch = ready && Boolean(accessToken);
   const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
   const query = buildQuery(
@@ -202,34 +200,6 @@ export function TeachesTable() {
     setAppliedYearId(draftYearId);
     setAppliedFilters(draftFilters);
   }
-
-  useEffect(() => {
-    const totalPages = data?.pagination.totalPages ?? 0;
-    if (!canFetch || totalPages < page + 1) {
-      return;
-    }
-    prefetch(
-      buildQuery(
-        page + 1,
-        limit,
-        appliedSearch,
-        sortBy,
-        sortOrder,
-        appliedYearId,
-        appliedFilters,
-      ),
-    );
-  }, [
-    appliedFilters,
-    appliedSearch,
-    appliedYearId,
-    canFetch,
-    data?.pagination.totalPages,
-    page,
-    prefetch,
-    sortBy,
-    sortOrder,
-  ]);
 
   function onSort(column: TeachesSortBy) {
     setPage(1);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
@@ -9,7 +9,6 @@ import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
-  studentsApi,
   useDeleteStudentMutation,
   useGetStudentsQuery,
 } from "@/features/school/api/studentsApi";
@@ -129,7 +128,6 @@ export function StudentsTable() {
   const [sortBy, setSortBy] = useState<StudentsSortBy>("id");
   const [sortOrder, setSortOrder] = useState<StudentsSortOrder>("asc");
   const limit = 10;
-  const prefetchStudents = studentsApi.usePrefetch("getStudents");
   const [deleteStudent, deleteState] = useDeleteStudentMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
@@ -157,26 +155,6 @@ export function StudentsTable() {
     setPage(1);
     setAppliedSearch(next);
   }
-
-  useEffect(() => {
-    const totalPages = data?.pagination.totalPages ?? 0;
-    if (!canFetch || totalPages < page + 1) {
-      return;
-    }
-
-    prefetchStudents(
-      buildStudentsQuery(page + 1, limit, appliedSearch, sortBy, sortOrder),
-    );
-  }, [
-    appliedSearch,
-    canFetch,
-    data?.pagination.totalPages,
-    limit,
-    page,
-    prefetchStudents,
-    sortBy,
-    sortOrder,
-  ]);
 
   function onSort(column: StudentsSortBy) {
     setPage(1);
@@ -411,19 +389,6 @@ export function StudentsTable() {
               <button
                 type="button"
                 disabled={page >= totalPages || isFetching}
-                onMouseEnter={() => {
-                  if (page < totalPages) {
-                    prefetchStudents(
-                      buildStudentsQuery(
-                        page + 1,
-                        limit,
-                        appliedSearch,
-                        sortBy,
-                        sortOrder,
-                      ),
-                    );
-                  }
-                }}
                 onClick={() => setPage(page + 1)}
                 className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
               >

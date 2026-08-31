@@ -20,7 +20,6 @@ import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
-  coursesApi,
   useDeleteClassCourseMutation,
   useGetClassCoursesQuery,
   useGetCoursesQuery,
@@ -135,7 +134,6 @@ export function ClassCoursesTable() {
     label: string;
   } | null>(null);
   const limit = 10;
-  const prefetch = coursesApi.usePrefetch("getClassCourses");
   const canFetch = ready && Boolean(accessToken);
   const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
   const query = buildQuery(
@@ -178,32 +176,6 @@ export function ClassCoursesTable() {
     setAppliedYearId(draftYearId);
     setAppliedFilters(draftFilters);
   }
-
-  useEffect(() => {
-    const totalPages = data?.pagination.totalPages ?? 0;
-    if (!canFetch || totalPages < page + 1) {
-      return;
-    }
-    prefetch(
-      buildQuery(
-        page + 1,
-        limit,
-        sortBy,
-        sortOrder,
-        appliedYearId,
-        appliedFilters,
-      ),
-    );
-  }, [
-    appliedFilters,
-    appliedYearId,
-    canFetch,
-    data?.pagination.totalPages,
-    page,
-    prefetch,
-    sortBy,
-    sortOrder,
-  ]);
 
   function onSort(column: ClassCoursesSortBy) {
     setPage(1);

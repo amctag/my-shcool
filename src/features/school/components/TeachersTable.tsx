@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   Check,
@@ -21,7 +21,6 @@ import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
-  teachersApi,
   useDeleteTeacherMutation,
   useGetTeachersQuery,
   useUpdateTeacherStatusMutation,
@@ -178,7 +177,6 @@ export function TeachersTable() {
     useState<PersonStatusFilter>("all");
   const [statusFilter, setStatusFilter] = useState<PersonStatusFilter>("all");
   const limit = 10;
-  const prefetchTeachers = teachersApi.usePrefetch("getTeachers");
   const [deleteTeacher, deleteState] = useDeleteTeacherMutation();
   const [updateTeacherStatus, statusState] = useUpdateTeacherStatusMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -210,27 +208,6 @@ export function TeachersTable() {
     setAppliedSearch(next);
     setStatusFilter(statusFilterInput);
   }
-
-  useEffect(() => {
-    const totalPages = data?.pagination.totalPages ?? 0;
-    if (!canFetch || totalPages < page + 1) {
-      return;
-    }
-
-    prefetchTeachers(
-      buildTeachersQuery(page + 1, limit, appliedSearch, sortBy, sortOrder, statusFilter),
-    );
-  }, [
-    appliedSearch,
-    canFetch,
-    data?.pagination.totalPages,
-    limit,
-    page,
-    prefetchTeachers,
-    sortBy,
-    sortOrder,
-    statusFilter,
-  ]);
 
   function onSort(column: TeachersSortBy) {
     setPage(1);
@@ -502,20 +479,6 @@ export function TeachersTable() {
               <button
                 type="button"
                 disabled={page >= totalPages || isFetching}
-                onMouseEnter={() => {
-                  if (page < totalPages) {
-                    prefetchTeachers(
-                      buildTeachersQuery(
-                        page + 1,
-                        limit,
-                        appliedSearch,
-                        sortBy,
-                        sortOrder,
-                        statusFilter,
-                      ),
-                    );
-                  }
-                }}
                 onClick={() => setPage(page + 1)}
                 className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
               >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ChevronDown,
   ChevronLeft,
@@ -11,7 +11,6 @@ import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import {
-  classesApi,
   useGetClassesQuery,
   useGetStagesQuery,
 } from "@/features/school/api/classesApi";
@@ -23,7 +22,7 @@ import type {
   DashboardClassesQuery,
 } from "@/features/school/types";
 
-const ROW_OPTIONS = [10, 25, 50] as const;
+const PAGE_SIZE = 10;
 
 function buildQuery(
   page: number,
@@ -52,8 +51,7 @@ export function ClassesTable() {
   const [appliedStageId, setAppliedStageId] = useState(0);
   const [sortOrder, setSortOrder] = useState<ClassesSortOrder>("asc");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const prefetch = classesApi.usePrefetch("getClasses");
+  const limit = PAGE_SIZE;
   const query = buildQuery(page, limit, appliedSearch, sortOrder, appliedStageId);
   const { data, error, isLoading, isFetching } = useGetClassesQuery(query, {
     skip: !canFetch,
@@ -71,23 +69,6 @@ export function ClassesTable() {
     setAppliedSearch(next);
     setAppliedStageId(draftStageId);
   }
-
-  useEffect(() => {
-    const totalPages = data?.pagination.totalPages ?? 0;
-    if (!canFetch || totalPages < page + 1) {
-      return;
-    }
-    prefetch(buildQuery(page + 1, limit, appliedSearch, sortOrder, appliedStageId));
-  }, [
-    appliedSearch,
-    appliedStageId,
-    canFetch,
-    data?.pagination.totalPages,
-    limit,
-    page,
-    prefetch,
-    sortOrder,
-  ]);
 
   const classes = data?.items ?? [];
   const pagination = data?.pagination;
@@ -116,18 +97,6 @@ export function ClassesTable() {
             onChange={setDraftStageId}
           />
         </TableSearchBar>
-        <FilterSelect
-          label="Rows per page"
-          value={limit}
-          options={ROW_OPTIONS.map((rows) => ({
-            value: rows,
-            label: `${rows} rows`,
-          }))}
-          onChange={(nextLimit) => {
-            setPage(1);
-            setLimit(nextLimit);
-          }}
-        />
       </div>
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="overflow-x-auto">

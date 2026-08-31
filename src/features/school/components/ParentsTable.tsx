@@ -23,7 +23,7 @@ import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetChildrenQuery } from "@/features/school/api/childrenApi";
-import { parentsApi, useDeleteParentMutation, useGetParentsQuery, useUpdateParentStatusMutation } from "@/features/school/api/parentsApi";
+import { useDeleteParentMutation, useGetParentsQuery, useUpdateParentStatusMutation } from "@/features/school/api/parentsApi";
 import {
   applyParentsSearch,
   clearSelectedParent,
@@ -344,7 +344,6 @@ export function ParentsTable() {
   const statusFilterInput = useAppSelector(selectParentsStatusFilterInput);
   const statusFilter = useAppSelector(selectParentsStatusFilter);
   const selectedParentId = useAppSelector(selectSelectedParentId);
-  const prefetchParents = parentsApi.usePrefetch("getParents");
   const [deleteParent, deleteState] = useDeleteParentMutation();
   const [updateParentStatus, statusState] = useUpdateParentStatusMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -368,34 +367,6 @@ export function ParentsTable() {
   const { data, error, isLoading, isFetching } = useGetParentsQuery(query, {
     skip: !canFetch,
   });
-
-  useEffect(() => {
-    const totalPages = data?.pagination.totalPages ?? 0;
-    if (!canFetch || totalPages < page + 1) {
-      return;
-    }
-
-    prefetchParents(
-      buildParentsQuery(
-        page + 1,
-        limit,
-        appliedSearch,
-        sortBy,
-        sortOrder,
-        statusFilter,
-      ),
-    );
-  }, [
-    appliedSearch,
-    canFetch,
-    data?.pagination.totalPages,
-    limit,
-    page,
-    prefetchParents,
-    sortBy,
-    sortOrder,
-    statusFilter,
-  ]);
 
   const parents = data?.items ?? [];
   const pagination = data?.pagination;
@@ -684,20 +655,6 @@ export function ParentsTable() {
               <button
                 type="button"
                 disabled={page >= totalPages || isFetching}
-                onMouseEnter={() => {
-                  if (page < totalPages) {
-                    prefetchParents(
-                      buildParentsQuery(
-                        page + 1,
-                        limit,
-                        appliedSearch,
-                        sortBy,
-                        sortOrder,
-                        statusFilter,
-                      ),
-                    );
-                  }
-                }}
                 onClick={() => dispatch(setParentsPage(page + 1))}
                 className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
               >
