@@ -38,15 +38,6 @@ type EditingExam = {
   heading: string;
 };
 
-function parseTimeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
-function getExamEndMinutes(exam: Pick<ExamRow, "startTime" | "duration">): number {
-  return parseTimeToMinutes(exam.startTime) + exam.duration;
-}
-
 function newExamRow(): ExamRow {
   return {
     key: `exam-${crypto.randomUUID()}`,
@@ -63,20 +54,6 @@ function newDateRow(): DateRow {
     date: "",
     exams: [newExamRow()],
   };
-}
-
-function examsOverlap(exams: ExamRow[]): string | null {
-  for (let index = 1; index < exams.length; index += 1) {
-    const previous = exams[index - 1];
-    const current = exams[index];
-    const previousEnd = getExamEndMinutes(previous);
-    const currentStart = parseTimeToMinutes(current.startTime);
-
-    if (currentStart < previousEnd) {
-      return `Exam ${index + 1} starts before the previous exam ends. Adjust start times so they do not overlap.`;
-    }
-  }
-  return null;
 }
 
 function formatDisplayDate(value: string): string {
@@ -289,11 +266,6 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
         if (!exam.duration || exam.duration < 1) {
           return "Each exam must have a duration of at least 1 minute.";
         }
-      }
-
-      const overlapError = examsOverlap(dateRow.exams);
-      if (overlapError) {
-        return overlapError;
       }
     }
     return null;

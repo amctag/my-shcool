@@ -1,23 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
+import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
   useCreateDashboardExamScheduleMutation,
+  useGetDashboardExamScheduleQuery,
   useGetDashboardGradeTypesQuery,
+  useUpdateDashboardExamScheduleMutation,
 } from "@/features/school/api/examSchedulesApi";
 import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
+import type { SaveExamScheduleBody } from "@/features/school/types";
 
 const inputClass =
   "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted/80 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-export function ExamScheduleMetadataForm() {
+export function ExamScheduleMetadataForm({
+  scheduleId,
+}: {
+  scheduleId?: number;
+}) {
   const router = useRouter();
+  const isEditing = Boolean(scheduleId);
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
@@ -27,7 +36,17 @@ export function ExamScheduleMetadataForm() {
   const [note, setNote] = useState("");
   const [classId, setClassId] = useState(0);
   const [gradeTypeId, setGradeTypeId] = useState(0);
+  const [yearId, setYearId] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const [existingDates, setExistingDates] = useState<
+    SaveExamScheduleBody["dates"]
+  >([]);
+
+  const { data: existing, isLoading: existingLoading } =
+    useGetDashboardExamScheduleQuery(scheduleId ?? 0, {
+      skip: !canFetch || !isEditing,
+    });
 
   const { data: gradeTypesData } = useGetDashboardGradeTypesQuery(undefined, {
     skip: !canFetch,
@@ -41,6 +60,32 @@ export function ExamScheduleMetadataForm() {
   const classes = classesData?.items ?? [];
 
   const [createSchedule, createState] = useCreateDashboardExamScheduleMutation();
+  const [updateSchedule, updateState] = useUpdateDashboardExamScheduleMutation();
+  const saving = createState.isLoading || updateState.isLoading;
+
+  useEffect(() => {
+    if (!existing || hydrated) {
+      return;
+    }
+    setTitle(existing.title);
+    setNote(existing.note ?? "");
+    setClassId(existing.classId);
+    setGradeTypeId(existing.gradeTypeId);
+    setYearId(existing.yearId);
+    setExistingDates(
+      existing.dates.map((examDate) => ({
+        date: examDate.date,
+        exams: examDate.exams.map((exam, index) => ({
+          courseId: exam.courseId,
+          position: index,
+          startTime: exam.startTime,
+          duration: exam.duration,
+          note: exam.note ?? undefined,
+        })),
+      })),
+    );
+    setHydrated(true);
+  }, [existing, hydrated]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -58,24 +103,46 @@ export function ExamScheduleMetadataForm() {
       setFormError("Grade type is required.");
       return;
     }
-    if (!defaultYearId) {
+
+    const resolvedYearId = yearId ?? defaultYearId;
+    if (!resolvedYearId) {
       setFormError("Year is required.");
       return;
     }
 
+    const body: SaveExamScheduleBody = {
+      title: title.trim(),
+      classId,
+      yearId: resolvedYearId,
+      gradeTypeId,
+      note: note.trim() || undefined,
+      dates: isEditing ? (existingDates ?? []) : [],
+    };
+
     try {
-      await createSchedule({
-        title: title.trim(),
-        classId,
-        yearId: defaultYearId,
-        gradeTypeId,
-        note: note.trim() || undefined,
-        dates: [],
-      }).unwrap();
-      router.push("/exams?saved=1");
+      if (isEditing && scheduleId) {
+        await updateSchedule({ id: scheduleId, body }).unwrap();
+        router.push("/exams?updated=1");
+      } else {
+        await createSchedule(body).unwrap();
+        router.push("/exams?saved=1");
+      }
     } catch (error) {
-      setFormError(getApiErrorMessage(error, "Could not save exam"));
+      setFormError(
+        getApiErrorMessage(error, isEditing ? "Could not update exam" : "Could not save exam"),
+      );
     }
+  }
+
+  if (isEditing && (existingLoading || !hydrated)) {
+    return (
+      <p className="rounded-2xl border border-border bg-white px-6 py-10 text-center text-sm text-muted">
+        <span className="inline-flex items-center gap-2">
+          Loading exam
+          <LoadingDots label="Loading exam" />
+        </span>
+      </p>
+    );
   }
 
   return (
@@ -152,10 +219,10 @@ export function ExamScheduleMetadataForm() {
         </button>
         <button
           type="submit"
-          disabled={createState.isLoading}
+          disabled={saving}
           className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl bg-primary px-5 text-sm font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50"
         >
-          {createState.isLoading ? "Saving…" : "Save"}
+          {saving ? "Saving…" : isEditing ? "Update" : "Save"}
         </button>
       </div>
     </form>

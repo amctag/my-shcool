@@ -9,7 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  Eye,
+  Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
@@ -137,9 +137,12 @@ export function ExamSchedulesTable() {
   }, [defaultYearId]);
 
   const savedMessage = searchParams.get("saved") === "1";
+  const updatedMessage = searchParams.get("updated") === "1";
   const savedMessageText = savedMessage
-    ? "Exam saved successfully. Use Add schedule in the list to set the timetable."
-    : null;
+    ? "Exam saved successfully. Use the schedule icon in the list to set the timetable."
+    : updatedMessage
+      ? "Exam updated successfully."
+      : null;
 
   const query = buildQuery(
     page,
@@ -344,8 +347,10 @@ export function ExamSchedulesTable() {
               ) : (
                 items.map((item) => {
                   const hasSchedule = Boolean(item.examDate);
-                  const viewHref = `/exams/view?scheduleId=${item.id}`;
-                  const scheduleHref = `/exams/edit?scheduleId=${item.id}`;
+                  const scheduleHref = hasSchedule
+                    ? `/exams/view?scheduleId=${item.id}`
+                    : `/exams/edit?scheduleId=${item.id}`;
+                  const editExamHref = `/exams/edit-exam?scheduleId=${item.id}`;
 
                   return (
                     <tr
@@ -372,25 +377,26 @@ export function ExamSchedulesTable() {
                       </td>
                       <td className="whitespace-nowrap px-5 py-4">
                         <div className="flex items-center gap-1">
-                          {hasSchedule ? (
-                            <Link
-                              href={viewHref}
-                              className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors hover:bg-primary-soft hover:text-primary"
-                              aria-label={`View ${item.title}`}
-                              title="View schedule"
-                            >
-                              <Eye aria-hidden className="h-4 w-4" />
-                            </Link>
-                          ) : (
-                            <Link
-                              href={scheduleHref}
-                              className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors hover:bg-primary-soft hover:text-primary"
-                              aria-label={`Add schedule for ${item.title}`}
-                              title="Add schedule"
-                            >
-                              <CalendarDays aria-hidden className="h-4 w-4" />
-                            </Link>
-                          )}
+                          <Link
+                            href={scheduleHref}
+                            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors hover:bg-primary-soft hover:text-primary"
+                            aria-label={
+                              hasSchedule
+                                ? `View schedule for ${item.title}`
+                                : `Add schedule for ${item.title}`
+                            }
+                            title={hasSchedule ? "View schedule" : "Add schedule"}
+                          >
+                            <CalendarDays aria-hidden className="h-4 w-4" />
+                          </Link>
+                          <Link
+                            href={editExamHref}
+                            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors hover:bg-primary-soft hover:text-primary"
+                            aria-label={`Edit ${item.title}`}
+                            title="Edit exam"
+                          >
+                            <Pencil aria-hidden className="h-4 w-4" />
+                          </Link>
                           <button
                             type="button"
                             className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100"
