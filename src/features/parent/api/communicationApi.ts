@@ -10,7 +10,7 @@ import type {
 
 export const parentCommunicationApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getAnnouncements: builder.query<
+    getParentAnnouncements: builder.query<
       ParentAnnouncementsResponse,
       StudentFilterQuery | void
     >({
@@ -35,7 +35,7 @@ export const parentCommunicationApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useGetAnnouncementsQuery,
+  useGetParentAnnouncementsQuery,
   useGetActivitiesQuery,
   useGetNoticesQuery,
 } = parentCommunicationApi;

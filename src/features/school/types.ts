@@ -463,7 +463,40 @@ export type SaveTeachBody = {
   yearId?: number;
 };
 
+export type DashboardAnnouncement = {
+  id: number;
+  title: string | null;
+  content: string;
+  scope: string;
+  audienceTargets: AnnouncementAudienceTarget[];
+  audienceLabel: string;
+  publishedAt: string;
+  createdAt: string;
+  personId: number;
+  createdByName: string;
+};
 
+export type DashboardAnnouncementsResponse = {
+  items: DashboardAnnouncement[];
+  pagination: PaginationMeta;
+};
 
+export type DashboardAnnouncementsQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  yearId?: number;
+  classId?: number;
+  sectionId?: number;
+};
+
+export type AnnouncementAudienceTarget = "parent" | "student" | "teacher";
+
+export type SaveAnnouncementBody = {
+  title?: string;
+  content: string;
+  audienceTargets: AnnouncementAudienceTarget[];
+  sectionId?: number;
+};
 
 
