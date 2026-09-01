@@ -24,7 +24,7 @@ export default async function EditExamPage({ searchParams }: EditExamPageProps) 
       </Link>
       <PageHeader
         title="Edit exam"
-        description="Update title, class, grade type, and note"
+        description="Update title, class, grade type, date, and note"
       />
       {valid ? (
         <Suspense

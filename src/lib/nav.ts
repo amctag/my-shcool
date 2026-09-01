@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Bookmark,
+  BookMarked,
   CalendarDays,
   ClipboardList,
   GraduationCap,
@@ -14,10 +15,12 @@ import {
   Bell,
   BookUser,
   UserRound,
+  UserPlus,
   Users,
   Presentation,
   Rows3,
   Tags,
+  ListOrdered,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -44,6 +47,7 @@ export const navGroups: NavGroup[] = [
         children: [
           { href: "/parents", label: "Parent", icon: UserRound },
           { href: "/students", label: "Student", icon: GraduationCap },
+          { href: "/registrations", label: "Registration", icon: UserPlus },
           { href: "/teachers", label: "Teacher", icon: Presentation },
         ],
       },
@@ -57,7 +61,22 @@ export const navGroups: NavGroup[] = [
       { href: "/section-titles", label: "Section titles", icon: Tags },
       { href: "/sections", label: "Sections", icon: Rows3 },
       { href: "/schedule", label: "Weekly schedule", icon: CalendarDays },
-      { href: "/grades", label: "Grades", icon: GraduationCap },
+      {
+        label: "Grades",
+        icon: GraduationCap,
+        children: [
+          {
+            href: "/grades/by-course",
+            label: "Grade by course",
+            icon: BookMarked,
+          },
+          {
+            href: "/grades/by-type",
+            label: "Grade by type",
+            icon: ListOrdered,
+          },
+        ],
+      },
       { href: "/exams", label: "Exam schedules", icon: BookOpen },
       { href: "/courses", label: "Courses", icon: Library },
       { href: "/classes", label: "Classes", icon: School },

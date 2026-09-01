@@ -46,6 +46,21 @@ function formatExamDate(value: string | null): string {
   }).format(new Date(`${value}T00:00:00`));
 }
 
+function formatExamDateRange(
+  examDate: string | null,
+  examDateEnd: string | null | undefined,
+  examDatesCount: number | undefined,
+): string {
+  if (!examDate) {
+    return "—";
+  }
+  const count = examDatesCount ?? 1;
+  if (count > 1 && examDateEnd && examDateEnd !== examDate) {
+    return `${formatExamDate(examDate)} – ${formatExamDate(examDateEnd)}`;
+  }
+  return formatExamDate(examDate);
+}
+
 function buildQuery(
   page: number,
   appliedSearch: string,
@@ -346,7 +361,8 @@ export function ExamSchedulesTable() {
                 </tr>
               ) : (
                 items.map((item) => {
-                  const hasSchedule = Boolean(item.examDate);
+                  const hasSchedule =
+                    (item.examDatesCount ?? (item.examDate ? 1 : 0)) > 0;
                   const scheduleHref = hasSchedule
                     ? `/exams/view?scheduleId=${item.id}`
                     : `/exams/edit?scheduleId=${item.id}`;
@@ -373,7 +389,11 @@ export function ExamSchedulesTable() {
                         {item.yearTitle}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-foreground">
-                        {formatExamDate(item.examDate)}
+                        {formatExamDateRange(
+                          item.examDate,
+                          item.examDateEnd,
+                          item.examDatesCount,
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4">
                         <div className="flex items-center gap-1">

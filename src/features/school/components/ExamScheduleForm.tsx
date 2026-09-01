@@ -68,6 +68,74 @@ function formatDisplayDate(value: string): string {
   }).format(new Date(`${value}T00:00:00`));
 }
 
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function examsOverlap(
+  start1: string,
+  duration1: number,
+  start2: string,
+  duration2: number,
+): boolean {
+  const startMinutes1 = timeToMinutes(start1);
+  const endMinutes1 = startMinutes1 + duration1;
+  const startMinutes2 = timeToMinutes(start2);
+  const endMinutes2 = startMinutes2 + duration2;
+  return startMinutes1 < endMinutes2 && startMinutes2 < endMinutes1;
+}
+
+function validateDateExams(
+  exams: ExamRow[],
+  courseTitleById: Map<number, string>,
+): string | null {
+  const seenCourses = new Set<number>();
+  const scheduled: Array<{
+    courseTitle: string;
+    startTime: string;
+    duration: number;
+  }> = [];
+
+  for (const exam of exams) {
+    if (!exam.courseId) {
+      continue;
+    }
+
+    const courseTitle = courseTitleById.get(exam.courseId) ?? "This course";
+
+    if (seenCourses.has(exam.courseId)) {
+      return `${courseTitle} is already scheduled on this date. Each course can only appear once per day.`;
+    }
+    seenCourses.add(exam.courseId);
+
+    scheduled.push({
+      courseTitle,
+      startTime: exam.startTime,
+      duration: exam.duration,
+    });
+  }
+
+  for (let index = 0; index < scheduled.length; index++) {
+    for (let otherIndex = index + 1; otherIndex < scheduled.length; otherIndex++) {
+      const first = scheduled[index];
+      const second = scheduled[otherIndex];
+      if (
+        examsOverlap(
+          first.startTime,
+          first.duration,
+          second.startTime,
+          second.duration,
+        )
+      ) {
+        return `${first.courseTitle} and ${second.courseTitle} have overlapping exam times on this date (${first.startTime} and ${second.startTime}).`;
+      }
+    }
+  }
+
+  return null;
+}
+
 export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
   const router = useRouter();
   const ready = useAppSelector(selectAuthReady);
@@ -124,6 +192,23 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
     [classCourses],
   );
 
+  const drawerCourseOptions = useMemo(() => {
+    if (!editingExam) {
+      return scheduleCourseOptions;
+    }
+    const dateRow = dates.find((row) => row.key === editingExam.dateKey);
+    const usedCourseIds = new Set(
+      (dateRow?.exams ?? [])
+        .filter(
+          (exam) => exam.key !== editingExam.examKey && exam.courseId > 0,
+        )
+        .map((exam) => exam.courseId),
+    );
+    return scheduleCourseOptions.filter(
+      (course) => !usedCourseIds.has(course.courseId),
+    );
+  }, [dates, editingExam, scheduleCourseOptions]);
+
   const [updateSchedule, updateState] =
     useUpdateDashboardExamScheduleMutation();
   const saving = updateState.isLoading;
@@ -145,13 +230,16 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
         ? existing.dates.map((examDate) => ({
             key: `date-${examDate.id}`,
             date: examDate.date,
-            exams: examDate.exams.map((exam) => ({
-              key: `exam-${exam.id}`,
-              courseId: exam.courseId,
-              startTime: exam.startTime,
-              duration: exam.duration,
-              note: exam.note ?? "",
-            })),
+            exams:
+              examDate.exams.length > 0
+                ? examDate.exams.map((exam) => ({
+                    key: `exam-${exam.id}`,
+                    courseId: exam.courseId,
+                    startTime: exam.startTime,
+                    duration: exam.duration,
+                    note: exam.note ?? "",
+                  }))
+                : [newExamRow()],
           }))
         : [newDateRow()],
     );
@@ -197,9 +285,28 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
   }
 
   function saveDrawerCourse() {
-    if (!editingExam) {
+    if (!editingExam || !drawerCourseId) {
       return;
     }
+
+    const dateRow = dates.find((row) => row.key === editingExam.dateKey);
+    if (dateRow) {
+      const duplicateCourse = dateRow.exams.some(
+        (exam) =>
+          exam.key !== editingExam.examKey &&
+          exam.courseId === drawerCourseId,
+      );
+      if (duplicateCourse) {
+        const courseTitle =
+          courseTitleById.get(drawerCourseId) ?? "This course";
+        setFormError(
+          `${courseTitle} is already scheduled on this date. Each course can only appear once per day.`,
+        );
+        return;
+      }
+    }
+
+    setFormError(null);
     updateExamRow(editingExam.dateKey, editingExam.examKey, {
       courseId: drawerCourseId,
     });
@@ -233,6 +340,19 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
     );
   }
 
+  function addDateRow() {
+    setDates((current) => [...current, newDateRow()]);
+  }
+
+  function removeDateRow(dateKey: string) {
+    setDates((current) => {
+      if (current.length === 1) {
+        return current;
+      }
+      return current.filter((row) => row.key !== dateKey);
+    });
+  }
+
   function validateForm(): string | null {
     if (!title.trim()) {
       return "Title is required.";
@@ -249,6 +369,17 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
     if (dates.length === 0) {
       return "Add at least one exam date.";
     }
+
+    const seenDates = new Set<string>();
+    for (const dateRow of dates) {
+      if (dateRow.date) {
+        if (seenDates.has(dateRow.date)) {
+          return `Each exam date must be unique. ${formatDisplayDate(dateRow.date)} is used more than once.`;
+        }
+        seenDates.add(dateRow.date);
+      }
+    }
+
     for (const dateRow of dates) {
       if (!dateRow.date) {
         return "Each exam date must have a date.";
@@ -266,6 +397,11 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
         if (!exam.duration || exam.duration < 1) {
           return "Each exam must have a duration of at least 1 minute.";
         }
+      }
+
+      const duplicateError = validateDateExams(dateRow.exams, courseTitleById);
+      if (duplicateError) {
+        return duplicateError;
       }
     }
     return null;
@@ -343,13 +479,18 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
             <p className="mt-3 text-sm text-foreground">{note}</p>
           ) : null}
         </div>
+        <div className="space-y-5 p-5">
         {dates.map((dateRow) => (
-          <div key={dateRow.key} className="border-t border-stone-100">
-            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <section
+            key={dateRow.key}
+            className="overflow-hidden rounded-2xl border border-stone-200"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 px-5 py-4">
               <div className="flex min-w-0 items-center gap-2 text-sm text-muted">
                 <CalendarDays className="h-4 w-4 shrink-0 text-primary" aria-hidden />
                 <span>{formatDisplayDate(dateRow.date)}</span>
               </div>
+              <div className="flex flex-wrap items-end gap-3">
               <label className="min-w-44">
                 <span className="mb-1.5 block text-sm font-medium text-foreground">
                   Exam date *
@@ -364,6 +505,17 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
                   required
                 />
               </label>
+              <button
+                type="button"
+                onClick={() => removeDateRow(dateRow.key)}
+                disabled={dates.length === 1}
+                className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-red-200 px-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label={`Remove ${formatDisplayDate(dateRow.date)}`}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+                Remove date
+              </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto px-5 pb-5">
@@ -482,27 +634,34 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
                       </tr>
                     );
                   })}
-                  <tr className="bg-white">
-                    <td
-                      colSpan={6}
-                      className="border border-stone-200 px-3 py-3"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => addExamRow(dateRow.key)}
-                        className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium hover:bg-primary-soft"
-                      >
-                        <Plus aria-hidden className="h-4 w-4" />
-                        Add exam
-                      </button>
-                    </td>
-                  </tr>
                 </tbody>
               </table>
+              <div className="px-5 pb-5 pt-3">
+                <button
+                  type="button"
+                  onClick={() => addExamRow(dateRow.key)}
+                  className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium hover:bg-primary-soft"
+                >
+                  <Plus aria-hidden className="h-4 w-4" />
+                  Add exam
+                </button>
+              </div>
             </div>
-          </div>
+          </section>
         ))}
+        </div>
       </article>
+
+      <div className="flex justify-start">
+        <button
+          type="button"
+          onClick={addDateRow}
+          className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-4 text-sm font-medium shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:bg-primary-soft"
+        >
+          <Plus aria-hidden className="h-4 w-4" />
+          Add date
+        </button>
+      </div>
 
       <div className="flex flex-wrap gap-3">
         <button
@@ -526,7 +685,7 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
           dayName=""
           sessionLabel=""
           heading={editingExam.heading}
-          courses={scheduleCourseOptions}
+          courses={drawerCourseOptions}
           selectedCourseId={drawerCourseId}
           onSelectCourse={setDrawerCourseId}
           onSave={saveDrawerCourse}

@@ -13,7 +13,7 @@ export default function AddExamSchedulePage() {
       </Link>
       <PageHeader
         title="Add exam"
-        description="Create the exam title, class, and grade type first. Add the timetable from the list after saving."
+        description="Create the exam title, class, grade type, and date. Add courses and times from the list after saving."
       />
       <ExamScheduleMetadataForm />
     </div>

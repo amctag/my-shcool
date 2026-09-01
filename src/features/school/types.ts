@@ -611,6 +611,8 @@ export type DashboardExamSchedule = {
   gradeTypeId: number;
   gradeTypeTitle: string;
   examDate: string | null;
+  examDateEnd: string | null;
+  examDatesCount: number;
   createdAt: string;
   createdByName: string | null;
 };
@@ -688,7 +690,7 @@ export type SaveExamScheduleExamBody = {
 
 export type SaveExamScheduleDateBody = {
   date: string;
-  exams: SaveExamScheduleExamBody[];
+  exams?: SaveExamScheduleExamBody[];
 };
 
 export type SaveExamScheduleBody = {
@@ -698,5 +700,155 @@ export type SaveExamScheduleBody = {
   gradeTypeId: number;
   note?: string;
   dates?: SaveExamScheduleDateBody[];
+};
+
+export type DashboardRegistration = {
+  id: number;
+  studentId: number;
+  studentName: string;
+  classId: number;
+  className: string;
+  sectionId: number;
+  sectionTitle: string;
+  yearId: number;
+  yearTitle: string;
+  createdAt: string;
+};
+
+export type RegistrationsSortBy =
+  | "id"
+  | "student"
+  | "class"
+  | "section"
+  | "year"
+  | "date";
+
+export type RegistrationsSortOrder = "asc" | "desc";
+
+export type DashboardRegistrationsQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  classId?: number;
+  sectionId?: number;
+  yearId?: number;
+  sortBy?: RegistrationsSortBy;
+  sortOrder?: RegistrationsSortOrder;
+};
+
+export type DashboardRegistrationsResponse = {
+  items: DashboardRegistration[];
+  pagination: PaginationMeta;
+};
+
+export type SaveRegistrationBody = {
+  studentId: number;
+  classId: number;
+  sectionId: number;
+};
+
+export type DashboardGradeTypeListItem = {
+  id: number;
+  title: string;
+  type: string;
+  status: boolean;
+};
+
+export type DashboardGradeTypesListResponse = {
+  items: DashboardGradeTypeListItem[];
+};
+
+export type DashboardGradeByCourse = {
+  id: number;
+  yearId: number;
+  yearTitle: string;
+  courseId: number;
+  courseTitle: string;
+  sectionId: number;
+  sectionTitle: string;
+  className: string;
+  gradeTypeId: number;
+  gradeTypeTitle: string;
+  maxGrade: number;
+  publishDate: string | null;
+  createdAt: string;
+  studentCount: number;
+};
+
+export type GradesByCourseSortBy =
+  | "id"
+  | "year"
+  | "course"
+  | "section"
+  | "date"
+  | "maxGrade"
+  | "gradeType";
+
+export type GradesByCourseSortOrder = "asc" | "desc";
+
+export type DashboardGradesByCourseQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  yearId?: number;
+  classId?: number;
+  sectionId?: number;
+  courseId?: number;
+  gradeTypeId?: number;
+  sortBy?: GradesByCourseSortBy;
+  sortOrder?: GradesByCourseSortOrder;
+};
+
+export type DashboardGradesByCourseResponse = {
+  items: DashboardGradeByCourse[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardGradeByCourseStudent = {
+  registrationId: number;
+  studentId: number;
+  studentName: string;
+  grade: number | null;
+  comment: string | null;
+};
+
+export type DashboardGradeByCourseCandidates = {
+  gradeSheetId: number | null;
+  maxGrade: number;
+  publishDate: string | null;
+  students: DashboardGradeByCourseStudent[];
+};
+
+export type DashboardGradeByCourseDetail = {
+  id: number;
+  yearId: number;
+  yearTitle: string;
+  classId: number;
+  className: string;
+  courseId: number;
+  courseTitle: string;
+  sectionId: number;
+  sectionTitle: string;
+  gradeTypeId: number;
+  gradeTypeTitle: string;
+  maxGrade: number;
+  publishDate: string | null;
+  createdAt: string;
+  students: DashboardGradeByCourseStudent[];
+};
+
+export type SaveGradeByCourseEntry = {
+  registrationId: number;
+  grade?: number;
+  comment?: string;
+};
+
+export type SaveGradeByCourseBody = {
+  sectionId: number;
+  courseId: number;
+  gradeTypeId: number;
+  maxGrade: number;
+  publishDate?: string;
+  entries: SaveGradeByCourseEntry[];
 };
 

@@ -34,6 +34,7 @@ export function ExamScheduleMetadataForm({
 
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
+  const [examDate, setExamDate] = useState("");
   const [classId, setClassId] = useState(0);
   const [gradeTypeId, setGradeTypeId] = useState(0);
   const [yearId, setYearId] = useState<number | null>(null);
@@ -69,6 +70,7 @@ export function ExamScheduleMetadataForm({
     }
     setTitle(existing.title);
     setNote(existing.note ?? "");
+    setExamDate(existing.dates[0]?.date ?? "");
     setClassId(existing.classId);
     setGradeTypeId(existing.gradeTypeId);
     setYearId(existing.yearId);
@@ -103,6 +105,10 @@ export function ExamScheduleMetadataForm({
       setFormError("Grade type is required.");
       return;
     }
+    if (!examDate) {
+      setFormError("Exam date is required.");
+      return;
+    }
 
     const resolvedYearId = yearId ?? defaultYearId;
     if (!resolvedYearId) {
@@ -110,13 +116,21 @@ export function ExamScheduleMetadataForm({
       return;
     }
 
+    const datesPayload: SaveExamScheduleBody["dates"] = isEditing
+      ? existingDates.length > 0
+        ? existingDates.map((dateRow, index) =>
+            index === 0 ? { ...dateRow, date: examDate } : dateRow,
+          )
+        : [{ date: examDate, exams: [] }]
+      : [{ date: examDate, exams: [] }];
+
     const body: SaveExamScheduleBody = {
       title: title.trim(),
       classId,
       yearId: resolvedYearId,
       gradeTypeId,
       note: note.trim() || undefined,
-      dates: isEditing ? (existingDates ?? []) : [],
+      dates: datesPayload,
     };
 
     try {
@@ -196,6 +210,22 @@ export function ExamScheduleMetadataForm({
           ]}
           onChange={setGradeTypeId}
         />
+        <label>
+          <span className="mb-1.5 block text-sm font-medium text-foreground">
+            Exam date *
+          </span>
+          <input
+            type="date"
+            className={inputClass}
+            value={examDate}
+            onChange={(event) => setExamDate(event.target.value)}
+            required
+          />
+        </label>
+        <p className="md:col-span-2 rounded-xl border border-stone-100 bg-primary-soft/30 px-4 py-3 text-sm text-muted">
+          This date is used as the first day in the schedule editor. You can add
+          more dates and courses after saving.
+        </p>
         <label className="md:col-span-2">
           <span className="mb-1.5 block text-sm font-medium text-foreground">
             Note
