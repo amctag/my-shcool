@@ -15,7 +15,10 @@ import {
 import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
-import type { SaveExamScheduleBody } from "@/features/school/types";
+import type {
+  SaveExamScheduleBody,
+  SaveExamScheduleDateBody,
+} from "@/features/school/types";
 
 const inputClass =
   "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted/80 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -40,9 +43,9 @@ export function ExamScheduleMetadataForm({
   const [yearId, setYearId] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
-  const [existingDates, setExistingDates] = useState<
-    SaveExamScheduleBody["dates"]
-  >([]);
+  const [existingDates, setExistingDates] = useState<SaveExamScheduleDateBody[]>(
+    [],
+  );
 
   const { data: existing, isLoading: existingLoading } =
     useGetDashboardExamScheduleQuery(scheduleId ?? 0, {
