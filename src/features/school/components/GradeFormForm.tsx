@@ -16,6 +16,7 @@ import {
 import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import {
   GRADE_FORM_TABLE_FORMAT,
+  type GradeFormTableFormat,
   resolveGradeFormTableFormat,
 } from "@/features/school/types";
 import { useAppSelector } from "@/store/hooks";
@@ -45,7 +46,17 @@ function Field({
   );
 }
 
-function emptyForm() {
+type GradeFormFormState = {
+  title: string;
+  gradeBackground: string;
+  average: string;
+  direction: string;
+  tableFormat: GradeFormTableFormat;
+  gradeFormatId: number;
+  status: string;
+};
+
+function emptyForm(): GradeFormFormState {
   return {
     title: "",
     gradeBackground: "",
@@ -252,7 +263,7 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
                 label: "Grade on top",
               },
             ]}
-            onChange={(value) =>
+            onChange={(value: GradeFormTableFormat) =>
               setForm((current) => ({ ...current, tableFormat: value }))
             }
           />
