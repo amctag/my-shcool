@@ -23,6 +23,7 @@ import "@/features/school/api/weeklySchedulesApi";
 import "@/features/school/api/examSchedulesApi";
 import "@/features/school/api/registrationsApi";
 import "@/features/school/api/gradesApi";
+import "@/features/school/api/gradeFormsApi";
 
 export const makeStore = () =>
   configureStore({

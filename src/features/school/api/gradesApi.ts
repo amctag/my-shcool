@@ -3,6 +3,8 @@ import { toQueryString } from "@/lib/toQueryString";
 import type {
   DashboardGradeByCourseCandidates,
   DashboardGradeByCourseDetail,
+  DashboardGradeCardQuery,
+  DashboardGradeCardResponse,
   DashboardGradesByCourseQuery,
   DashboardGradesByCourseResponse,
   DashboardGradeTypesListResponse,
@@ -18,6 +20,22 @@ export const gradesApi = baseApi.injectEndpoints({
       query: () => "/dashboard/grades/grade-types",
       keepUnusedDataFor: 300,
       providesTags: [{ type: "DashboardGrades", id: "GRADE_TYPES" }],
+    }),
+    getGradeCard: builder.query<
+      DashboardGradeCardResponse,
+      DashboardGradeCardQuery
+    >({
+      query: ({ registrationId, yearId, classId, sectionId }) =>
+        `/dashboard/grades/grade-card${toQueryString({
+          registrationId,
+          yearId,
+          classId,
+          sectionId,
+        })}`,
+      keepUnusedDataFor: 120,
+      providesTags: (_result, _error, { registrationId }) => [
+        { type: "DashboardGrades", id: `GRADE_CARD_${registrationId}` },
+      ],
     }),
     getGradesByCourse: builder.query<
       DashboardGradesByCourseResponse,
@@ -89,6 +107,12 @@ export const gradesApi = baseApi.injectEndpoints({
       invalidatesTags: (result) => [
         { type: "DashboardGrades", id: "BY_COURSE_LIST" },
         { type: "DashboardGrades", id: "CANDIDATES" },
+        ...(result
+          ? result.students.map((student) => ({
+              type: "DashboardGrades" as const,
+              id: `GRADE_CARD_${student.registrationId}`,
+            }))
+          : []),
         ...(result ? [{ type: "DashboardGrades" as const, id: result.id }] : []),
       ],
     }),
@@ -97,6 +121,7 @@ export const gradesApi = baseApi.injectEndpoints({
 
 export const {
   useGetDashboardGradeTypesListQuery,
+  useGetGradeCardQuery,
   useGetGradesByCourseQuery,
   useGetGradeByCourseQuery,
   useGetGradeByCourseCandidatesQuery,

@@ -24,6 +24,7 @@ export const apiTagTypes = [
   "DashboardExamSchedules",
   "Registrations",
   "DashboardGrades",
+  "DashboardGradeForms",
 ] as const;
 
 export type ApiTagType = (typeof apiTagTypes)[number];

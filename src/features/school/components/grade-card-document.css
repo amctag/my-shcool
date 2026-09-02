@@ -1,0 +1,220 @@
+.grade-card-page {
+  min-height: 100vh;
+  background: #ffffff;
+  padding: 1.5rem 1rem 2.5rem;
+}
+
+.grade-card-toolbar {
+  max-width: 100%;
+  margin: 0 auto 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.grade-card-toolbar button,
+.grade-card-toolbar a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid #9ca3af;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.grade-card-toolbar button:hover,
+.grade-card-toolbar a:hover {
+  background: #f3f4f6;
+}
+
+.grade-card-document {
+  --grade-card-teal: #8fd0b5;
+  --grade-card-teal-dark: #6fbf9f;
+  --grade-card-border: #1f2937;
+
+  max-width: 100%;
+  margin: 0 auto;
+  border: 2px solid var(--grade-card-border);
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  font-family: Arial, "Segoe UI", Tahoma, sans-serif;
+}
+
+.grade-card-document--rtl {
+  font-family: Arial, Tahoma, "Segoe UI", sans-serif;
+}
+
+.grade-card-document--rtl .grade-card-meta-label,
+.grade-card-document--rtl .grade-card-meta-value {
+  text-align: start;
+}
+
+.grade-card-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--grade-card-teal-dark);
+  border-top: 1px solid var(--grade-card-border);
+  border-bottom: 1px solid var(--grade-card-border);
+}
+
+.grade-card-meta-item {
+  background: var(--grade-card-teal);
+  padding: 0.75rem 1rem;
+}
+
+.grade-card-meta-label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+.grade-card-meta-value {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+.grade-card-table-wrap {
+  overflow-x: auto;
+  border-top: 1px solid var(--grade-card-border);
+}
+
+.grade-card-table {
+  width: 100%;
+  min-width: 56rem;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.grade-card-table th,
+.grade-card-table td {
+  border: 1px solid var(--grade-card-border);
+  padding: 0.35rem 0.4rem;
+  text-align: center;
+  vertical-align: middle;
+  color: #000000;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.grade-card-table thead th {
+  background: var(--grade-card-teal);
+  font-size: 0.68rem;
+  font-weight: 700;
+  min-width: 4.5rem;
+}
+
+.grade-card-table .course-cell,
+.grade-card-table .max-mark-cell {
+  background: var(--grade-card-teal);
+  font-weight: 700;
+  min-width: 9rem;
+}
+
+.grade-card-table .course-cell {
+  text-align: start;
+  min-width: 11rem;
+}
+
+.grade-card-document--ltr .grade-card-meta-label,
+.grade-card-document--ltr .grade-card-meta-value {
+  text-align: start;
+}
+
+.grade-card-table[dir="rtl"] .course-cell {
+  text-align: right;
+}
+
+.grade-card-table[dir="ltr"] .course-cell {
+  text-align: left;
+}
+
+.grade-card-table tbody td.grade-cell {
+  background: #ffffff;
+  font-weight: 600;
+  min-width: 3.5rem;
+}
+
+.grade-card-table tbody td.max-mark-cell {
+  background: var(--grade-card-teal);
+}
+
+.grade-card-table tbody tr.summary-row td {
+  background: var(--grade-card-teal-dark);
+  font-weight: 700;
+}
+
+.grade-card-table .average-cell {
+  background: var(--grade-card-teal);
+  font-weight: 700;
+  min-width: 5rem;
+}
+
+.grade-card-table--course_on_top thead tr:first-child th.course-cell {
+  min-width: 6rem;
+}
+
+.grade-card-table--course_on_top thead tr:nth-child(2) th.max-mark-cell {
+  font-size: 0.65rem;
+}
+
+.grade-card-table--grade_on_top .course-cell {
+  min-width: 11rem;
+}
+
+.grade-card-message {
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  color: #92400e;
+  background: #fffbeb;
+  border-top: 1px solid #fde68a;
+}
+
+.grade-card-loading {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 3rem;
+  text-align: center;
+  color: #4b5563;
+}
+
+@media (max-width: 900px) {
+  .grade-card-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media print {
+  .grade-card-page {
+    padding: 0;
+    background: #ffffff;
+  }
+
+  .grade-card-toolbar {
+    display: none;
+  }
+
+  .grade-card-document {
+    box-shadow: none;
+    border-width: 1px;
+    max-width: none;
+  }
+
+  .grade-card-table {
+    min-width: 100%;
+    font-size: 0.65rem;
+  }
+}

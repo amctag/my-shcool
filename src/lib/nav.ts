@@ -21,6 +21,8 @@ import {
   Rows3,
   Tags,
   ListOrdered,
+  FileSpreadsheet,
+  FileDown,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -74,6 +76,16 @@ export const navGroups: NavGroup[] = [
             href: "/grades/by-type",
             label: "Grade by type",
             icon: ListOrdered,
+          },
+          {
+            href: "/grade-forms",
+            label: "Grade form",
+            icon: FileSpreadsheet,
+          },
+          {
+            href: "/export-grade-card",
+            label: "Export grade card",
+            icon: FileDown,
           },
         ],
       },

@@ -758,6 +758,60 @@ export type DashboardGradeTypesListResponse = {
   items: DashboardGradeTypeListItem[];
 };
 
+export type DashboardGradeCardQuery = {
+  registrationId: number;
+  yearId?: number;
+  classId?: number;
+  sectionId?: number;
+};
+
+export type DashboardGradeCardCell = {
+  score: number | null;
+  maxGrade: number | null;
+  comment: string | null;
+};
+
+export type DashboardGradeCardResponse = {
+  student: {
+    registrationId: number;
+    studentId: number;
+    studentName: string;
+    classId: number;
+    className: string;
+    sectionId: number;
+    sectionTitle: string;
+    yearId: number;
+    yearTitle: string;
+  };
+  gradeForm: {
+    id: number;
+    title: string;
+    direction: string;
+    tableFormat: string;
+    average: boolean;
+  } | null;
+  courses: Array<{
+    classCourseId: number;
+    courseId: number;
+    courseTitle: string;
+    coefficient: number;
+  }>;
+  gradeTypes: Array<{
+    detailId: number;
+    gradeTypeId: number;
+    gradeTypeTitle: string;
+    position: number;
+  }>;
+  cells: Record<string, DashboardGradeCardCell>;
+};
+
+export function gradeCardCellKey(
+  courseId: number,
+  gradeTypeId: number,
+): string {
+  return `${courseId}-${gradeTypeId}`;
+}
+
 export type DashboardGradeByCourse = {
   id: number;
   yearId: number;
@@ -850,5 +904,136 @@ export type SaveGradeByCourseBody = {
   maxGrade: number;
   publishDate?: string;
   entries: SaveGradeByCourseEntry[];
+};
+
+export type GradeFormsSortBy =
+  | "id"
+  | "title"
+  | "year"
+  | "direction"
+  | "tableFormat"
+  | "status"
+  | "date";
+
+export type GradeFormsSortOrder = "asc" | "desc";
+
+export const GRADE_FORM_TABLE_FORMAT = {
+  courseOnTop: "course_on_top",
+  gradeOnTop: "grade_on_top",
+} as const;
+
+export type GradeFormTableFormat =
+  (typeof GRADE_FORM_TABLE_FORMAT)[keyof typeof GRADE_FORM_TABLE_FORMAT];
+
+export function resolveGradeFormTableFormat(
+  value: string | null | undefined,
+): GradeFormTableFormat {
+  return value === GRADE_FORM_TABLE_FORMAT.courseOnTop
+    ? GRADE_FORM_TABLE_FORMAT.courseOnTop
+    : GRADE_FORM_TABLE_FORMAT.gradeOnTop;
+}
+
+export type DashboardGradeForm = {
+  id: number;
+  title: string;
+  yearId: number;
+  yearTitle: string;
+  gradeBackground: string | null;
+  average: boolean;
+  direction: string;
+  tableFormat: string;
+  gradeFormatId: number;
+  status: boolean;
+  classNames: string[];
+  detailCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DashboardGradeFormDetail = DashboardGradeForm & {
+  classIds: number[];
+};
+
+export type DashboardGradeFormsQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  yearId?: number;
+  sortBy?: GradeFormsSortBy;
+  sortOrder?: GradeFormsSortOrder;
+};
+
+export type DashboardGradeFormsResponse = {
+  items: DashboardGradeForm[];
+  pagination: PaginationMeta;
+};
+
+export type CreateGradeFormBody = {
+  title: string;
+  yearId: number;
+  gradeBackground?: string;
+  average?: boolean;
+  direction?: string;
+  tableFormat?: string;
+  gradeFormatId: number;
+  status?: boolean;
+  classIds?: number[];
+};
+
+export type UpdateGradeFormBody = Partial<CreateGradeFormBody>;
+
+export type DashboardGradeFormClassOption = {
+  id: number;
+  className: string;
+};
+
+export type DashboardGradeFormCourseItem = {
+  courseId: number;
+  courseTitle: string;
+  classNames: string[];
+};
+
+export type DashboardGradeFormClassesCourses = {
+  gradeFormId: number;
+  title: string;
+  yearId: number;
+  yearTitle: string;
+  classIds: number[];
+  classes: DashboardGradeFormClassOption[];
+  courses: DashboardGradeFormCourseItem[];
+};
+
+export type UpdateGradeFormClassesBody = {
+  classIds: number[];
+};
+
+export type DashboardGradeFormDetailRow = {
+  id: number;
+  gradeFormId: number;
+  gradeTypeId: number;
+  gradeTypeTitle: string;
+  position: number;
+  status: boolean;
+  isVisible: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DashboardGradeFormDetailsList = {
+  gradeFormId: number;
+  title: string;
+  items: DashboardGradeFormDetailRow[];
+};
+
+export type DashboardGradeFormByClass = {
+  gradeForm: DashboardGradeFormDetail | null;
+  details: DashboardGradeFormDetailRow[];
+};
+
+export type SaveGradeFormDetailBody = {
+  gradeTypeId: number;
+  position?: number;
+  status?: boolean;
+  isVisible?: boolean;
 };
 
