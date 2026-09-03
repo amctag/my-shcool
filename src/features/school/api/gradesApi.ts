@@ -7,17 +7,22 @@ import type {
   DashboardGradeCardResponse,
   DashboardGradesByCourseQuery,
   DashboardGradesByCourseResponse,
+  DashboardGradeTypeListItem,
   DashboardGradeTypesListResponse,
   SaveGradeByCourseBody,
+  SaveGradeTypeBody,
 } from "@/features/school/types";
 
 export const gradesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDashboardGradeTypesList: builder.query<
       DashboardGradeTypesListResponse,
-      void
+      { includeInactive?: boolean } | void
     >({
-      query: () => "/dashboard/grades/grade-types",
+      query: (arg) =>
+        `/dashboard/grades/grade-types${toQueryString({
+          includeInactive: arg?.includeInactive ? true : undefined,
+        })}`,
       keepUnusedDataFor: 300,
       providesTags: [{ type: "DashboardGrades", id: "GRADE_TYPES" }],
     }),
@@ -116,6 +121,28 @@ export const gradesApi = baseApi.injectEndpoints({
         ...(result ? [{ type: "DashboardGrades" as const, id: result.id }] : []),
       ],
     }),
+    createGradeType: builder.mutation<
+      DashboardGradeTypeListItem,
+      SaveGradeTypeBody
+    >({
+      query: (body) => ({
+        url: "/dashboard/grades/grade-types",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: [{ type: "DashboardGrades", id: "GRADE_TYPES" }],
+    }),
+    updateGradeType: builder.mutation<
+      DashboardGradeTypeListItem,
+      { id: number; body: SaveGradeTypeBody }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dashboard/grades/grade-types/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: [{ type: "DashboardGrades", id: "GRADE_TYPES" }],
+    }),
   }),
 });
 
@@ -127,4 +154,6 @@ export const {
   useGetGradeByCourseCandidatesQuery,
   useLazyGetGradeByCourseCandidatesQuery,
   useSaveGradeByCourseMutation,
+  useCreateGradeTypeMutation,
+  useUpdateGradeTypeMutation,
 } = gradesApi;

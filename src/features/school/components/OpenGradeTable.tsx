@@ -28,8 +28,12 @@ function formatIssueDate(value: Date): string {
   return `${year}/${month}/${day}`;
 }
 
-function formatCoefficient(value: number): string {
-  return value.toFixed(2);
+function formatMaxMark(value: number): string {
+  const rounded = Math.round(value * 100) / 100;
+  if (Number.isInteger(rounded)) {
+    return String(rounded);
+  }
+  return rounded.toFixed(2);
 }
 
 function formatScore(score: number | null | undefined): string {
@@ -55,35 +59,58 @@ type GradeCardCourse = {
   courseId: number;
   courseTitle: string;
   coefficient: number;
+  marksSum: number | null;
+  scaledAverage: number | null;
+  passed: boolean | null;
 };
 
 type GradeCardGradeType = {
   detailId: number;
   gradeTypeId: number;
   gradeTypeTitle: string;
+  percentage: number | null;
 };
+
+function formatResult(
+  passed: boolean | null | undefined,
+  labels: GradeCardLabels,
+): string {
+  if (passed == null) {
+    return "";
+  }
+  return passed ? labels.passed : labels.failed;
+}
 
 function GradeCardTableCourseOnTop({
   labels,
   courses,
   gradeTypes,
   cells,
-  showYearlyAverage,
+  averageScale,
 }: {
   labels: GradeCardLabels;
   courses: GradeCardCourse[];
   gradeTypes: GradeCardGradeType[];
   cells: Record<string, DashboardGradeCardCell>;
-  showYearlyAverage: boolean;
+  averageScale: number;
 }) {
-  const columnCount = 1 + Math.max(courses.length, 1) + (showYearlyAverage ? 1 : 0);
+  const hasCourses = courses.length > 0;
+  const columnCount = 2 + Math.max(courses.length, 1);
+  const coefficientsTotal = hasCourses
+    ? courses.reduce((sum, course) => sum + course.coefficient, 0)
+    : 0;
+  const referenceMarksSum =
+    coefficientsTotal > 0 ? formatMaxMark(coefficientsTotal) : "";
+  const referenceAverage =
+    averageScale > 0 ? formatMaxMark(averageScale) : "";
 
   return (
     <>
       <thead>
         <tr>
           <th className="course-cell">{labels.gradeType}</th>
-          {courses.length > 0 ? (
+          <th className="max-mark-cell">{labels.maxMark}</th>
+          {hasCourses ? (
             courses.map((course) => (
               <th key={course.classCourseId} className="course-cell">
                 {course.courseTitle}
@@ -92,22 +119,21 @@ function GradeCardTableCourseOnTop({
           ) : (
             <th>—</th>
           )}
-          {showYearlyAverage ? (
-            <th className="average-cell">{labels.yearlyAverage}</th>
-          ) : null}
         </tr>
         <tr>
           <th className="max-mark-cell">{labels.maxMark}</th>
-          {courses.length > 0 ? (
+          <th className="max-mark-cell">
+            {coefficientsTotal > 0 ? formatMaxMark(coefficientsTotal) : ""}
+          </th>
+          {hasCourses ? (
             courses.map((course) => (
               <th key={`max-${course.classCourseId}`} className="max-mark-cell">
-                {formatCoefficient(course.coefficient)}
+                {formatMaxMark(course.coefficient)}
               </th>
             ))
           ) : (
             <th>—</th>
           )}
-          {showYearlyAverage ? <th className="average-cell">—</th> : null}
         </tr>
       </thead>
       <tbody>
@@ -117,29 +143,62 @@ function GradeCardTableCourseOnTop({
               {labels.noDetails}
             </td>
           </tr>
-        ) : courses.length === 0 ? (
+        ) : !hasCourses ? (
           <tr>
             <td colSpan={columnCount} style={{ padding: "2rem" }}>
               {labels.noCourses}
             </td>
           </tr>
         ) : (
-          gradeTypes.map((gradeType) => (
-            <tr key={gradeType.detailId}>
-              <td className="course-cell">{gradeType.gradeTypeTitle}</td>
+          <>
+            {gradeTypes.map((gradeType) => (
+              <tr key={gradeType.detailId}>
+                <td className="course-cell">{gradeType.gradeTypeTitle}</td>
+                <td className="max-mark-cell">{labels.emptyGrade}</td>
+                {courses.map((course) => (
+                  <td
+                    key={`${gradeType.detailId}-${course.classCourseId}`}
+                    className="grade-cell"
+                  >
+                    {getCellValue(cells, course.courseId, gradeType.gradeTypeId)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+            <tr className="summary-row">
+              <td className="course-cell">{labels.marksSum}</td>
+              <td className="max-mark-cell">{referenceMarksSum}</td>
               {courses.map((course) => (
-                <td
-                  key={`${gradeType.detailId}-${course.classCourseId}`}
-                  className="grade-cell"
-                >
-                  {getCellValue(cells, course.courseId, gradeType.gradeTypeId)}
+                <td key={`sum-${course.classCourseId}`} className="grade-cell">
+                  {formatScore(course.marksSum)}
                 </td>
               ))}
-              {showYearlyAverage ? (
-                <td className="average-cell grade-cell">{labels.emptyGrade}</td>
-              ) : null}
             </tr>
-          ))
+            <tr className="summary-row">
+              <td className="course-cell">{labels.result}</td>
+              <td className="max-mark-cell">{labels.emptyGrade}</td>
+              {courses.map((course) => (
+                <td
+                  key={`result-${course.classCourseId}`}
+                  className="grade-cell"
+                >
+                  {formatResult(course.passed, labels)}
+                </td>
+              ))}
+            </tr>
+            <tr className="summary-row">
+              <td className="course-cell">{labels.scaledAverage}</td>
+              <td className="max-mark-cell">{referenceAverage}</td>
+              {courses.map((course) => (
+                <td
+                  key={`avg-${course.classCourseId}`}
+                  className="grade-cell"
+                >
+                  {formatScore(course.scaledAverage)}
+                </td>
+              ))}
+            </tr>
+          </>
         )}
       </tbody>
     </>
@@ -151,16 +210,107 @@ function GradeCardTableGradeOnTop({
   courses,
   gradeTypes,
   cells,
-  showYearlyAverage,
+  averageScale,
+  passMinimum,
 }: {
   labels: GradeCardLabels;
   courses: GradeCardCourse[];
   gradeTypes: GradeCardGradeType[];
   cells: Record<string, DashboardGradeCardCell>;
-  showYearlyAverage: boolean;
+  averageScale: number;
+  passMinimum: number;
 }) {
-  const columnCount =
-    2 + Math.max(gradeTypes.length, 1) + (showYearlyAverage ? 1 : 0);
+  const gradeTypeColumns = Math.max(gradeTypes.length, 1);
+  const columnCount = 2 + gradeTypeColumns;
+  const coefficientsTotal = courses.reduce(
+    (sum, course) => sum + course.coefficient,
+    0,
+  );
+  function scoreOrZero(courseId: number, gradeTypeId: number): number {
+    const cell = cells[gradeCardCellKey(courseId, gradeTypeId)];
+    if (cell?.score == null || Number.isNaN(Number(cell.score))) {
+      return 0;
+    }
+    return Number(cell.score);
+  }
+
+  function columnHasAnyScore(gradeTypeId: number): boolean {
+    return courses.some((course) => {
+      const cell = cells[gradeCardCellKey(course.courseId, gradeTypeId)];
+      return cell?.score != null && !Number.isNaN(Number(cell.score));
+    });
+  }
+
+  function columnMarksSum(gradeTypeId: number): number | null {
+    if (!columnHasAnyScore(gradeTypeId)) {
+      return null;
+    }
+    return courses.reduce(
+      (sum, course) => sum + scoreOrZero(course.courseId, gradeTypeId),
+      0,
+    );
+  }
+
+  function columnScaledAverage(gradeTypeId: number): number | null {
+    if (coefficientsTotal <= 0 || averageScale <= 0) {
+      return null;
+    }
+    const marksSum = columnMarksSum(gradeTypeId);
+    if (marksSum == null) {
+      return null;
+    }
+    return Math.round((marksSum / coefficientsTotal) * averageScale * 100) / 100;
+  }
+
+  function marksSumGradeTypeCells() {
+    if (gradeTypes.length === 0) {
+      return (
+        <td key="sum-empty" className="grade-cell">
+          {labels.emptyGrade}
+        </td>
+      );
+    }
+    return gradeTypes.map((gradeType) => (
+      <td key={`sum-${gradeType.detailId}`} className="grade-cell">
+        {formatScore(columnMarksSum(gradeType.gradeTypeId))}
+      </td>
+    ));
+  }
+
+  function averageGradeTypeCells() {
+    if (gradeTypes.length === 0) {
+      return (
+        <td key="avg-empty" className="grade-cell">
+          {labels.emptyGrade}
+        </td>
+      );
+    }
+    return gradeTypes.map((gradeType) => (
+      <td key={`avg-${gradeType.detailId}`} className="grade-cell">
+        {formatScore(columnScaledAverage(gradeType.gradeTypeId))}
+      </td>
+    ));
+  }
+
+  function resultGradeTypeCells() {
+    if (gradeTypes.length === 0) {
+      return (
+        <td key="result-empty" className="grade-cell">
+          {labels.emptyGrade}
+        </td>
+      );
+    }
+    return gradeTypes.map((gradeType) => {
+      const columnAverage = columnScaledAverage(gradeType.gradeTypeId);
+      const passed =
+        columnAverage == null ? null : columnAverage >= passMinimum;
+      return (
+        <td key={`result-${gradeType.detailId}`} className="grade-cell">
+          {formatResult(passed, labels)}
+        </td>
+      );
+    });
+  }
 
   return (
     <>
@@ -170,14 +320,13 @@ function GradeCardTableGradeOnTop({
           <th className="max-mark-cell">{labels.maxMark}</th>
           {gradeTypes.length > 0 ? (
             gradeTypes.map((gradeType) => (
-              <th key={gradeType.detailId}>{gradeType.gradeTypeTitle}</th>
+              <th key={gradeType.detailId} className="grade-type-cell">
+                {gradeType.gradeTypeTitle}
+              </th>
             ))
           ) : (
             <th>—</th>
           )}
-          {showYearlyAverage ? (
-            <th className="average-cell">{labels.yearlyAverage}</th>
-          ) : null}
         </tr>
       </thead>
       <tbody>
@@ -188,35 +337,55 @@ function GradeCardTableGradeOnTop({
             </td>
           </tr>
         ) : (
-          courses.map((course) => (
-            <tr key={course.classCourseId}>
-              <td className="course-cell">{course.courseTitle}</td>
-              <td className="max-mark-cell">
-                {formatCoefficient(course.coefficient)}
-              </td>
-              {gradeTypes.length > 0 ? (
-                gradeTypes.map((gradeType) => (
-                  <td
-                    key={`${course.classCourseId}-${gradeType.detailId}`}
-                    className="grade-cell"
-                  >
-                    {getCellValue(
-                      cells,
-                      course.courseId,
-                      gradeType.gradeTypeId,
-                    )}
-                  </td>
-                ))
-              ) : (
-                <td className="grade-cell">{labels.emptyGrade}</td>
-              )}
-              {showYearlyAverage ? (
-                <td className="average-cell grade-cell">
-                  {labels.emptyGrade}
+          <>
+            {courses.map((course) => (
+              <tr key={course.classCourseId}>
+                <td className="course-cell">{course.courseTitle}</td>
+                <td className="max-mark-cell">
+                  {formatMaxMark(course.coefficient)}
                 </td>
-              ) : null}
+                {gradeTypes.length > 0 ? (
+                  gradeTypes.map((gradeType) => (
+                    <td
+                      key={`${course.classCourseId}-${gradeType.detailId}`}
+                      className="grade-cell"
+                    >
+                      {getCellValue(
+                        cells,
+                        course.courseId,
+                        gradeType.gradeTypeId,
+                      )}
+                    </td>
+                  ))
+                ) : (
+                  <td className="grade-cell">{labels.emptyGrade}</td>
+                )}
+              </tr>
+            ))}
+            <tr className="summary-row">
+              <td className="course-cell">{labels.marksSum}</td>
+              <td className="max-mark-cell">
+                {coefficientsTotal > 0
+                  ? formatMaxMark(coefficientsTotal)
+                  : labels.emptyGrade}
+              </td>
+              {marksSumGradeTypeCells()}
             </tr>
-          ))
+            <tr className="summary-row">
+              <td className="course-cell">{labels.result}</td>
+              <td className="max-mark-cell">{labels.emptyGrade}</td>
+              {resultGradeTypeCells()}
+            </tr>
+            <tr className="summary-row">
+              <td className="course-cell">{labels.scaledAverage}</td>
+              <td className="max-mark-cell">
+                {averageScale > 0
+                  ? formatMaxMark(averageScale)
+                  : labels.emptyGrade}
+              </td>
+              {averageGradeTypeCells()}
+            </tr>
+          </>
         )}
       </tbody>
     </>
@@ -226,14 +395,19 @@ function GradeCardTableGradeOnTop({
 function gradeCardLabels(isRtl: boolean) {
   if (isRtl) {
     return {
+      title: "بطاقة علامات",
       studentName: "اسم التلميذ",
-      classSection: "الصف والشعبة",
+      classSection: "الصف و الشعبة",
       academicYear: "العام الدراسي",
       issueDate: "تاريخ الإصدار",
       course: "المادة",
       gradeType: "نوع العلامة",
       maxMark: "العلامة القصوى",
-      yearlyAverage: "نتيجة معدل السنة الدراسية",
+      marksSum: "مجموع العلامات",
+      result: "النتيجة",
+      scaledAverage: "المعدل",
+      passed: "ناجح",
+      failed: "راسب",
       emptyGrade: "",
       noForm: "لا يوجد نموذج علامات مرتبط بهذا الصف للعام المحدد.",
       noCourses: "لا توجد مواد لهذا الصف.",
@@ -242,6 +416,7 @@ function gradeCardLabels(isRtl: boolean) {
   }
 
   return {
+    title: "Grade card",
     studentName: "Student name",
     classSection: "Class & section",
     academicYear: "Academic year",
@@ -249,7 +424,11 @@ function gradeCardLabels(isRtl: boolean) {
     course: "Course",
     gradeType: "Grade type",
     maxMark: "Max mark",
-    yearlyAverage: "Yearly average",
+    marksSum: "Marks sum",
+    result: "Result",
+    scaledAverage: "Average",
+    passed: "Passed",
+    failed: "Failed",
     emptyGrade: "",
     noForm: "No grade form is assigned to this class for the selected year.",
     noCourses: "No courses found for this class.",
@@ -306,10 +485,11 @@ export function OpenGradeTable({
   const textDirection = gradeForm?.direction === "rtl" ? "rtl" : "ltr";
   const isRtl = textDirection === "rtl";
   const labels = gradeCardLabels(isRtl);
-  const showYearlyAverage = gradeForm?.average ?? false;
   const tableFormat = resolveGradeFormTableFormat(gradeForm?.tableFormat);
   const courseOnTop = tableFormat === GRADE_FORM_TABLE_FORMAT.courseOnTop;
-  const classSectionLabel = `${student.className} / ${student.sectionTitle}`;
+  const classSectionLabel = `${student.className}/${student.sectionTitle}`;
+  const averageScale = Number(gradeForm?.average ?? 0);
+  const passMinimum = Number(gradeForm?.minimum ?? 0);
 
   return (
     <article
@@ -317,24 +497,19 @@ export function OpenGradeTable({
       lang={isRtl ? "ar" : "en"}
       className={`grade-card-document grade-card-document--${textDirection} grade-card-document--${tableFormat}`}
     >
-      <div className="grade-card-meta">
-        <div className="grade-card-meta-item">
-          <p className="grade-card-meta-label">{labels.studentName}</p>
-          <p className="grade-card-meta-value">{student.studentName}</p>
+      <header className="grade-card-header">
+        <h1 className="grade-card-title">{labels.title}</h1>
+        <div className="grade-card-meta">
+          <span className="grade-card-meta-label">{labels.studentName}</span>
+          <span className="grade-card-meta-value">{student.studentName}</span>
+          <span className="grade-card-meta-label">{labels.academicYear}</span>
+          <span className="grade-card-meta-value">{student.yearTitle}</span>
+          <span className="grade-card-meta-label">{labels.classSection}</span>
+          <span className="grade-card-meta-value">{classSectionLabel}</span>
+          <span className="grade-card-meta-label">{labels.issueDate}</span>
+          <span className="grade-card-meta-value">{issueDate}</span>
         </div>
-        <div className="grade-card-meta-item">
-          <p className="grade-card-meta-label">{labels.classSection}</p>
-          <p className="grade-card-meta-value">{classSectionLabel}</p>
-        </div>
-        <div className="grade-card-meta-item">
-          <p className="grade-card-meta-label">{labels.academicYear}</p>
-          <p className="grade-card-meta-value">{student.yearTitle}</p>
-        </div>
-        <div className="grade-card-meta-item">
-          <p className="grade-card-meta-label">{labels.issueDate}</p>
-          <p className="grade-card-meta-value">{issueDate}</p>
-        </div>
-      </div>
+      </header>
 
       {!gradeForm ? (
         <p className="grade-card-message">{labels.noForm}</p>
@@ -351,7 +526,7 @@ export function OpenGradeTable({
               courses={courses}
               gradeTypes={gradeTypes}
               cells={cells}
-              showYearlyAverage={showYearlyAverage}
+              averageScale={averageScale}
             />
           ) : (
             <GradeCardTableGradeOnTop
@@ -359,7 +534,8 @@ export function OpenGradeTable({
               courses={courses}
               gradeTypes={gradeTypes}
               cells={cells}
-              showYearlyAverage={showYearlyAverage}
+              averageScale={averageScale}
+              passMinimum={passMinimum}
             />
           )}
         </table>
@@ -394,6 +570,9 @@ export function OpenGradeView({
       <div className="grade-card-page">
         <div className="grade-card-toolbar">
           <Link href={backHref}>Back</Link>
+          <button type="button" onClick={() => window.print()}>
+            Print / PDF
+          </button>
         </div>
         <OpenGradeTable
           registrationId={registrationId}

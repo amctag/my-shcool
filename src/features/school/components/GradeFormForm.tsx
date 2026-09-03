@@ -50,6 +50,7 @@ type GradeFormFormState = {
   title: string;
   gradeBackground: string;
   average: string;
+  minimum: string;
   direction: string;
   tableFormat: GradeFormTableFormat;
   gradeFormatId: number;
@@ -60,7 +61,8 @@ function emptyForm(): GradeFormFormState {
   return {
     title: "",
     gradeBackground: "",
-    average: "1",
+    average: "20",
+    minimum: "10",
     direction: "ltr",
     tableFormat: GRADE_FORM_TABLE_FORMAT.gradeOnTop,
     gradeFormatId: 1,
@@ -103,7 +105,8 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
     setForm({
       title: gradeForm.title,
       gradeBackground: gradeForm.gradeBackground ?? "",
-      average: gradeForm.average ? "1" : "0",
+      average: String(gradeForm.average ?? 0),
+      minimum: String(gradeForm.minimum ?? 0),
       direction: gradeForm.direction,
       tableFormat: resolveGradeFormTableFormat(gradeForm.tableFormat),
       gradeFormatId: gradeForm.gradeFormatId,
@@ -134,6 +137,21 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
       return;
     }
 
+    const average = Number(form.average);
+    if (!Number.isInteger(average) || average < 0) {
+      setFormError("Average must be a whole number 0 or greater.");
+      return;
+    }
+    const minimum = Number(form.minimum);
+    if (!Number.isInteger(minimum) || minimum < 0) {
+      setFormError("Minimum must be a whole number 0 or greater.");
+      return;
+    }
+    if (average > 0 && minimum > average) {
+      setFormError("Minimum cannot be greater than Average.");
+      return;
+    }
+
     try {
       if (isEdit && gradeFormId) {
         await updateGradeForm({
@@ -142,7 +160,8 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
             title,
             yearId: resolvedYearId,
             gradeBackground: form.gradeBackground.trim() || undefined,
-            average: form.average === "1",
+            average,
+            minimum,
             direction: form.direction,
             tableFormat: form.tableFormat,
             gradeFormatId: form.gradeFormatId,
@@ -155,7 +174,8 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
           title,
           yearId: resolvedYearId,
           gradeBackground: form.gradeBackground.trim() || undefined,
-          average: form.average === "1",
+          average,
+          minimum,
           direction: form.direction,
           tableFormat: form.tableFormat,
           gradeFormatId: form.gradeFormatId,
@@ -222,16 +242,38 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
         </Field>
 
         <Field id="grade-form-average" label="Average" required>
-          <FilterSelect
-            label="Average"
+          <input
+            id="grade-form-average"
+            type="number"
+            min={0}
+            step={1}
+            className={inputClass}
             value={form.average}
-            options={[
-              { value: "1", label: "Yes" },
-              { value: "0", label: "No" },
-            ]}
-            onChange={(value) =>
-              setForm((current) => ({ ...current, average: value }))
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                average: event.target.value,
+              }))
             }
+            placeholder="e.g. 20"
+          />
+        </Field>
+
+        <Field id="grade-form-minimum" label="Minimum" required>
+          <input
+            id="grade-form-minimum"
+            type="number"
+            min={0}
+            step={1}
+            className={inputClass}
+            value={form.minimum}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                minimum: event.target.value,
+              }))
+            }
+            placeholder="e.g. 10"
           />
         </Field>
 

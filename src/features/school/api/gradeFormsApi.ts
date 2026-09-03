@@ -5,10 +5,13 @@ import type {
   DashboardGradeFormClassesCourses,
   DashboardGradeFormDetail,
   DashboardGradeFormDetailsList,
+  DashboardGradeFormExpressions,
+  DashboardGradeFormExpressionTypes,
   DashboardGradeFormByClass,
   DashboardGradeFormsQuery,
   DashboardGradeFormsResponse,
   SaveGradeFormDetailBody,
+  SaveGradeFormExpressionBody,
   UpdateGradeFormBody,
   UpdateGradeFormClassesBody,
 } from "@/features/school/types";
@@ -127,6 +130,36 @@ export const gradeFormsApi = baseApi.injectEndpoints({
         { type: "DashboardGradeForms", id: `DETAILS_${id}` },
       ],
     }),
+    getGradeFormExpressionTypes: builder.query<
+      DashboardGradeFormExpressionTypes,
+      { gradeFormId: number; detailId: number }
+    >({
+      query: ({ gradeFormId, detailId }) =>
+        `/dashboard/grade-forms/${gradeFormId}/details/${detailId}/expression-types`,
+      providesTags: (_result, _error, { gradeFormId, detailId }) => [
+        {
+          type: "DashboardGradeForms",
+          id: `EXPRESSION_TYPES_${gradeFormId}`,
+        },
+        {
+          type: "DashboardGradeForms",
+          id: `EXPRESSION_TYPES_${gradeFormId}_${detailId}`,
+        },
+      ],
+    }),
+    getGradeFormExpressions: builder.query<
+      DashboardGradeFormExpressions,
+      { gradeFormId: number; detailId: number }
+    >({
+      query: ({ gradeFormId, detailId }) =>
+        `/dashboard/grade-forms/${gradeFormId}/details/${detailId}/percentages`,
+      providesTags: (_result, _error, { gradeFormId, detailId }) => [
+        {
+          type: "DashboardGradeForms",
+          id: `EXPRESSIONS_${gradeFormId}_${detailId}`,
+        },
+      ],
+    }),
     createGradeFormDetail: builder.mutation<
       DashboardGradeFormDetailsList,
       { gradeFormId: number; body: SaveGradeFormDetailBody }
@@ -140,6 +173,7 @@ export const gradeFormsApi = baseApi.injectEndpoints({
         { type: "DashboardGradeForms", id: "LIST" },
         { type: "DashboardGradeForms", id: gradeFormId },
         { type: "DashboardGradeForms", id: `DETAILS_${gradeFormId}` },
+        { type: "DashboardGradeForms", id: `EXPRESSION_TYPES_${gradeFormId}` },
       ],
     }),
     updateGradeFormDetail: builder.mutation<
@@ -159,6 +193,7 @@ export const gradeFormsApi = baseApi.injectEndpoints({
         { type: "DashboardGradeForms", id: "LIST" },
         { type: "DashboardGradeForms", id: gradeFormId },
         { type: "DashboardGradeForms", id: `DETAILS_${gradeFormId}` },
+        { type: "DashboardGradeForms", id: `EXPRESSION_TYPES_${gradeFormId}` },
       ],
     }),
     deleteGradeFormDetail: builder.mutation<
@@ -173,6 +208,52 @@ export const gradeFormsApi = baseApi.injectEndpoints({
         { type: "DashboardGradeForms", id: "LIST" },
         { type: "DashboardGradeForms", id: gradeFormId },
         { type: "DashboardGradeForms", id: `DETAILS_${gradeFormId}` },
+        { type: "DashboardGradeForms", id: `EXPRESSION_TYPES_${gradeFormId}` },
+      ],
+    }),
+    createGradeFormExpression: builder.mutation<
+      DashboardGradeFormDetailsList,
+      {
+        gradeFormId: number;
+        detailId: number;
+        body: SaveGradeFormExpressionBody;
+      }
+    >({
+      query: ({ gradeFormId, detailId, body }) => ({
+        url: `/dashboard/grade-forms/${gradeFormId}/details/${detailId}/percentages`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { gradeFormId, detailId }) => [
+        { type: "DashboardGradeForms", id: `DETAILS_${gradeFormId}` },
+        {
+          type: "DashboardGradeForms",
+          id: `EXPRESSION_TYPES_${gradeFormId}_${detailId}`,
+        },
+        {
+          type: "DashboardGradeForms",
+          id: `EXPRESSIONS_${gradeFormId}_${detailId}`,
+        },
+      ],
+    }),
+    deleteGradeFormExpression: builder.mutation<
+      DashboardGradeFormDetailsList,
+      { gradeFormId: number; detailId: number; percentageId: number }
+    >({
+      query: ({ gradeFormId, detailId, percentageId }) => ({
+        url: `/dashboard/grade-forms/${gradeFormId}/details/${detailId}/percentages/${percentageId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { gradeFormId, detailId }) => [
+        { type: "DashboardGradeForms", id: `DETAILS_${gradeFormId}` },
+        {
+          type: "DashboardGradeForms",
+          id: `EXPRESSION_TYPES_${gradeFormId}_${detailId}`,
+        },
+        {
+          type: "DashboardGradeForms",
+          id: `EXPRESSIONS_${gradeFormId}_${detailId}`,
+        },
       ],
     }),
   }),
@@ -184,6 +265,8 @@ export const {
   useGetGradeFormByClassQuery,
   useGetGradeFormClassesCoursesQuery,
   useGetGradeFormDetailsQuery,
+  useGetGradeFormExpressionTypesQuery,
+  useGetGradeFormExpressionsQuery,
   useCreateGradeFormMutation,
   useUpdateGradeFormMutation,
   useDeleteGradeFormMutation,
@@ -191,4 +274,6 @@ export const {
   useCreateGradeFormDetailMutation,
   useUpdateGradeFormDetailMutation,
   useDeleteGradeFormDetailMutation,
+  useCreateGradeFormExpressionMutation,
+  useDeleteGradeFormExpressionMutation,
 } = gradeFormsApi;

@@ -749,13 +749,28 @@ export type SaveRegistrationBody = {
 
 export type DashboardGradeTypeListItem = {
   id: number;
+  schoolId: number | null;
   title: string;
+  isAbstract: boolean;
+  position: number;
+  isMain: boolean;
   type: string;
   status: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type DashboardGradeTypesListResponse = {
   items: DashboardGradeTypeListItem[];
+};
+
+export type SaveGradeTypeBody = {
+  title: string;
+  isAbstract?: boolean;
+  position?: number;
+  isMain?: boolean;
+  type: string;
+  status?: boolean;
 };
 
 export type DashboardGradeCardQuery = {
@@ -788,19 +803,25 @@ export type DashboardGradeCardResponse = {
     title: string;
     direction: string;
     tableFormat: string;
-    average: boolean;
+    average: number;
+    minimum: number;
   } | null;
   courses: Array<{
     classCourseId: number;
     courseId: number;
     courseTitle: string;
     coefficient: number;
+    marksSum: number | null;
+    scaledAverage: number | null;
+    passed: boolean | null;
+    yearlyAverage: number | null;
   }>;
   gradeTypes: Array<{
     detailId: number;
     gradeTypeId: number;
     gradeTypeTitle: string;
     position: number;
+    percentage: number | null;
   }>;
   cells: Record<string, DashboardGradeCardCell>;
 };
@@ -939,7 +960,8 @@ export type DashboardGradeForm = {
   yearId: number;
   yearTitle: string;
   gradeBackground: string | null;
-  average: boolean;
+  average: number;
+  minimum: number;
   direction: string;
   tableFormat: string;
   gradeFormatId: number;
@@ -972,7 +994,8 @@ export type CreateGradeFormBody = {
   title: string;
   yearId: number;
   gradeBackground?: string;
-  average?: boolean;
+  average?: number;
+  minimum?: number;
   direction?: string;
   tableFormat?: string;
   gradeFormatId: number;
@@ -1007,12 +1030,21 @@ export type UpdateGradeFormClassesBody = {
   classIds: number[];
 };
 
+export type DashboardGradeFormExpressionItem = {
+  id: number;
+  sourceGradeTypeId: number;
+  sourceGradeTypeTitle: string;
+  percentage: number;
+};
+
 export type DashboardGradeFormDetailRow = {
   id: number;
   gradeFormId: number;
   gradeTypeId: number;
   gradeTypeTitle: string;
   position: number;
+  percentage: number | null;
+  expressions: DashboardGradeFormExpressionItem[];
   status: boolean;
   isVisible: boolean;
   createdAt: string;
@@ -1033,7 +1065,27 @@ export type DashboardGradeFormByClass = {
 export type SaveGradeFormDetailBody = {
   gradeTypeId: number;
   position?: number;
+  percentage?: number;
   status?: boolean;
   isVisible?: boolean;
+};
+
+export type DashboardGradeFormExpressionTypeOption = {
+  id: number;
+  title: string;
+  used: boolean;
+};
+
+export type DashboardGradeFormExpressionTypes = {
+  items: DashboardGradeFormExpressionTypeOption[];
+};
+
+export type DashboardGradeFormExpressions = {
+  items: DashboardGradeFormExpressionItem[];
+};
+
+export type SaveGradeFormExpressionBody = {
+  sourceGradeTypeId: number;
+  percentage: number;
 };
 

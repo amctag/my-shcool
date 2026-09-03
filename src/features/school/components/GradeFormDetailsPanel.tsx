@@ -18,6 +18,7 @@ import type {
   DashboardGradeFormDetailRow,
   SaveGradeFormDetailBody,
 } from "@/features/school/types";
+import { GradeFormExpressionDrawer } from "@/features/school/components/GradeFormExpressionDrawer";
 
 const inputClass =
   "h-11 shrink-0 rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted/80 focus:border-primary";
@@ -55,6 +56,7 @@ function formToBody(form: DetailFormState): SaveGradeFormDetailBody | null {
   if (!Number.isFinite(position) || position < 0) {
     return null;
   }
+
   return {
     gradeTypeId: form.gradeTypeId,
     position,
@@ -136,6 +138,8 @@ export function GradeFormDetailsPanel({
   const [pendingDelete, setPendingDelete] =
     useState<DashboardGradeFormDetailRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [expressionDetail, setExpressionDetail] =
+    useState<DashboardGradeFormDetailRow | null>(null);
 
   const { data: gradeForm, isLoading: gradeFormLoading } = useGetGradeFormQuery(
     gradeFormId,
@@ -165,6 +169,7 @@ export function GradeFormDetailsPanel({
     setShowAddForm(false);
     setEditingId(null);
     setFormError(null);
+    setExpressionDetail(null);
   }, [gradeFormId]);
 
   function openAddForm() {
@@ -340,6 +345,9 @@ export function GradeFormDetailsPanel({
                 <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
                   Visible
                 </th>
+                <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Expression
+                </th>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted">
                   Actions
                 </th>
@@ -349,7 +357,7 @@ export function GradeFormDetailsPanel({
               {items.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     No details yet. Click Add to create one.
@@ -362,7 +370,7 @@ export function GradeFormDetailsPanel({
                       key={item.id}
                       className="border-b border-stone-100 bg-primary-soft/20"
                     >
-                      <td colSpan={5} className="px-5 py-4">
+                      <td colSpan={6} className="px-5 py-4">
                         <DetailFormFields
                           form={editForm}
                           onChange={setEditForm}
@@ -406,6 +414,15 @@ export function GradeFormDetailsPanel({
                         {item.isVisible ? "Yes" : "No"}
                       </td>
                       <td className="px-5 py-4">
+                        <button
+                          type="button"
+                          onClick={() => setExpressionDetail(item)}
+                          className="inline-flex h-10 cursor-pointer items-center rounded-lg border border-border px-3 text-sm font-medium hover:bg-primary-soft"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                      <td className="px-5 py-4">
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
@@ -443,6 +460,16 @@ export function GradeFormDetailsPanel({
         <p className="text-sm text-red-600" role="alert">
           {formError}
         </p>
+      ) : null}
+
+      {expressionDetail ? (
+        <GradeFormExpressionDrawer
+          detail={
+            items.find((item) => item.id === expressionDetail.id) ??
+            expressionDetail
+          }
+          onClose={() => setExpressionDetail(null)}
+        />
       ) : null}
 
       {pendingDelete ? (

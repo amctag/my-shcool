@@ -7,7 +7,7 @@ export default function GradeCardLayout({
 }) {
   return (
     <RequireAuth>
-      <div className="min-h-screen bg-white">{children}</div>
+      <div className="h-screen overflow-hidden bg-white">{children}</div>
     </RequireAuth>
   );
 }
