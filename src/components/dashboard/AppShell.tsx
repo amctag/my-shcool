@@ -13,7 +13,17 @@ import { useAppSelector } from "@/store/hooks";
 import { navGroups, type NavItem } from "@/lib/nav";
 
 function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
+  if (pathname === href) {
+    return true;
+  }
+  if (!pathname.startsWith(`${href}/`)) {
+    return false;
+  }
+  // Keep Attendance vs Reason siblings from both highlighting
+  if (href === "/attendance" && pathname.startsWith("/attendance/reasons")) {
+    return false;
+  }
+  return true;
 }
 
 function isBranchActive(pathname: string, item: NavItem): boolean {

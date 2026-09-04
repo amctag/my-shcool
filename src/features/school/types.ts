@@ -784,6 +784,7 @@ export type DashboardGradeCardCell = {
   score: number | null;
   maxGrade: number | null;
   comment: string | null;
+  display?: string | null;
 };
 
 export type DashboardGradeCardResponse = {
@@ -803,6 +804,7 @@ export type DashboardGradeCardResponse = {
     title: string;
     direction: string;
     tableFormat: string;
+    gradeFormatId: number;
     average: number;
     minimum: number;
   } | null;
@@ -814,6 +816,7 @@ export type DashboardGradeCardResponse = {
     marksSum: number | null;
     scaledAverage: number | null;
     passed: boolean | null;
+    displayAverage?: string | null;
     yearlyAverage: number | null;
   }>;
   gradeTypes: Array<{
@@ -822,8 +825,13 @@ export type DashboardGradeCardResponse = {
     gradeTypeTitle: string;
     position: number;
     percentage: number | null;
+    marksSum?: number | null;
+    scaledAverage?: number | null;
+    passed?: boolean | null;
+    displayAverage?: string | null;
   }>;
   cells: Record<string, DashboardGradeCardCell>;
+  coefficientsTotal?: number;
 };
 
 export function gradeCardCellKey(
@@ -952,6 +960,51 @@ export function resolveGradeFormTableFormat(
   return value === GRADE_FORM_TABLE_FORMAT.courseOnTop
     ? GRADE_FORM_TABLE_FORMAT.courseOnTop
     : GRADE_FORM_TABLE_FORMAT.gradeOnTop;
+}
+
+export const GRADE_FORM_FORMAT = {
+  numeric: 1,
+  letter: 2,
+} as const;
+
+export type GradeFormFormatId =
+  (typeof GRADE_FORM_FORMAT)[keyof typeof GRADE_FORM_FORMAT];
+
+/** Convert a 0–100 percent into A+ … F. */
+export function percentToLetterGrade(percent: number): string {
+  if (percent >= 95) return "A+";
+  if (percent >= 90) return "A";
+  if (percent >= 85) return "A-";
+  if (percent >= 80) return "B+";
+  if (percent >= 75) return "B";
+  if (percent >= 70) return "B-";
+  if (percent >= 65) return "C+";
+  if (percent >= 60) return "C";
+  if (percent >= 55) return "C-";
+  if (percent >= 50) return "D";
+  return "F";
+}
+
+export function formatGradeValue(
+  score: number | null | undefined,
+  max: number | null | undefined,
+  gradeFormatId: number | null | undefined,
+): string {
+  if (score == null || Number.isNaN(Number(score))) {
+    return "";
+  }
+  const numeric = Number(score);
+  if (gradeFormatId !== GRADE_FORM_FORMAT.letter) {
+    return numeric.toFixed(2);
+  }
+  const maxValue =
+    max != null && Number.isFinite(Number(max)) && Number(max) > 0
+      ? Number(max)
+      : null;
+  if (maxValue == null) {
+    return "";
+  }
+  return percentToLetterGrade((numeric / maxValue) * 100);
 }
 
 export type DashboardGradeForm = {
@@ -1087,5 +1140,111 @@ export type DashboardGradeFormExpressions = {
 export type SaveGradeFormExpressionBody = {
   sourceGradeTypeId: number;
   percentage: number;
+};
+
+export type SaveGradeFormExpressionsBody = {
+  items: SaveGradeFormExpressionBody[];
+};
+
+export type AttendanceStudentStatus =
+  | "present"
+  | "absent"
+  | "late"
+  | "excused";
+
+export type AttendancesSortBy =
+  | "id"
+  | "date"
+  | "class"
+  | "section"
+  | "year"
+  | "status";
+
+export type AttendancesSortOrder = "asc" | "desc";
+
+export type DashboardAttendancesQuery = {
+  page: number;
+  limit: number;
+  yearId?: number;
+  classId?: number;
+  sectionId?: number;
+  status?: boolean;
+  date?: string;
+  search?: string;
+  sortBy?: AttendancesSortBy;
+  sortOrder?: AttendancesSortOrder;
+};
+
+export type DashboardAttendanceListItem = {
+  id: number;
+  date: string;
+  sectionId: number;
+  sectionTitle: string;
+  classId: number;
+  className: string;
+  yearId: number;
+  yearTitle: string;
+  status: boolean;
+  studentCount: number;
+  absentCount: number;
+};
+
+export type DashboardAttendancesResponse = {
+  items: DashboardAttendanceListItem[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type DashboardAttendanceStudentRow = {
+  studentId: number;
+  registrationId: number;
+  studentName: string;
+  status: AttendanceStudentStatus;
+  attendanceReasonId: number | null;
+  attendanceReasonTitle: string | null;
+  description: string | null;
+};
+
+export type DashboardAttendanceSheet = {
+  attendanceId: number | null;
+  date: string;
+  sectionId: number;
+  sectionTitle: string;
+  classId: number;
+  className: string;
+  yearId: number;
+  yearTitle: string;
+  students: DashboardAttendanceStudentRow[];
+};
+
+export type DashboardAttendanceDetail = DashboardAttendanceSheet & {
+  status: boolean;
+};
+
+export type SaveAttendanceDetailBody = {
+  studentId: number;
+  status: AttendanceStudentStatus;
+  attendanceReasonId?: number | null;
+  description?: string | null;
+};
+
+export type SaveAttendanceBody = {
+  sectionId: number;
+  date: string;
+  details: SaveAttendanceDetailBody[];
+};
+
+export type DashboardAttendanceReason = {
+  id: number;
+  title: string;
+  status: boolean;
+  usageCount: number;
+};
+
+export type SaveAttendanceReasonBody = {
+  title: string;
+  status?: boolean;
 };
 

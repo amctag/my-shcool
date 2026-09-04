@@ -242,6 +242,12 @@
   background: var(--grade-card-teal-dark);
 }
 
+.grade-card-table--course_on_top thead th.summary-col,
+.grade-card-table--course_on_top tbody td.summary-col {
+  background: var(--grade-card-teal-dark);
+  font-weight: 700;
+}
+
 .grade-card-table--course_on_top thead tr:first-child th.course-cell {
   width: 9%;
 }

@@ -1,35 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
-  useCreateGradeFormExpressionMutation,
-  useDeleteGradeFormExpressionMutation,
   useGetGradeFormExpressionTypesQuery,
   useGetGradeFormExpressionsQuery,
+  useReplaceGradeFormExpressionsMutation,
 } from "@/features/school/api/gradeFormsApi";
 import type { DashboardGradeFormDetailRow } from "@/features/school/types";
 
 const inputClass =
   "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted/80 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
+type DraftExpressionItem = {
+  key: string;
+  sourceGradeTypeId: number;
+  sourceGradeTypeTitle: string;
+  percentage: number;
+};
+
 type GradeFormExpressionDrawerProps = {
   detail: DashboardGradeFormDetailRow;
   onClose: () => void;
 };
 
+function roundPercent(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 export function GradeFormExpressionDrawer({
   detail,
   onClose,
 }: GradeFormExpressionDrawerProps) {
+  const keyPrefix = useId();
   const [selectedGradeTypeId, setSelectedGradeTypeId] = useState(0);
   const [percentage, setPercentage] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [draftItems, setDraftItems] = useState<DraftExpressionItem[]>([]);
+  const [draftSyncedForDetailId, setDraftSyncedForDetailId] = useState<
+    number | null
+  >(null);
 
-  const [createExpression, createState] = useCreateGradeFormExpressionMutation();
-  const [deleteExpression, deleteState] = useDeleteGradeFormExpressionMutation();
+  const [replaceExpressions, replaceState] =
+    useReplaceGradeFormExpressionsMutation();
   const { data: expressionTypesData } = useGetGradeFormExpressionTypesQuery({
     gradeFormId: detail.gradeFormId,
     detailId: detail.id,
@@ -39,13 +54,15 @@ export function GradeFormExpressionDrawer({
       gradeFormId: detail.gradeFormId,
       detailId: detail.id,
     });
-  const busy = createState.isLoading || deleteState.isLoading;
+  const busy = replaceState.isLoading;
 
-  const items = expressionsData?.items ?? [];
-  const relatedOptions = (expressionTypesData?.items ?? []).map((item) => ({
-    value: item.id,
-    label: item.title,
-  }));
+  const usedIds = new Set(draftItems.map((item) => item.sourceGradeTypeId));
+  const relatedOptions = (expressionTypesData?.items ?? [])
+    .filter((item) => !usedIds.has(item.id))
+    .map((item) => ({
+      value: item.id,
+      label: item.title,
+    }));
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -68,11 +85,31 @@ export function GradeFormExpressionDrawer({
     setSelectedGradeTypeId(0);
     setPercentage("");
     setFormError(null);
+    setDraftSyncedForDetailId(null);
+    setDraftItems([]);
   }, [detail.id]);
 
-  const total = items.reduce((sum, item) => sum + item.percentage, 0);
+  useEffect(() => {
+    if (!expressionsData || draftSyncedForDetailId === detail.id) {
+      return;
+    }
+    setDraftItems(
+      expressionsData.items.map((item, index) => ({
+        key: `${keyPrefix}-${item.id}-${index}`,
+        sourceGradeTypeId: item.sourceGradeTypeId,
+        sourceGradeTypeTitle: item.sourceGradeTypeTitle,
+        percentage: item.percentage,
+      })),
+    );
+    setDraftSyncedForDetailId(detail.id);
+  }, [expressionsData, detail.id, draftSyncedForDetailId, keyPrefix]);
 
-  async function handleAdd() {
+  const total = roundPercent(
+    draftItems.reduce((sum, item) => sum + item.percentage, 0),
+  );
+  const canSave = total === 100 && draftItems.length > 0 && !busy;
+
+  function handleAdd() {
     setFormError(null);
     const value = Number(percentage);
     if (!selectedGradeTypeId) {
@@ -83,41 +120,63 @@ export function GradeFormExpressionDrawer({
       setFormError("Enter a percentage between 0 and 100.");
       return;
     }
-    if (total + value > 100) {
+    if (usedIds.has(selectedGradeTypeId)) {
+      setFormError("This grade type is already in the expression.");
+      return;
+    }
+    if (roundPercent(total + value) > 100) {
       setFormError("Total cannot exceed 100%.");
       return;
     }
 
+    const title =
+      expressionTypesData?.items.find((item) => item.id === selectedGradeTypeId)
+        ?.title ?? `Type #${selectedGradeTypeId}`;
+
+    setDraftItems((current) => [
+      ...current,
+      {
+        key: `${keyPrefix}-draft-${selectedGradeTypeId}-${Date.now()}`,
+        sourceGradeTypeId: selectedGradeTypeId,
+        sourceGradeTypeTitle: title,
+        percentage: roundPercent(value),
+      },
+    ]);
+    setSelectedGradeTypeId(0);
+    setPercentage("");
+  }
+
+  function handleRemove(key: string) {
+    setFormError(null);
+    setDraftItems((current) => current.filter((item) => item.key !== key));
+  }
+
+  async function handleSave() {
+    setFormError(null);
+    if (total !== 100) {
+      setFormError("Total must equal 100% before saving.");
+      return;
+    }
+
     try {
-      await createExpression({
+      await replaceExpressions({
         gradeFormId: detail.gradeFormId,
         detailId: detail.id,
         body: {
-          sourceGradeTypeId: selectedGradeTypeId,
-          percentage: value,
+          items: draftItems.map((item) => ({
+            sourceGradeTypeId: item.sourceGradeTypeId,
+            percentage: item.percentage,
+          })),
         },
       }).unwrap();
-      setSelectedGradeTypeId(0);
-      setPercentage("");
+      onClose();
     } catch (caught) {
-      setFormError(getApiErrorMessage(caught, "Could not add expression item"));
+      setFormError(getApiErrorMessage(caught, "Could not save expression"));
     }
   }
 
-  async function handleRemove(percentageId: number) {
-    setFormError(null);
-    try {
-      await deleteExpression({
-        gradeFormId: detail.gradeFormId,
-        detailId: detail.id,
-        percentageId,
-      }).unwrap();
-    } catch (caught) {
-      setFormError(
-        getApiErrorMessage(caught, "Could not remove expression item"),
-      );
-    }
-  }
+  const listLoading =
+    expressionsLoading || draftSyncedForDetailId !== detail.id;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -176,7 +235,7 @@ export function GradeFormExpressionDrawer({
             />
             <button
               type="button"
-              onClick={() => void handleAdd()}
+              onClick={handleAdd}
               disabled={busy}
               className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-primary text-on-primary hover:bg-primary-hover disabled:opacity-50"
               aria-label="Add expression item"
@@ -192,18 +251,18 @@ export function GradeFormExpressionDrawer({
           ) : null}
 
           <ul className="mt-4 divide-y divide-stone-100 rounded-xl border border-border">
-            {expressionsLoading ? (
+            {listLoading ? (
               <li className="px-4 py-24 text-center text-sm text-muted">
                 Loading expressions…
               </li>
-            ) : items.length === 0 ? (
+            ) : draftItems.length === 0 ? (
               <li className="px-4 py-24 text-center text-sm text-muted">
                 No related grade types yet. Select a type and add a percentage.
               </li>
             ) : (
-              items.map((item) => (
+              draftItems.map((item) => (
                 <li
-                  key={item.id}
+                  key={item.key}
                   className="flex min-h-11 items-center justify-between gap-3 px-4 py-3 text-sm"
                 >
                   <span className="min-w-0 font-medium text-foreground">
@@ -215,7 +274,7 @@ export function GradeFormExpressionDrawer({
                     </span>
                     <button
                       type="button"
-                      onClick={() => void handleRemove(item.id)}
+                      onClick={() => handleRemove(item.key)}
                       disabled={busy}
                       className="cursor-pointer text-sm font-medium text-red-600 hover:underline disabled:opacity-50"
                     >
@@ -232,13 +291,21 @@ export function GradeFormExpressionDrawer({
           </p>
         </div>
 
-        <div className="flex justify-end border-t border-stone-100 px-5 py-4">
+        <div className="flex justify-end gap-3 border-t border-stone-100 px-5 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl bg-primary px-5 text-sm font-medium text-on-primary hover:bg-primary-hover"
+            className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white px-5 text-sm font-medium text-foreground hover:bg-stone-50"
           >
             Close
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={!canSave}
+            className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl bg-primary px-5 text-sm font-medium text-on-primary hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

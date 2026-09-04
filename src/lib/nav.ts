@@ -97,7 +97,14 @@ export const navGroups: NavGroup[] = [
   {
     title: "Operations",
     items: [
-      { href: "/attendance", label: "Attendance", icon: ClipboardList },
+      {
+        label: "Attendance",
+        icon: ClipboardList,
+        children: [
+          { href: "/attendance", label: "Attendance", icon: ClipboardList },
+          { href: "/attendance/reasons", label: "Reason", icon: Tags },
+        ],
+      },
       { href: "/agenda", label: "Agenda", icon: ScrollText },
       { href: "/notices", label: "Notices", icon: Bell },
     ],

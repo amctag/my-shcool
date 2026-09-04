@@ -12,9 +12,11 @@ import type {
   DashboardGradeFormsResponse,
   SaveGradeFormDetailBody,
   SaveGradeFormExpressionBody,
+  SaveGradeFormExpressionsBody,
   UpdateGradeFormBody,
   UpdateGradeFormClassesBody,
 } from "@/features/school/types";
+
 
 export const gradeFormsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -211,6 +213,31 @@ export const gradeFormsApi = baseApi.injectEndpoints({
         { type: "DashboardGradeForms", id: `EXPRESSION_TYPES_${gradeFormId}` },
       ],
     }),
+    replaceGradeFormExpressions: builder.mutation<
+      DashboardGradeFormDetailsList,
+      {
+        gradeFormId: number;
+        detailId: number;
+        body: SaveGradeFormExpressionsBody;
+      }
+    >({
+      query: ({ gradeFormId, detailId, body }) => ({
+        url: `/dashboard/grade-forms/${gradeFormId}/details/${detailId}/percentages`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { gradeFormId, detailId }) => [
+        { type: "DashboardGradeForms", id: `DETAILS_${gradeFormId}` },
+        {
+          type: "DashboardGradeForms",
+          id: `EXPRESSION_TYPES_${gradeFormId}_${detailId}`,
+        },
+        {
+          type: "DashboardGradeForms",
+          id: `EXPRESSIONS_${gradeFormId}_${detailId}`,
+        },
+      ],
+    }),
     createGradeFormExpression: builder.mutation<
       DashboardGradeFormDetailsList,
       {
@@ -274,6 +301,7 @@ export const {
   useCreateGradeFormDetailMutation,
   useUpdateGradeFormDetailMutation,
   useDeleteGradeFormDetailMutation,
+  useReplaceGradeFormExpressionsMutation,
   useCreateGradeFormExpressionMutation,
   useDeleteGradeFormExpressionMutation,
 } = gradeFormsApi;
