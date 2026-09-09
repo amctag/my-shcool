@@ -189,7 +189,7 @@ export function RegistrationsTable() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <TableSearchBar
           label="Search registrations"
-          placeholder="Search student"
+          placeholder="Search by first, middle, or last name"
           value={searchInput}
           onChange={setSearchInput}
           onSearch={applySearch}

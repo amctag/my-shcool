@@ -19,11 +19,16 @@ import "@/features/school/api/coursesApi";
 import "@/features/school/api/sectionsApi";
 import "@/features/school/api/teachesApi";
 import "@/features/school/api/announcementsApi";
+import "@/features/school/api/activitiesApi";
+import "@/features/school/api/noticesApi";
+import "@/features/school/api/noticeTypesApi";
 import "@/features/school/api/weeklySchedulesApi";
 import "@/features/school/api/examSchedulesApi";
 import "@/features/school/api/registrationsApi";
 import "@/features/school/api/gradesApi";
 import "@/features/school/api/gradeFormsApi";
+import "@/features/school/api/agendasApi";
+import "@/features/school/api/agendaSectionsApi";
 
 export const makeStore = () =>
   configureStore({

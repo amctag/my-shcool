@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { personNameMatches } from "@/lib/personNameSearch";
 import { selectAuthReady } from "@/features/auth/authSlice";
 import { useGetChildrenQuery } from "@/features/school/api/childrenApi";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
@@ -45,14 +46,11 @@ function formatStudentLabel(student: DashboardParentChild): string {
 }
 
 function studentMatches(student: DashboardParentChild, query: string): boolean {
-  const needle = query.trim().toLowerCase();
-  if (!needle) {
-    return false;
-  }
-
-  return [student.fullName, student.firstName, student.lastName].some((part) =>
-    part?.toLowerCase().includes(needle),
-  );
+  return personNameMatches(query, [
+    student.fullName,
+    student.firstName,
+    student.lastName,
+  ]);
 }
 
 function StudentPicker({

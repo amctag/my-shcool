@@ -37,8 +37,7 @@ function buildStudentsQuery(
 }
 
 function studentName(firstName?: string, lastName?: string, fullName?: string): string {
-  const combined = `${firstName?.trim() ?? ""} ${lastName?.trim() ?? ""}`.trim();
-  return combined || fullName?.trim() || "—";
+  return fullName?.trim() || `${firstName?.trim() ?? ""} ${lastName?.trim() ?? ""}`.trim() || "—";
 }
 
 const MONTHS = [
@@ -203,7 +202,7 @@ export function StudentsTable() {
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <TableSearchBar
           label="Search students"
-          placeholder="Search by name or id"
+          placeholder="Search by first, middle, or last name"
           value={searchInput}
           onChange={setSearchInput}
           onSearch={applySearch}

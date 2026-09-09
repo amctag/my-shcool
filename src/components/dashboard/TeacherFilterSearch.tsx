@@ -10,8 +10,7 @@ function teacherName(teacher: {
   lastName?: string;
   fullName: string;
 }): string {
-  const name = `${teacher.firstName ?? ""} ${teacher.lastName ?? ""}`.trim();
-  return name || teacher.fullName;
+  return teacher.fullName.trim() || `${teacher.firstName ?? ""} ${teacher.lastName ?? ""}`.trim();
 }
 
 export function TeacherFilterSearch({

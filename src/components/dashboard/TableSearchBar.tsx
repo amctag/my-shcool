@@ -11,6 +11,7 @@ export function TableSearchBar({
   children,
   compact = false,
   hideInput = false,
+  nowrap = false,
 }: {
   value?: string;
   onChange?: (value: string) => void;
@@ -20,6 +21,7 @@ export function TableSearchBar({
   children?: ReactNode;
   compact?: boolean;
   hideInput?: boolean;
+  nowrap?: boolean;
 }) {
   const searchField = hideInput ? null : (
     <label
@@ -44,7 +46,9 @@ export function TableSearchBar({
 
   return (
     <form
-      className="flex w-full min-w-0 flex-wrap items-center gap-2"
+      className={`flex w-full min-w-0 items-center gap-2 ${
+        nowrap ? "flex-nowrap overflow-x-auto" : "flex-wrap"
+      }`}
       onSubmit={(event) => {
         event.preventDefault();
         onSearch();

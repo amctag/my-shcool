@@ -19,8 +19,14 @@ function isActive(pathname: string, href: string) {
   if (!pathname.startsWith(`${href}/`)) {
     return false;
   }
-  // Keep Attendance vs Reason siblings from both highlighting
+  // Keep sibling routes from both highlighting
   if (href === "/attendance" && pathname.startsWith("/attendance/reasons")) {
+    return false;
+  }
+  if (href === "/notices" && pathname.startsWith("/notices/types")) {
+    return false;
+  }
+  if (href === "/agenda" && pathname.startsWith("/agenda/sessions")) {
     return false;
   }
   return true;

@@ -2,10 +2,14 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { selectAuthReady } from "@/features/auth/authSlice";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
-import { useGetCoursesQuery } from "@/features/school/api/coursesApi";
+import {
+  useGetClassCoursesQuery,
+  useGetCoursesQuery,
+} from "@/features/school/api/coursesApi";
 import { useGetSectionsQuery, useGetYearsQuery } from "@/features/school/api/sectionsApi";
 import { useGetTeachersQuery } from "@/features/school/api/teachersApi";
 import {
@@ -25,6 +29,7 @@ type FormState = {
   classId: string;
   sectionId: string;
   courseId: string;
+  courseIds: number[];
   teacherId: string;
 };
 
@@ -34,6 +39,7 @@ function emptyForm(): FormState {
     classId: "",
     sectionId: "",
     courseId: "",
+    courseIds: [],
     teacherId: "",
   };
 }
@@ -85,6 +91,7 @@ export function TeachForm({
   const yearId = Number(form.yearId) || 0;
   const classId = Number(form.classId) || 0;
   const sectionId = Number(form.sectionId) || 0;
+  const teacherId = Number(form.teacherId) || 0;
 
   const { data: item, isLoading } = useGetTeachQuery(teachId ?? 0, {
     skip: !authReady || !teachId,
@@ -93,9 +100,21 @@ export function TeachForm({
     { page: 1, limit: 100 },
     { skip: !authReady },
   );
-  const { data: courses = [] } = useGetCoursesQuery(undefined, {
+  const { data: schoolCourses = [] } = useGetCoursesQuery(undefined, {
     skip: !authReady,
   });
+  const { data: classCoursesData } = useGetClassCoursesQuery(
+    {
+      page: 1,
+      limit: 100,
+      classId,
+      yearId,
+      status: "active",
+      sortBy: "course",
+      sortOrder: "asc",
+    },
+    { skip: !authReady || !classId || !yearId },
+  );
   const { data: years = [] } = useGetYearsQuery(undefined, {
     skip: !authReady,
   });
@@ -114,16 +133,16 @@ export function TeachForm({
     },
     { skip: !authReady || !classId || !yearId },
   );
-  const { data: sectionTeaches } = useGetTeachesQuery(
+  const { data: classTeaches } = useGetTeachesQuery(
     {
       page: 1,
       limit: 100,
-      sectionId,
+      classId,
       yearId,
       sortBy: "id",
       sortOrder: "asc",
     },
-    { skip: !authReady || !sectionId || !yearId },
+    { skip: !authReady || !classId || !yearId },
   );
   const [createTeach, createState] = useCreateTeachMutation();
   const [updateTeach, updateState] = useUpdateTeachMutation();
@@ -131,16 +150,51 @@ export function TeachForm({
   const teachers = teachersData?.items ?? [];
   const sections = sectionsData?.items ?? [];
   const classes = classesData?.items ?? [];
-  const usedCourseIds = useMemo(() => {
-    const ids = new Set<number>();
-    for (const row of sectionTeaches?.items ?? []) {
-      if (teachId && row.id === teachId) {
-        continue;
-      }
-      ids.add(row.courseId);
+  const classCourses = classCoursesData?.items ?? [];
+  const courses = useMemo(() => {
+    if (classCourses.length > 0) {
+      return classCourses.map((item) => ({
+        id: item.courseId,
+        title: item.courseTitle,
+      }));
     }
-    return ids;
-  }, [sectionTeaches?.items, teachId]);
+    return schoolCourses.map((item) => ({ id: item.id, title: item.title }));
+  }, [classCourses, schoolCourses]);
+
+  const targetSectionIds = useMemo(() => {
+    if (sectionId) {
+      return [sectionId];
+    }
+    return sections.map((section) => section.id);
+  }, [sectionId, sections]);
+
+  const courseFlags = useMemo(() => {
+    const flags = new Map<
+      number,
+      { takenByOther: boolean; alreadyYours: boolean }
+    >();
+    for (const course of courses) {
+      const rows = (classTeaches?.items ?? []).filter(
+        (row) =>
+          row.courseId === course.id &&
+          targetSectionIds.includes(row.sectionId) &&
+          (!teachId || row.id !== teachId),
+      );
+      const takenByOther =
+        targetSectionIds.length > 0 &&
+        targetSectionIds.every((id) =>
+          rows.some((row) => row.sectionId === id && row.teacherId !== teacherId),
+        );
+      const alreadyYours =
+        teacherId > 0 &&
+        targetSectionIds.length > 0 &&
+        targetSectionIds.every((id) =>
+          rows.some((row) => row.sectionId === id && row.teacherId === teacherId),
+        );
+      flags.set(course.id, { takenByOther, alreadyYours });
+    }
+    return flags;
+  }, [classTeaches?.items, courses, targetSectionIds, teacherId, teachId]);
 
   useEffect(() => {
     if (teachId || form.yearId) {
@@ -166,37 +220,69 @@ export function TeachForm({
       classId: String(item.classId),
       sectionId: String(item.sectionId),
       courseId: String(item.courseId),
+      courseIds: [item.courseId],
       teacherId: String(item.teacherId),
     });
   }, [item]);
 
-  async function onSave() {
-    setFormError(null);
-    const teacherId = Number(form.teacherId);
-    const sectionId = Number(form.sectionId);
-    const courseId = Number(form.courseId);
-    const selectedYearId = Number(form.yearId);
-    if (!teacherId || !sectionId || !courseId || !selectedYearId || !classId) {
-      setFormError("Teacher, class, section, course, and year are required");
+  function toggleCourse(courseId: number) {
+    const flags = courseFlags.get(courseId);
+    if (flags?.takenByOther || flags?.alreadyYours) {
       return;
     }
-    if (usedCourseIds.has(courseId)) {
-      setFormError("This section already has a teacher for that course this year");
+    setForm((current) => {
+      const selected = current.courseIds.includes(courseId)
+        ? current.courseIds.filter((id) => id !== courseId)
+        : [...current.courseIds, courseId];
+      return { ...current, courseIds: selected };
+    });
+  }
+
+  async function onSave() {
+    setFormError(null);
+    const selectedTeacherId = Number(form.teacherId);
+    const selectedClassId = Number(form.classId);
+    const selectedSectionId = Number(form.sectionId) || undefined;
+    const selectedYearId = Number(form.yearId);
+    if (!selectedTeacherId || !selectedClassId || !selectedYearId) {
+      setFormError("Teacher, class, and year are required");
       return;
     }
 
     const body: SaveTeachBody = {
-      teacherId,
-      sectionId,
-      courseId,
+      teacherId: selectedTeacherId,
+      classId: selectedClassId,
+      sectionId: selectedSectionId,
       yearId: selectedYearId,
     };
 
     try {
       if (teachId) {
-        await updateTeach({ id: teachId, body }).unwrap();
+        const courseId = Number(form.courseId);
+        if (!courseId || !selectedSectionId) {
+          setFormError("Course and section are required");
+          return;
+        }
+        if (courseFlags.get(courseId)?.takenByOther) {
+          setFormError(
+            "This class already has another teacher for that course this year",
+          );
+          return;
+        }
+        await updateTeach({
+          id: teachId,
+          body: { ...body, courseId },
+        }).unwrap();
       } else {
-        await createTeach(body).unwrap();
+        const courseIds = form.courseIds.filter((id) => {
+          const flags = courseFlags.get(id);
+          return !flags?.takenByOther && !flags?.alreadyYours;
+        });
+        if (courseIds.length === 0) {
+          setFormError("Select at least one course for this class");
+          return;
+        }
+        await createTeach({ ...body, courseIds }).unwrap();
       }
       router.push("/teaches");
     } catch (caught) {
@@ -233,6 +319,7 @@ export function TeachForm({
                   ...current,
                   yearId: event.target.value,
                   sectionId: "",
+                  courseIds: [],
                 }))
               }
               className={`${inputClass} cursor-pointer`}
@@ -256,6 +343,7 @@ export function TeachForm({
                   ...current,
                   classId: event.target.value,
                   sectionId: "",
+                  courseIds: [],
                 }))
               }
               className={`${inputClass} cursor-pointer`}
@@ -268,16 +356,16 @@ export function TeachForm({
               ))}
             </select>
           </Field>
-          <Field id="sectionId" label="Section" required>
+          <Field id="sectionId" label="Section">
             <select
               id="sectionId"
-              required
               disabled={!classId || !yearId}
               value={form.sectionId}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
                   sectionId: event.target.value,
+                  courseIds: [],
                 }))
               }
               className={`${inputClass} cursor-pointer disabled:bg-stone-50`}
@@ -285,41 +373,13 @@ export function TeachForm({
               <option value="">
                 {!classId || !yearId
                   ? "Choose class and year first"
-                  : "Choose section"}
+                  : "All sections of this class"}
               </option>
               {sections.map((section) => (
                 <option key={section.id} value={String(section.id)}>
                   {section.sectionTitle}
                 </option>
               ))}
-            </select>
-          </Field>
-          <Field id="courseId" label="Course" required>
-            <select
-              id="courseId"
-              required
-              value={form.courseId}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  courseId: event.target.value,
-                }))
-              }
-              className={`${inputClass} cursor-pointer`}
-            >
-              <option value="">Choose course</option>
-              {courses.map((course) => {
-                const used = usedCourseIds.has(course.id);
-                return (
-                  <option
-                    key={course.id}
-                    value={String(course.id)}
-                    disabled={used}
-                  >
-                    {used ? `${course.title} (used)` : course.title}
-                  </option>
-                );
-              })}
             </select>
           </Field>
           <Field id="teacherId" label="Teacher" required>
@@ -344,6 +404,104 @@ export function TeachForm({
             </select>
           </Field>
         </div>
+
+        {teachId ? (
+          <div className="mt-4">
+            <Field id="courseId" label="Course" required>
+              <select
+                id="courseId"
+                required
+                value={form.courseId}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    courseId: event.target.value,
+                  }))
+                }
+                className={`${inputClass} cursor-pointer`}
+              >
+                <option value="">Choose course</option>
+                {courses.map((course) => {
+                  const taken = courseFlags.get(course.id)?.takenByOther;
+                  return (
+                    <option
+                      key={course.id}
+                      value={String(course.id)}
+                      disabled={taken}
+                    >
+                      {taken ? `${course.title} (used)` : course.title}
+                    </option>
+                  );
+                })}
+              </select>
+            </Field>
+          </div>
+        ) : (
+          <div className="mt-6">
+            <p className="mb-1.5 text-sm font-medium text-foreground">
+              Courses *
+            </p>
+            <p className="mb-3 text-sm text-muted">
+              Select every course this teacher should teach in this class.
+              Leave section empty to apply to all sections.
+            </p>
+            {!classId || !yearId ? (
+              <p className="text-sm text-muted">Choose a class first.</p>
+            ) : courses.length === 0 ? (
+              <p className="text-sm text-muted">
+                No courses are linked to this class yet.
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {courses.map((course) => {
+                  const flags = courseFlags.get(course.id);
+                  const taken = Boolean(flags?.takenByOther);
+                  const yours = Boolean(flags?.alreadyYours);
+                  const checked = yours || form.courseIds.includes(course.id);
+                  const disabled = taken || yours;
+                  return (
+                    <label
+                      key={course.id}
+                      className={`inline-flex min-h-11 items-center gap-2.5 rounded-xl border px-4 text-sm transition-colors duration-200 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring ${
+                        disabled
+                          ? "cursor-not-allowed border-border bg-stone-50 text-muted"
+                          : checked
+                            ? "cursor-pointer border-primary bg-primary-soft font-medium text-primary"
+                            : "cursor-pointer border-border bg-white text-foreground hover:border-primary/40 hover:bg-primary-soft/60"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={disabled}
+                        onChange={() => toggleCourse(course.id)}
+                        className="peer sr-only"
+                      />
+                      <span
+                        aria-hidden
+                        className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors duration-200 ${
+                          checked
+                            ? "border-primary bg-primary text-on-primary"
+                            : "border-border bg-white"
+                        }`}
+                      >
+                        {checked ? (
+                          <Check className="h-3 w-3 stroke-[3]" />
+                        ) : null}
+                      </span>
+                      {taken
+                        ? `${course.title} (used)`
+                        : yours
+                          ? `${course.title} (already assigned)`
+                          : course.title}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {formError ? (
           <p className="mt-4 text-sm text-red-600">{formError}</p>
         ) : null}

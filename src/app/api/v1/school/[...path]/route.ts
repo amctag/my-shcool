@@ -69,6 +69,13 @@ async function proxySchoolAuth(request: NextRequest, path: string[]) {
   if (authorization) {
     headers.set("authorization", authorization);
   }
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const realIp = request.headers.get("x-real-ip");
+  if (forwardedFor) {
+    headers.set("x-forwarded-for", forwardedFor);
+  } else if (realIp) {
+    headers.set("x-forwarded-for", realIp);
+  }
   if (contentType) {
     headers.set("content-type", contentType);
   }

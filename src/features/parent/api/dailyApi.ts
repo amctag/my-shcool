@@ -20,7 +20,7 @@ export const parentDailyApi = baseApi.injectEndpoints({
         `/parent/me/attendance/absences${toQueryString(params)}`,
       providesTags: ["Attendance"],
     }),
-    getAgendas: builder.query<ParentAgendasResponse, ParentAgendasQuery>({
+    getParentAgendas: builder.query<ParentAgendasResponse, ParentAgendasQuery>({
       query: (params) => `/parent/me/agendas${toQueryString(params)}`,
       providesTags: ["Agenda"],
     }),
@@ -43,7 +43,7 @@ export const parentDailyApi = baseApi.injectEndpoints({
 
 export const {
   useGetAttendanceAbsencesQuery,
-  useGetAgendasQuery,
+  useGetParentAgendasQuery,
   useGetAlbumsQuery,
   useGetAlbumQuery,
 } = parentDailyApi;

@@ -217,7 +217,7 @@ export type ParentNoticeItem = {
   schoolName: string;
   sectionName: string;
   class: string;
-  receivedVia: "student" | "section";
+  receivedVia: "student" | "section" | "school";
 };
 
 export type ParentNoticesResponse = {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { personNameMatches } from "@/lib/personNameSearch";
 import { selectAuthReady } from "@/features/auth/authSlice";
 import {
   useGetParentOptionsQuery,
@@ -209,17 +210,12 @@ function formatParentLabel(parent: {
 }
 
 function parentMatches(parent: DashboardParentOption, query: string): boolean {
-  const needle = query.trim().toLowerCase();
-  if (!needle) {
-    return false;
-  }
-
-  return [
+  return personNameMatches(query, [
     parent.fullName,
     parent.firstName,
     parent.middleName,
     parent.lastName,
-  ].some((part) => part?.toLowerCase().includes(needle));
+  ]);
 }
 
 function ParentPicker({

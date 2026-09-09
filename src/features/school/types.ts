@@ -458,8 +458,10 @@ export type DashboardTeachesResponse = {
 
 export type SaveTeachBody = {
   teacherId: number;
-  sectionId: number;
-  courseId: number;
+  classId?: number;
+  sectionId?: number;
+  courseId?: number;
+  courseIds?: number[];
   yearId?: number;
 };
 
@@ -497,6 +499,89 @@ export type SaveAnnouncementBody = {
   content: string;
   audienceTargets: AnnouncementAudienceTarget[];
   sectionId?: number;
+};
+
+export type DashboardActivity = {
+  id: number;
+  title: string;
+  content: string;
+  date: string;
+  image: string;
+  scope: string;
+  yearId: number | null;
+  yearTitle: string | null;
+  createdAt: string;
+  personId: number;
+  createdByName: string;
+};
+
+export type DashboardActivitiesResponse = {
+  items: DashboardActivity[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardActivitiesQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  yearId?: number;
+};
+
+export type SaveActivityBody = {
+  title: string;
+  content: string;
+  date?: string;
+  image?: string;
+  yearId?: number;
+};
+
+export type DashboardNoticeType = {
+  id: number;
+  title: string;
+  usageCount?: number;
+};
+
+export type SaveNoticeTypeBody = {
+  title: string;
+};
+
+export type DashboardNotice = {
+  id: number;
+  description: string;
+  date: string;
+  scope: string;
+  noticeTypeId: number | null;
+  noticeTypeTitle: string | null;
+  sectionIds: number[];
+  studentIds: number[];
+  studentCount: number;
+  status: boolean;
+  createdAt: string;
+  personId: number;
+  createdByName: string;
+};
+
+export type DashboardNoticesResponse = {
+  items: DashboardNotice[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardNoticesQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  yearId?: number;
+  classId?: number;
+  sectionId?: number;
+  noticeTypeId?: number;
+};
+
+export type SaveNoticeBody = {
+  description: string;
+  date?: string;
+  noticeTypeId?: number;
+  sectionId?: number;
+  studentIds?: number[];
 };
 
 export type DashboardWeeklySchedule = {
@@ -1245,6 +1330,128 @@ export type DashboardAttendanceReason = {
 
 export type SaveAttendanceReasonBody = {
   title: string;
+  status?: boolean;
+};
+
+export type AgendasSortBy =
+  | "id"
+  | "agendaDate"
+  | "course"
+  | "status"
+  | "publishedDate";
+
+export type AgendasSortOrder = "asc" | "desc";
+
+export type DashboardAgendasQuery = {
+  page: number;
+  limit: number;
+  yearId?: number;
+  classId?: number;
+  sectionId?: number;
+  courseId?: number;
+  agendaDate?: string;
+  status?: number;
+  search?: string;
+  sortBy?: AgendasSortBy;
+  sortOrder?: AgendasSortOrder;
+};
+
+export type DashboardAgendaSection = {
+  sectionId: number;
+  sectionTitle: string;
+  classId: number;
+  className: string;
+  yearId: number;
+  yearTitle: string;
+};
+
+export type DashboardAgenda = {
+  id: number;
+  description: string;
+  agendaDate: string;
+  time: string;
+  courseId: number;
+  courseTitle: string;
+  imageLink: string;
+  fileLink: string;
+  publishedDate: string;
+  status: number;
+  sections: DashboardAgendaSection[];
+  sectionsLabel: string;
+};
+
+export type DashboardAgendasResponse = {
+  items: DashboardAgenda[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type SaveAgendaBody = {
+  description: string;
+  agendaDate: string;
+  time: string;
+  courseId: number;
+  sectionIds: number[];
+  imageLink?: string;
+  fileLink?: string;
+  status?: number;
+};
+
+export type AgendaSectionsSortBy = "id" | "agendaDate" | "section";
+export type AgendaSectionsSortOrder = "asc" | "desc";
+
+export type DashboardAgendaSectionsQuery = {
+  page: number;
+  limit: number;
+  yearId?: number;
+  classId?: number;
+  sectionId?: number;
+  agendaId?: number;
+  search?: string;
+  sortBy?: AgendaSectionsSortBy;
+  sortOrder?: AgendaSectionsSortOrder;
+};
+
+export type DashboardAgendaSectionRow = {
+  id: number;
+  agendaId: number;
+  agendaDescription: string;
+  agendaDate: string;
+  courseTitle: string;
+  sectionId: number;
+  sectionTitle: string;
+  classId: number;
+  className: string;
+  yearId: number;
+  yearTitle: string;
+};
+
+export type DashboardAgendaSectionsResponse = {
+  items: DashboardAgendaSectionRow[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type SaveAgendaSectionBody = {
+  agendaId: number;
+  sectionId: number;
+};
+
+export type DashboardSession = {
+  id: number;
+  sessionName: string;
+  position: number;
+  status: boolean;
+  usageCount: number;
+};
+
+export type SaveSessionBody = {
+  sessionName: string;
+  position?: number;
   status?: boolean;
 };
 

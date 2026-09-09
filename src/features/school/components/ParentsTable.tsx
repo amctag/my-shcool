@@ -417,7 +417,7 @@ export function ParentsTable() {
         <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
           <TableSearchBar
             label="Search parents"
-            placeholder="Search by name or id"
+            placeholder="Search by first, middle, or last name"
             value={searchInput}
             onChange={(value) => dispatch(setParentsSearchInput(value))}
             onSearch={() => dispatch(applyParentsSearch())}

@@ -233,6 +233,10 @@ export function AnnouncementForm() {
               );
             })}
           </div>
+          <p className="mt-2 text-sm text-muted">
+            Parents with a logged-in app receive a Firebase notification.
+            A class/section limits who is notified.
+          </p>
         </Field>
 
         <div className="grid gap-5 sm:grid-cols-2">

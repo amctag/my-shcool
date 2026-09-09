@@ -20,6 +20,9 @@ export const apiTagTypes = [
   "Teaches",
   "Sections",
   "DashboardAnnouncements",
+  "DashboardNotices",
+  "DashboardNoticeTypes",
+  "DashboardActivities",
   "DashboardWeeklySchedules",
   "DashboardExamSchedules",
   "Registrations",
@@ -27,6 +30,9 @@ export const apiTagTypes = [
   "DashboardGradeForms",
   "DashboardAttendances",
   "DashboardAttendanceReasons",
+  "DashboardAgendas",
+  "DashboardAgendaSections",
+  "DashboardSessions",
 ] as const;
 
 export type ApiTagType = (typeof apiTagTypes)[number];

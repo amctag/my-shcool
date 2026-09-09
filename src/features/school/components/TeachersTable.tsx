@@ -59,8 +59,11 @@ function teacherName(
   lastName?: string,
   fullName?: string,
 ): string {
-  const combined = `${firstName?.trim() ?? ""} ${lastName?.trim() ?? ""}`.trim();
-  return combined || fullName?.trim() || "—";
+  return (
+    fullName?.trim() ||
+    `${firstName?.trim() ?? ""} ${lastName?.trim() ?? ""}`.trim() ||
+    "—"
+  );
 }
 
 const MONTHS = [
@@ -269,7 +272,7 @@ export function TeachersTable() {
         <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
           <TableSearchBar
             label="Search teachers"
-            placeholder="Search by name, id, or phone"
+            placeholder="Search by first, middle, or last name, id, or phone"
             value={searchInput}
             onChange={setSearchInput}
             onSearch={applySearch}

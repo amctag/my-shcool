@@ -50,7 +50,7 @@ export const teachesApi = baseApi.injectEndpoints({
       query: (id) => `/dashboard/teaches/${id}`,
       providesTags: (_result, _error, id) => [{ type: "Teaches", id }],
     }),
-    createTeach: builder.mutation<DashboardTeach, SaveTeachBody>({
+    createTeach: builder.mutation<{ items: DashboardTeach[] }, SaveTeachBody>({
       query: (body) => ({
         url: "/dashboard/teaches",
         method: "POST",
