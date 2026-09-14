@@ -535,6 +535,46 @@ export type SaveActivityBody = {
   yearId?: number;
 };
 
+export type DashboardAlbumImage = {
+  id: number;
+  imageLink: string;
+  caption: string | null;
+  position: number;
+};
+
+export type DashboardAlbum = {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  yearId: number;
+  yearTitle: string;
+  photoCount: number;
+  coverImage: string | null;
+  images: DashboardAlbumImage[];
+  createdAt: string;
+};
+
+export type DashboardAlbumsResponse = {
+  items: DashboardAlbum[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardAlbumsQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  yearId?: number;
+};
+
+export type SaveAlbumBody = {
+  title: string;
+  description: string;
+  date?: string;
+  yearId: number;
+  imageLinks?: string[];
+};
+
 export type DashboardNoticeType = {
   id: number;
   title: string;

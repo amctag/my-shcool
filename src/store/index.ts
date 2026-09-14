@@ -20,6 +20,7 @@ import "@/features/school/api/sectionsApi";
 import "@/features/school/api/teachesApi";
 import "@/features/school/api/announcementsApi";
 import "@/features/school/api/activitiesApi";
+import "@/features/school/api/albumsApi";
 import "@/features/school/api/noticesApi";
 import "@/features/school/api/noticeTypesApi";
 import "@/features/school/api/weeklySchedulesApi";
