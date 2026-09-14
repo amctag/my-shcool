@@ -97,7 +97,7 @@ export function TeachForm({
     skip: !authReady || !teachId,
   });
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100 },
+    { page: 1, limit: 20 },
     { skip: !authReady },
   );
   const { data: schoolCourses = [] } = useGetCoursesQuery(undefined, {
@@ -106,7 +106,7 @@ export function TeachForm({
   const { data: classCoursesData } = useGetClassCoursesQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId,
       yearId,
       status: "active",
@@ -119,13 +119,13 @@ export function TeachForm({
     skip: !authReady,
   });
   const { data: teachersData } = useGetTeachersQuery(
-    { page: 1, limit: 100, sortBy: "name", sortOrder: "asc" },
+    { page: 1, limit: 20, sortBy: "name", sortOrder: "asc" },
     { skip: !authReady },
   );
   const { data: sectionsData } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId,
       yearId,
       sortBy: "section",
@@ -136,7 +136,7 @@ export function TeachForm({
   const { data: classTeaches } = useGetTeachesQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId,
       yearId,
       sortBy: "id",

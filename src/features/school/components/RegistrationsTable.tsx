@@ -118,7 +118,7 @@ export function RegistrationsTable() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !canFetch },
   );
   const classes = classesData?.items ?? [];

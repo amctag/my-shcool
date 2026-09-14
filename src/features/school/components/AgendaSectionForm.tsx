@@ -197,7 +197,7 @@ export function AgendaSectionForm({
                 {agendas.map((agenda) => (
                   <option key={agenda.id} value={agenda.id}>
                     {agenda.agendaDate} · {agenda.courseTitle} ·{" "}
-                    {agenda.description.slice(0, 60)}
+                    {agenda.title?.trim() || agenda.description.slice(0, 60)}
                   </option>
                 ))}
               </select>

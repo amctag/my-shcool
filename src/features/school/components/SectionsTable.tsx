@@ -114,7 +114,7 @@ export function SectionsTable() {
     skip: !canFetch || !appliedYearId,
   });
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100 },
+    { page: 1, limit: 20 },
     { skip: !canFetch },
   );
   const classes = classesData?.items ?? [];

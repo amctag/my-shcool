@@ -85,7 +85,7 @@ export function NoticesList() {
   );
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !canFetch },
   );
   const classes = classesData?.items ?? [];
@@ -94,7 +94,7 @@ export function NoticesList() {
   const { data: sectionsData, isFetching: sectionsLoading } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       yearId: draftYearId ?? undefined,
       classId: draftClassId,
       sortBy: "section",

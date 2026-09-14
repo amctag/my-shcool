@@ -69,13 +69,13 @@ export function TakeAttendanceForm({ attendanceId }: TakeAttendanceFormProps) {
   const resolvedYearId = yearId ?? defaultYearId;
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !canFetch || isEdit },
   );
   const { data: sectionsData } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       yearId: resolvedYearId ?? undefined,
       classId: classId || undefined,
     },

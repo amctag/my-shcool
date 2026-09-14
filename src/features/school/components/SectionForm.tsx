@@ -74,7 +74,7 @@ export function SectionForm({
     { skip: !authReady || !sectionId },
   );
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100 },
+    { page: 1, limit: 20 },
     { skip: !authReady },
   );
   const { data: titles = [] } = useGetSectionTitlesQuery(undefined, {

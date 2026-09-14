@@ -157,7 +157,7 @@ export function TeachesTable() {
     skip: !canFetch || !appliedYearId,
   });
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100 },
+    { page: 1, limit: 20 },
     { skip: !canFetch },
   );
   const { data: courses = [] } = useGetCoursesQuery(undefined, {
@@ -166,7 +166,7 @@ export function TeachesTable() {
   const { data: sectionsData } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId: draftFilters.classId,
       yearId: draftYearId ?? 0,
       sortBy: "section",

@@ -185,7 +185,7 @@ function ChildrenDrawer({
   const { data, error, isLoading, isFetching } = useGetChildrenQuery({
     parentId,
     page: 1,
-    limit: 100,
+    limit: 20,
   });
 
   useEffect(() => {

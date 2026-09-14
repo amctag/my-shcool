@@ -68,7 +68,7 @@ export function GradeByCourseForm({
   const resolvedYearId = yearId ?? defaultYearId;
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !authReady },
   );
   const classes = classesData?.items ?? [];
@@ -76,7 +76,7 @@ export function GradeByCourseForm({
   const { data: sectionsData, isSuccess: sectionsReady } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId: classId > 0 ? classId : undefined,
       yearId: resolvedYearId ?? undefined,
       sortBy: "section",
@@ -90,7 +90,7 @@ export function GradeByCourseForm({
     useGetClassCoursesQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId: classId > 0 ? classId : undefined,
       yearId: resolvedYearId ?? undefined,
       status: "active",

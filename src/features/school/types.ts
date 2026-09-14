@@ -1367,6 +1367,7 @@ export type DashboardAgendaSection = {
 
 export type DashboardAgenda = {
   id: number;
+  title: string;
   description: string;
   agendaDate: string;
   time: string;
@@ -1389,6 +1390,7 @@ export type DashboardAgendasResponse = {
 };
 
 export type SaveAgendaBody = {
+  title: string;
   description: string;
   agendaDate: string;
   time: string;
@@ -1397,6 +1399,14 @@ export type SaveAgendaBody = {
   imageLink?: string;
   fileLink?: string;
   status?: number;
+};
+
+export type DashboardUploadKind = "image" | "file";
+
+export type DashboardUploadResponse = {
+  url: string;
+  path: string;
+  category: string;
 };
 
 export type AgendaSectionsSortBy = "id" | "agendaDate" | "section";

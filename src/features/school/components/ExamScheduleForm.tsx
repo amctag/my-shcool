@@ -164,7 +164,7 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
   const { data: classCoursesData } = useGetClassCoursesQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId,
       yearId: yearId ?? undefined,
       status: "active",

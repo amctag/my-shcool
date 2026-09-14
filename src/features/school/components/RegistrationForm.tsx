@@ -232,7 +232,7 @@ export function RegistrationForm() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !authReady },
   );
   const classes = classesData?.items ?? [];
@@ -242,7 +242,7 @@ export function RegistrationForm() {
   const { data: sectionsData } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId: classId > 0 ? classId : undefined,
       yearId: yearId ?? undefined,
       sortBy: "section",

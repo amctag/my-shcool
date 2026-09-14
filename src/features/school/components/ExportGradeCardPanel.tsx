@@ -55,7 +55,7 @@ export function ExportGradeCardPanel() {
     appliedSectionId > 0;
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !canFetch },
   );
   const classes = classesData?.items ?? [];
@@ -63,7 +63,7 @@ export function ExportGradeCardPanel() {
   const { data: sectionsData, isSuccess: sectionsReady } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId: draftClassId > 0 ? draftClassId : undefined,
       yearId: resolvedDraftYearId ?? undefined,
       sortBy: "section",

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { FileText } from "lucide-react";
 import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
@@ -10,6 +11,7 @@ import {
   useGetDashboardAgendaQuery,
   useUpdateDashboardAgendaMutation,
 } from "@/features/school/api/agendasApi";
+import { useUploadDashboardMediaMutation } from "@/features/school/api/uploadsApi";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import { useGetClassCoursesQuery } from "@/features/school/api/coursesApi";
 import { useGetSectionsQuery } from "@/features/school/api/sectionsApi";
@@ -21,6 +23,7 @@ const inputClass =
   "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted/80 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 type FormState = {
+  title: string;
   description: string;
   agendaDate: string;
   time: string;
@@ -29,12 +32,15 @@ type FormState = {
   classId: number;
   sectionIds: number[];
   imageLink: string;
+  imageName: string;
   fileLink: string;
+  fileName: string;
   status: string;
 };
 
 function emptyForm(): FormState {
   return {
+    title: "",
     description: "",
     agendaDate: "",
     time: "",
@@ -43,9 +49,41 @@ function emptyForm(): FormState {
     classId: 0,
     sectionIds: [],
     imageLink: "",
+    imageName: "",
     fileLink: "",
+    fileName: "",
     status: "1",
   };
+}
+
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"];
+
+function hasExtension(name: string, extensions: string[]): boolean {
+  const lower = name.toLowerCase();
+  return extensions.some((ext) => lower.endsWith(`.${ext}`));
+}
+
+function fileNameFromUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+  try {
+    const path = new URL(trimmed).pathname;
+    const name = path.split("/").filter(Boolean).pop();
+    return name || trimmed;
+  } catch {
+    return trimmed.split("/").filter(Boolean).pop() || trimmed;
+  }
+}
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function Field({
@@ -91,7 +129,11 @@ export function AgendaForm({
   });
   const [createAgenda, createState] = useCreateDashboardAgendaMutation();
   const [updateAgenda, updateState] = useUpdateDashboardAgendaMutation();
+  const [uploadMedia] = useUploadDashboardMediaMutation();
   const saving = createState.isLoading || updateState.isLoading;
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const busy = saving || uploadingImage || uploadingPdf;
 
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 100, sortOrder: "asc" },
@@ -134,6 +176,7 @@ export function AgendaForm({
     }
     const firstSection = item.sections[0];
     setForm({
+      title: item.title ?? "",
       description: item.description,
       agendaDate: item.agendaDate,
       time: item.time,
@@ -142,7 +185,9 @@ export function AgendaForm({
       classId: firstSection?.classId ?? 0,
       sectionIds: item.sections.map((section) => section.sectionId),
       imageLink: item.imageLink,
+      imageName: fileNameFromUrl(item.imageLink),
       fileLink: item.fileLink,
+      fileName: fileNameFromUrl(item.fileLink),
       status: String(item.status),
     });
   }, [item]);
@@ -166,8 +211,51 @@ export function AgendaForm({
     });
   }
 
-  async function onSave() {
+  async function uploadPickedFile(
+    file: File,
+    kind: "image" | "file",
+  ): Promise<void> {
     setFormError(null);
+    if (kind === "image") {
+      setUploadingImage(true);
+    } else {
+      setUploadingPdf(true);
+    }
+    try {
+      const result = await uploadMedia({ file, kind }).unwrap();
+      setForm((current) =>
+        kind === "image"
+          ? { ...current, imageLink: result.url, imageName: file.name }
+          : { ...current, fileLink: result.url, fileName: file.name },
+      );
+    } catch (caught) {
+      setFormError(
+        getApiErrorMessage(
+          caught,
+          kind === "image"
+            ? "Could not upload that image. Please try again."
+            : "Could not upload that PDF. Please try again.",
+        ),
+      );
+    } finally {
+      if (kind === "image") {
+        setUploadingImage(false);
+      } else {
+        setUploadingPdf(false);
+      }
+    }
+  }
+
+  async function onSave() {
+    if (uploadingImage || uploadingPdf) {
+      return;
+    }
+    setFormError(null);
+    const title = form.title.trim();
+    if (!title) {
+      setFormError("Title is required");
+      return;
+    }
     const description = form.description.trim();
     if (!description) {
       setFormError("Description is required");
@@ -195,13 +283,14 @@ export function AgendaForm({
     }
 
     const body: SaveAgendaBody = {
+      title,
       description,
       agendaDate: form.agendaDate,
       time: form.time.trim(),
       courseId: form.courseId,
       sectionIds: form.sectionIds,
-      imageLink: form.imageLink.trim() || undefined,
-      fileLink: form.fileLink.trim() || undefined,
+      imageLink: form.imageLink.trim(),
+      fileLink: form.fileLink.trim(),
       status: form.status === "0" ? 0 : 1,
     };
 
@@ -231,7 +320,7 @@ export function AgendaForm({
       }}
       className="rounded-2xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-8"
     >
-      <fieldset disabled={readOnly || saving}>
+      <fieldset disabled={readOnly || busy}>
         <h1 className="mb-6 text-xl font-semibold text-foreground">
           {readOnly ? "Agenda" : isEdit ? "Edit agenda" : "Add agenda"}
         </h1>
@@ -407,6 +496,26 @@ export function AgendaForm({
         </div>
 
         <div className="mt-4">
+          <Field id="agenda-title" label="Title" required>
+            <input
+              id="agenda-title"
+              type="text"
+              required
+              maxLength={255}
+              value={form.title}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  title: event.target.value,
+                }))
+              }
+              placeholder="e.g. Fractions practice"
+              className={inputClass}
+            />
+          </Field>
+        </div>
+
+        <div className="mt-4">
           <Field id="agenda-description" label="Description" required>
             <textarea
               id="agenda-description"
@@ -426,36 +535,139 @@ export function AgendaForm({
         </div>
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field id="agenda-image" label="Image link">
-            <input
-              id="agenda-image"
-              type="text"
-              value={form.imageLink}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  imageLink: event.target.value,
-                }))
-              }
-              placeholder="https://"
-              className={inputClass}
-            />
-          </Field>
-          <Field id="agenda-file" label="File link">
-            <input
-              id="agenda-file"
-              type="text"
-              value={form.fileLink}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  fileLink: event.target.value,
-                }))
-              }
-              placeholder="https://"
-              className={inputClass}
-            />
-          </Field>
+          <div>
+            <Field id="agenda-image" label="Image">
+              <input
+                id="agenda-image"
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  event.target.value = "";
+                  if (!file) {
+                    return;
+                  }
+                  if (!hasExtension(file.name, IMAGE_EXTENSIONS)) {
+                    setFormError("Please choose a JPG, PNG, WEBP, or GIF image.");
+                    return;
+                  }
+                  void uploadPickedFile(file, "image");
+                }}
+                className={`${inputClass} cursor-pointer file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground`}
+              />
+            </Field>
+            {uploadingImage ? (
+              <p className="mt-2 text-sm text-muted">Uploading image…</p>
+            ) : form.imageLink ? (
+              <div className="mt-2 space-y-2">
+                {isHttpUrl(form.imageLink) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={form.imageLink}
+                    alt={form.imageName || "Agenda image"}
+                    className="max-h-40 rounded-xl border border-border object-contain"
+                  />
+                ) : null}
+                <p className="text-sm text-muted">
+                  {form.imageName || fileNameFromUrl(form.imageLink)}
+                </p>
+                {!readOnly ? (
+                  <button
+                    type="button"
+                    className="min-h-11 text-sm font-medium text-red-600 hover:underline"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        imageLink: "",
+                        imageName: "",
+                      }))
+                    }
+                  >
+                    Remove image
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted">Optional. JPG, PNG, WEBP, or GIF.</p>
+            )}
+          </div>
+          <div>
+            <Field id="agenda-file" label="PDF">
+              <input
+                id="agenda-file"
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  event.target.value = "";
+                  if (!file) {
+                    return;
+                  }
+                  if (!hasExtension(file.name, ["pdf"])) {
+                    setFormError("Please choose a PDF file.");
+                    return;
+                  }
+                  void uploadPickedFile(file, "file");
+                }}
+                className={`${inputClass} cursor-pointer file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground`}
+              />
+            </Field>
+            {uploadingPdf ? (
+              <p className="mt-2 text-sm text-muted">Uploading PDF…</p>
+            ) : form.fileLink ? (
+              <div className="mt-2 space-y-2">
+                {isHttpUrl(form.fileLink) ? (
+                  <a
+                    href={form.fileLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex min-h-16 items-center gap-3 rounded-xl border border-border bg-white p-3 text-foreground hover:border-primary"
+                  >
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                      <FileText className="h-6 w-6" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-primary">
+                        PDF
+                      </span>
+                      <span className="block truncate text-sm text-muted">
+                        {form.fileName || fileNameFromUrl(form.fileLink)}
+                      </span>
+                    </span>
+                  </a>
+                ) : (
+                  <div className="flex min-h-16 items-center gap-3 rounded-xl border border-border bg-white p-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                      <FileText className="h-6 w-6" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium">File</span>
+                      <span className="block truncate text-sm text-muted">
+                        {form.fileName || fileNameFromUrl(form.fileLink)}
+                      </span>
+                    </span>
+                  </div>
+                )}
+                {!readOnly ? (
+                  <button
+                    type="button"
+                    className="min-h-11 text-sm font-medium text-red-600 hover:underline"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        fileLink: "",
+                        fileName: "",
+                      }))
+                    }
+                  >
+                    Remove PDF
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted">Optional. PDF only.</p>
+            )}
+          </div>
         </div>
 
         {formError ? (
@@ -474,10 +686,16 @@ export function AgendaForm({
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={busy}
               className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl bg-primary px-5 text-sm font-medium text-on-primary hover:bg-primary-hover disabled:opacity-50"
             >
-              {saving ? "Saving…" : isEdit ? "Save changes" : "Save"}
+              {uploadingImage || uploadingPdf
+                ? "Uploading…"
+                : saving
+                  ? "Saving…"
+                  : isEdit
+                    ? "Save changes"
+                    : "Save"}
             </button>
           </div>
         ) : null}

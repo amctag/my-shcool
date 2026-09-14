@@ -120,7 +120,7 @@ export function GradesByCourseTable() {
   const draftResolvedYearId = draftYearId ?? defaultYearId;
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !canFetch },
   );
   const classes = classesData?.items ?? [];
@@ -128,7 +128,7 @@ export function GradesByCourseTable() {
   const { data: sectionsData } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId: draftClassId > 0 ? draftClassId : undefined,
       yearId: draftResolvedYearId ?? undefined,
       sortBy: "section",
@@ -141,7 +141,7 @@ export function GradesByCourseTable() {
   const { data: classCoursesData } = useGetClassCoursesQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       classId: draftClassId > 0 ? draftClassId : undefined,
       yearId: draftResolvedYearId ?? undefined,
       status: "active",

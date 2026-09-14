@@ -88,7 +88,7 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
     { skip: !authReady || !gradeFormId },
   );
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !authReady },
   );
   const classes = classesData?.items ?? [];

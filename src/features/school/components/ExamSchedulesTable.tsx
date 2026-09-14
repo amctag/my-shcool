@@ -174,7 +174,7 @@ export function ExamSchedulesTable() {
     });
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !canFetch || !appliedYearId },
   );
 

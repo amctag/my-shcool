@@ -28,6 +28,7 @@ import "@/features/school/api/registrationsApi";
 import "@/features/school/api/gradesApi";
 import "@/features/school/api/gradeFormsApi";
 import "@/features/school/api/agendasApi";
+import "@/features/school/api/uploadsApi";
 import "@/features/school/api/agendaSectionsApi";
 
 export const makeStore = () =>

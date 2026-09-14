@@ -84,7 +84,7 @@ export function NoticeForm() {
   });
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !canFetch },
   );
   const classes = classesData?.items ?? [];
@@ -93,7 +93,7 @@ export function NoticeForm() {
   const { data: sectionsData, isFetching: sectionsLoading } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       yearId: defaultYearId ?? undefined,
       classId: form.classId,
       sortBy: "section",
@@ -108,7 +108,7 @@ export function NoticeForm() {
     useGetRegistrationsQuery(
       {
         page: 1,
-        limit: 100,
+        limit: 20,
         yearId: defaultYearId ?? undefined,
         classId: form.classId,
         sectionId: form.sectionId,

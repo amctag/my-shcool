@@ -77,7 +77,7 @@ export function ClassCourseForm({
     skip: !authReady || !classCourseId,
   });
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100 },
+    { page: 1, limit: 20 },
     { skip: !authReady },
   );
   const { data: courses = [] } = useGetCoursesQuery(undefined, {

@@ -141,13 +141,13 @@ export function AttendancesTable() {
   const draftResolvedYearId = draftYearId ?? defaultYearId;
 
   const { data: classesData } = useGetClassesQuery(
-    { page: 1, limit: 100, sortOrder: "asc" },
+    { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !canFetch },
   );
   const { data: sectionsData } = useGetSectionsQuery(
     {
       page: 1,
-      limit: 100,
+      limit: 20,
       yearId: draftResolvedYearId ?? undefined,
       classId: draftClassId || undefined,
     },

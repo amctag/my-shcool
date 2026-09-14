@@ -345,6 +345,9 @@ export function AgendasTable() {
                   onSort={handleSort}
                 />
                 <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Title
+                </th>
+                <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
                   Sections
                 </th>
                 <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
@@ -364,11 +367,11 @@ export function AgendasTable() {
             </thead>
             <tbody>
               {isLoading || !resolvedYearId ? (
-                <TableLoadingRow colSpan={6} label="Loading agendas" />
+                <TableLoadingRow colSpan={7} label="Loading agendas" />
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
@@ -378,7 +381,7 @@ export function AgendasTable() {
               ) : items.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     No agendas found. Click Add to create one.
@@ -398,6 +401,9 @@ export function AgendasTable() {
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-foreground">
                       {item.courseTitle}
+                    </td>
+                    <td className="max-w-xs truncate px-5 py-4 font-medium text-foreground">
+                      {item.title?.trim() || "—"}
                     </td>
                     <td className="px-5 py-4 text-foreground">
                       {item.sectionsLabel || "—"}
