@@ -141,7 +141,7 @@ export function ParentOpenGradeCard({
 
   if (loading) {
     return (
-      <div className="grade-card-page">
+      <div className="grade-card-page grade-card-page--parent-app">
         <div className="grade-card-loading">
           <LoadingDots label="Loading grade card" />
         </div>
@@ -151,7 +151,7 @@ export function ParentOpenGradeCard({
 
   if (error || !data) {
     return (
-      <div className="grade-card-page">
+      <div className="grade-card-page grade-card-page--parent-app">
         <p className="grade-card-loading text-red-600" role="alert">
           {error ?? "Grade card not found."}
         </p>
@@ -160,7 +160,7 @@ export function ParentOpenGradeCard({
   }
 
   return (
-    <div className="grade-card-page">
+    <div className="grade-card-page grade-card-page--parent-app">
       <div className="grade-card-toolbar">
         <span />
         <button type="button" onClick={() => window.print()}>

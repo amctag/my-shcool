@@ -277,33 +277,74 @@
 }
 
 @media (max-width: 900px) {
-  .grade-card-meta {
+  .grade-card-page:not(.grade-card-page--parent-app) .grade-card-meta {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto auto auto;
   }
 
-  .grade-card-meta-label,
-  .grade-card-meta-value {
+  .grade-card-page:not(.grade-card-page--parent-app) .grade-card-meta-label,
+  .grade-card-page:not(.grade-card-page--parent-app) .grade-card-meta-value {
     border-inline-end: none;
   }
 
-  .grade-card-meta-label:nth-child(odd) {
+  .grade-card-page:not(.grade-card-page--parent-app)
+    .grade-card-meta-label:nth-child(odd) {
     border-inline-end: var(--grade-card-border-line);
   }
 
-  .grade-card-meta-value:nth-child(even) {
+  .grade-card-page:not(.grade-card-page--parent-app)
+    .grade-card-meta-value:nth-child(even) {
     border-inline-end: none;
   }
 
-  .grade-card-meta-label:nth-child(n + 5),
-  .grade-card-meta-value:nth-child(n + 5) {
+  .grade-card-page:not(.grade-card-page--parent-app)
+    .grade-card-meta-label:nth-child(n + 5),
+  .grade-card-page:not(.grade-card-page--parent-app)
+    .grade-card-meta-value:nth-child(n + 5) {
     border-bottom: var(--grade-card-border-line);
   }
 
-  .grade-card-meta-label:last-child,
-  .grade-card-meta-value:last-child {
+  .grade-card-page:not(.grade-card-page--parent-app)
+    .grade-card-meta-label:last-child,
+  .grade-card-page:not(.grade-card-page--parent-app)
+    .grade-card-meta-value:last-child {
     border-bottom: none;
   }
+}
+
+/* Parent app WebView: keep desktop export layout; scroll instead of reflow. */
+.grade-card-page--parent-app {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.grade-card-page--parent-app .grade-card-document {
+  min-width: 1100px;
+  width: 1100px;
+  max-width: none;
+  flex: none;
+  height: auto;
+  min-height: 100%;
+}
+
+.grade-card-page--parent-app .grade-card-meta {
+  grid-template-columns: auto 1fr auto 1fr;
+}
+
+.grade-card-page--parent-app .grade-card-table-wrap {
+  overflow: visible;
+}
+
+.grade-card-page--parent-app .grade-card-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 1060px;
+}
+
+.grade-card-page--parent-app .grade-card-table th,
+.grade-card-page--parent-app .grade-card-table td {
+  white-space: nowrap;
+  word-break: normal;
 }
 
 @media print {
