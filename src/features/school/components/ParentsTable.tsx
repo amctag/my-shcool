@@ -23,7 +23,7 @@ import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetChildrenQuery } from "@/features/school/api/childrenApi";
-import { useDeleteParentMutation, useGetParentsQuery, useUpdateParentStatusMutation } from "@/features/school/api/parentsApi";
+import { useDeleteParentMutation, useGetParentsQuery, useUpdateParentPaidMutation, useUpdateParentStatusMutation } from "@/features/school/api/parentsApi";
 import {
   applyParentsSearch,
   clearSelectedParent,
@@ -73,6 +73,10 @@ function buildParentsQuery(
 
 function isParentActive(status?: boolean) {
   return status !== false;
+}
+
+function isParentPaid(paid?: boolean) {
+  return paid !== false;
 }
 
 function IconColumnHeader({
@@ -346,8 +350,10 @@ export function ParentsTable() {
   const selectedParentId = useAppSelector(selectSelectedParentId);
   const [deleteParent, deleteState] = useDeleteParentMutation();
   const [updateParentStatus, statusState] = useUpdateParentStatusMutation();
+  const [updateParentPaid, paidState] = useUpdateParentPaidMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [paidError, setPaidError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
     id: number;
     fullName: string;
@@ -411,6 +417,18 @@ export function ParentsTable() {
     }
   }
 
+  async function toggleParentPaid(parent: { id: number; paid?: boolean }) {
+    setPaidError(null);
+    try {
+      await updateParentPaid({
+        id: parent.id,
+        paid: !isParentPaid(parent.paid),
+      }).unwrap();
+    } catch (caught) {
+      setPaidError(getApiErrorMessage(caught, "Could not update parent paid flag"));
+    }
+  }
+
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -439,6 +457,11 @@ export function ParentsTable() {
       {statusError ? (
         <p className="mb-4 text-sm text-red-600" role="alert">
           {statusError}
+        </p>
+      ) : null}
+      {paidError ? (
+        <p className="mb-4 text-sm text-red-600" role="alert">
+          {paidError}
         </p>
       ) : null}
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
@@ -484,7 +507,7 @@ export function ParentsTable() {
                 <IconColumnHeader label="Status">
                   <Pause aria-hidden className="h-4 w-4" />
                 </IconColumnHeader>
-                <IconColumnHeader label="Has children">
+                <IconColumnHeader label="Paid">
                   <span aria-hidden className="text-base font-semibold">
                     $
                   </span>
@@ -581,27 +604,34 @@ export function ParentsTable() {
                       </button>
                     </td>
                     <td className="px-2 py-4 text-center">
-                      <span
+                      <button
+                        type="button"
+                        aria-pressed={isParentPaid(parent.paid)}
                         aria-label={
-                          parent.childrenCount > 0
-                            ? `${parent.childrenCount} children`
-                            : "No children"
+                          isParentPaid(parent.paid)
+                            ? "Paid — click to mark unpaid"
+                            : "Unpaid — click to mark paid"
                         }
                         title={
-                          parent.childrenCount > 0
-                            ? `${parent.childrenCount} children in school`
-                            : "No children"
+                          isParentPaid(parent.paid)
+                            ? "Paid — click to mark unpaid"
+                            : "Unpaid — click to mark paid"
                         }
-                        className={`inline-flex h-11 w-11 items-center justify-center ${
-                          parent.childrenCount > 0
-                            ? "text-emerald-600"
-                            : "text-muted/40"
-                        }`}
+                        disabled={paidState.isLoading}
+                        onClick={() => void toggleParentPaid(parent)}
+                        className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <span aria-hidden className="text-lg font-semibold leading-none">
+                        <span
+                          aria-hidden
+                          className={`text-lg font-semibold leading-none ${
+                            isParentPaid(parent.paid)
+                              ? "text-emerald-600"
+                              : "text-muted/40"
+                          }`}
+                        >
                           $
                         </span>
-                      </span>
+                      </button>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">

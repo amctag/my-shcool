@@ -7,6 +7,7 @@ export type DashboardParent = {
   phoneNumber: string | null;
   childrenCount: number;
   status?: boolean;
+  paid?: boolean;
 };
 
 export type PaginationMeta = {
@@ -125,6 +126,7 @@ export type DashboardParentDetail = {
   description: string | null;
   birthday: string | null;
   status: boolean;
+  paid: boolean;
 };
 
 export type SaveParentBody = {
@@ -148,6 +150,7 @@ export type SaveParentBody = {
   description?: string;
   birthday?: string;
   status?: boolean;
+  paid?: boolean;
 };
 
 export type TeachersSortBy = "id" | "name" | "phone" | "address" | "birthday";

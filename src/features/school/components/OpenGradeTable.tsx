@@ -10,6 +10,7 @@ import {
   gradeCardCellKey,
   resolveGradeFormTableFormat,
   type DashboardGradeCardCell,
+  type DashboardGradeCardResponse,
 } from "@/features/school/types";
 import { useAppSelector } from "@/store/hooks";
 import "./grade-card-document.css";
@@ -375,50 +376,12 @@ function gradeCardLabels(isRtl: boolean) {
   };
 }
 
-export function OpenGradeTable({
-  registrationId,
-  yearId,
-  classId,
-  sectionId,
-}: OpenGradeTableProps) {
-  const authReady = useAppSelector(selectAuthReady);
+export function GradeCardDocument({
+  data,
+}: {
+  data: DashboardGradeCardResponse;
+}) {
   const issueDate = formatIssueDate(new Date());
-
-  const { data, error, isLoading } = useGetGradeCardQuery(
-    { registrationId, yearId, classId, sectionId },
-    { skip: !authReady || registrationId <= 0 },
-  );
-
-  if (isLoading) {
-    return (
-      <div className="grade-card-page">
-        <div className="grade-card-loading">
-          <LoadingDots label="Loading grade card" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="grade-card-page">
-        <p className="grade-card-loading text-red-600" role="alert">
-          {getApiErrorMessage(error, "Could not load grade card")}
-        </p>
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="grade-card-page">
-        <p className="grade-card-loading text-red-600" role="alert">
-          Grade card not found.
-        </p>
-      </div>
-    );
-  }
-
   const { student, gradeForm, courses, gradeTypes } = data;
   const cells = data.cells ?? {};
   const textDirection = gradeForm?.direction === "rtl" ? "rtl" : "ltr";
@@ -488,6 +451,52 @@ export function OpenGradeTable({
       ) : null}
     </article>
   );
+}
+
+export function OpenGradeTable({
+  registrationId,
+  yearId,
+  classId,
+  sectionId,
+}: OpenGradeTableProps) {
+  const authReady = useAppSelector(selectAuthReady);
+
+  const { data, error, isLoading } = useGetGradeCardQuery(
+    { registrationId, yearId, classId, sectionId },
+    { skip: !authReady || registrationId <= 0 },
+  );
+
+  if (isLoading) {
+    return (
+      <div className="grade-card-page">
+        <div className="grade-card-loading">
+          <LoadingDots label="Loading grade card" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="grade-card-page">
+        <p className="grade-card-loading text-red-600" role="alert">
+          {getApiErrorMessage(error, "Could not load grade card")}
+        </p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="grade-card-page">
+        <p className="grade-card-loading text-red-600" role="alert">
+          Grade card not found.
+        </p>
+      </div>
+    );
+  }
+
+  return <GradeCardDocument data={data} />;
 }
 
 type OpenGradeViewProps = {

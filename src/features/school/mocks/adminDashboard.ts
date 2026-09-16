@@ -389,6 +389,7 @@ export const fakeSchoolDetails = {
   email: "info@greenvalley.edu",
   website: "https://greenvalley.edu",
   about: "Green Valley School provides quality education for all students.",
+  logo: "",
   yearTitle: "2025-2026",
 };
 

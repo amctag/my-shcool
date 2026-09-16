@@ -324,4 +324,5 @@ export type SchoolDetails = {
   email: string;
   website: string;
   about: string;
+  logo: string;
 };

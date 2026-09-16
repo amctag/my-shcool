@@ -71,6 +71,20 @@ export const parentsApi = baseApi.injectEndpoints({
         { type: "Parents", id: "LIST" },
       ],
     }),
+    updateParentPaid: builder.mutation<
+      { id: number; paid: boolean },
+      { id: number; paid: boolean }
+    >({
+      query: ({ id, paid }) => ({
+        url: `/dashboard/parents/${id}/paid`,
+        method: "PATCH",
+        body: { paid },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Parents", id },
+        { type: "Parents", id: "LIST" },
+      ],
+    }),
     deleteParent: builder.mutation<void, number>({
       query: (id) => ({
         url: `/dashboard/parents/${id}`,
@@ -97,5 +111,6 @@ export const {
   useCreateParentMutation,
   useUpdateParentMutation,
   useUpdateParentStatusMutation,
+  useUpdateParentPaidMutation,
   useDeleteParentMutation,
 } = parentsApi;
