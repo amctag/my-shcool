@@ -49,10 +49,10 @@ export const navGroups: NavGroup[] = [
         children: [
           { href: "/parents", label: "Parent", icon: UserRound },
           { href: "/students", label: "Student", icon: GraduationCap },
-          { href: "/registrations", label: "Registration", icon: UserPlus },
           { href: "/teachers", label: "Teacher", icon: Presentation },
         ],
       },
+      { href: "/registrations", label: "Registration", icon: UserPlus },
     ],
   },
   {

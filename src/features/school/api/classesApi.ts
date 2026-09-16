@@ -1,6 +1,7 @@
 import { baseApi } from "@/store/api/baseApi";
 import { toQueryString } from "@/lib/toQueryString";
 import type {
+  DashboardClass,
   DashboardClassesQuery,
   DashboardClassesResponse,
   DashboardStage,
@@ -22,6 +23,10 @@ export const classesApi = baseApi.injectEndpoints({
             ]
           : [{ type: "Classes", id: "LIST" }],
     }),
+    getClass: builder.query<DashboardClass, number>({
+      query: (id) => `/dashboard/classes/${id}`,
+      providesTags: (_result, _error, id) => [{ type: "Classes", id }],
+    }),
     getStages: builder.query<DashboardStage[], void>({
       query: () => "/dashboard/classes/stages",
       keepUnusedDataFor: 120,
@@ -30,4 +35,5 @@ export const classesApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useGetClassesQuery, useGetStagesQuery } = classesApi;
+export const { useGetClassesQuery, useGetClassQuery, useGetStagesQuery } =
+  classesApi;

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { useParams, useRouter } from "next/navigation";
 import { Check, Pencil, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
@@ -42,12 +43,11 @@ export default function AttendanceDetailPage() {
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/attendance"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to attendance
-      </Link>
+      </BackLink>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader
           title="Attendance details"

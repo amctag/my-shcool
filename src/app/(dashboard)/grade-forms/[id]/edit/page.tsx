@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { GradeFormForm } from "@/features/school/components/GradeFormForm";
 
@@ -12,12 +12,11 @@ export default async function EditGradeFormPage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/grade-forms"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to grade forms
-      </Link>
+      </BackLink>
       <PageHeader
         title="Edit grade form"
         description="Update report card layout settings"

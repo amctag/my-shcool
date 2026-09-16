@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Sparkles, UserRound } from "lucide-react";
+import { CalendarDays, Plus, Sparkles, UserRound } from "lucide-react";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
+import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -179,32 +180,14 @@ export function ActivitiesList() {
             ))}
           </div>
           {pagination && totalPages > 0 ? (
-            <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-border bg-white px-5 py-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-              <p className="text-sm text-muted">
-                Page {pagination.page} of {totalPages} · {pagination.total}{" "}
-                {pagination.total === 1 ? "activity" : "activities"}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={page <= 1 || isFetching}
-                  onClick={() => setPage(page - 1)}
-                  className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:opacity-50"
-                >
-                  <ChevronLeft aria-hidden className="h-4 w-4" />
-                  Previous
-                </button>
-                <button
-                  type="button"
-                  disabled={page >= totalPages || isFetching}
-                  onClick={() => setPage(page + 1)}
-                  className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:opacity-50"
-                >
-                  Next
-                  <ChevronRight aria-hidden className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+            <TablePagination
+              page={page}
+              totalPages={totalPages}
+              total={pagination.total}
+              label="activities"
+              disabled={isFetching}
+              onPageChange={(next) => setPage(next)}
+            />
           ) : null}
         </>
       )}

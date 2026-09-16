@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { AgendaForm } from "@/features/school/components/AgendaForm";
 
 export default async function EditAgendaPage({
@@ -8,19 +8,14 @@ export default async function EditAgendaPage({
 }) {
   const { id } = await params;
   const agendaId = Number(id);
+  const backHref =
+    Number.isInteger(agendaId) && agendaId > 0
+      ? `/agenda/${agendaId}`
+      : "/agenda";
 
   return (
     <div className="space-y-4">
-      <Link
-        href={
-          Number.isInteger(agendaId) && agendaId > 0
-            ? `/agenda/${agendaId}`
-            : "/agenda"
-        }
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
-      >
-        Back to agenda
-      </Link>
+      <BackLink href={backHref}>Back to agenda</BackLink>
       {Number.isInteger(agendaId) && agendaId > 0 ? (
         <AgendaForm agendaId={agendaId} />
       ) : (

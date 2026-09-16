@@ -1,16 +1,15 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { TakeAttendanceForm } from "@/features/school/components/TakeAttendanceForm";
 
 export default function AddAttendancePage() {
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/attendance"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to attendance
-      </Link>
+      </BackLink>
       <PageHeader
         title="Add attendance"
         description="Choose class, section, and date, then mark each student present or absent"

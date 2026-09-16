@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
+import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -23,14 +24,26 @@ import type {
 function buildStudentsQuery(
   page: number,
   limit: number,
-  appliedSearch: string,
+  appliedFirstName: string,
+  appliedMiddleName: string,
+  appliedLastName: string,
+  appliedParentName: string,
   sortBy: StudentsSortBy,
   sortOrder: StudentsSortOrder,
 ): DashboardChildrenQuery {
   const query: DashboardChildrenQuery = { page, limit, sortBy, sortOrder };
 
-  if (appliedSearch) {
-    query.search = appliedSearch;
+  if (appliedFirstName) {
+    query.firstName = appliedFirstName;
+  }
+  if (appliedMiddleName) {
+    query.middleName = appliedMiddleName;
+  }
+  if (appliedLastName) {
+    query.lastName = appliedLastName;
+  }
+  if (appliedParentName) {
+    query.parentName = appliedParentName;
   }
 
   return query;
@@ -121,8 +134,14 @@ function SortHeader({
 export function StudentsTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
-  const [searchInput, setSearchInput] = useState("");
-  const [appliedSearch, setAppliedSearch] = useState("");
+  const [firstNameInput, setFirstNameInput] = useState("");
+  const [middleNameInput, setMiddleNameInput] = useState("");
+  const [lastNameInput, setLastNameInput] = useState("");
+  const [parentNameInput, setParentNameInput] = useState("");
+  const [appliedFirstName, setAppliedFirstName] = useState("");
+  const [appliedMiddleName, setAppliedMiddleName] = useState("");
+  const [appliedLastName, setAppliedLastName] = useState("");
+  const [appliedParentName, setAppliedParentName] = useState("");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<StudentsSortBy>("id");
   const [sortOrder, setSortOrder] = useState<StudentsSortOrder>("asc");
@@ -137,7 +156,10 @@ export function StudentsTable() {
   const query = buildStudentsQuery(
     page,
     limit,
-    appliedSearch,
+    appliedFirstName,
+    appliedMiddleName,
+    appliedLastName,
+    appliedParentName,
     sortBy,
     sortOrder,
   );
@@ -147,12 +169,23 @@ export function StudentsTable() {
   });
 
   function applySearch() {
-    const next = searchInput.trim();
-    if (next === appliedSearch) {
+    const nextFirstName = firstNameInput.trim();
+    const nextMiddleName = middleNameInput.trim();
+    const nextLastName = lastNameInput.trim();
+    const nextParentName = parentNameInput.trim();
+    if (
+      nextFirstName === appliedFirstName &&
+      nextMiddleName === appliedMiddleName &&
+      nextLastName === appliedLastName &&
+      nextParentName === appliedParentName
+    ) {
       return;
     }
     setPage(1);
-    setAppliedSearch(next);
+    setAppliedFirstName(nextFirstName);
+    setAppliedMiddleName(nextMiddleName);
+    setAppliedLastName(nextLastName);
+    setAppliedParentName(nextParentName);
   }
 
   function onSort(column: StudentsSortBy) {
@@ -200,13 +233,48 @@ export function StudentsTable() {
   return (
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <TableSearchBar
-          label="Search students"
-          placeholder="Search by first, middle, or last name"
-          value={searchInput}
-          onChange={setSearchInput}
-          onSearch={applySearch}
-        />
+        <TableSearchBar hideInput onSearch={applySearch}>
+          <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+            <span className="sr-only">First name</span>
+            <input
+              type="search"
+              value={firstNameInput}
+              onChange={(event) => setFirstNameInput(event.target.value)}
+              placeholder="First name"
+              className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
+          </label>
+          <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+            <span className="sr-only">Middle name</span>
+            <input
+              type="search"
+              value={middleNameInput}
+              onChange={(event) => setMiddleNameInput(event.target.value)}
+              placeholder="Middle name"
+              className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
+          </label>
+          <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+            <span className="sr-only">Family name</span>
+            <input
+              type="search"
+              value={lastNameInput}
+              onChange={(event) => setLastNameInput(event.target.value)}
+              placeholder="Family"
+              className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
+          </label>
+          <label className="relative w-full min-w-0 shrink-0 sm:w-40">
+            <span className="sr-only">Parent name</span>
+            <input
+              type="search"
+              value={parentNameInput}
+              onChange={(event) => setParentNameInput(event.target.value)}
+              placeholder="Parent name"
+              className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
+          </label>
+        </TableSearchBar>
         <Link
           href="/students/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -319,13 +387,31 @@ export function StudentsTable() {
                       />
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-foreground">
-                      {student.parentName ?? "—"}
+                      {student.parentId && student.parentName ? (
+                        <Link
+                          href={`/parents/${student.parentId}`}
+                          className="cursor-pointer font-medium text-primary underline-offset-2 transition-colors duration-200 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        >
+                          {student.parentName}
+                        </Link>
+                      ) : (
+                        (student.parentName ?? "—")
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 tabular-nums text-foreground">
                       {student.phoneNumber ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-foreground">
-                      {student.className ?? "—"}
+                      {student.classId && student.className ? (
+                        <Link
+                          href={`/classes/${student.classId}`}
+                          className="cursor-pointer font-medium text-primary underline-offset-2 transition-colors duration-200 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        >
+                          {student.className}
+                        </Link>
+                      ) : (
+                        (student.className ?? "—")
+                      )}
                     </td>
                     <td className="px-5 py-4 text-foreground">
                       {student.address ?? "—"}
@@ -370,32 +456,14 @@ export function StudentsTable() {
           </table>
         </div>
         {pagination && totalPages > 0 ? (
-          <div className="flex items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
-            <p className="text-sm text-muted">
-              Page {pagination.page} of {totalPages} · {pagination.total}{" "}
-              students
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1 || isFetching}
-                onClick={() => setPage(page - 1)}
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ChevronLeft aria-hidden className="h-4 w-4" />
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={page >= totalPages || isFetching}
-                onClick={() => setPage(page + 1)}
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Next
-                <ChevronRight aria-hidden className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            page={page}
+            totalPages={totalPages}
+            total={pagination.total}
+            label="students"
+            disabled={isFetching}
+            onPageChange={(next) => setPage(next)}
+          />
         ) : null}
       </article>
       {pendingDelete ? (

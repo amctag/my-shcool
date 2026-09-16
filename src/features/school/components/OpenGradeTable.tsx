@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { selectAuthReady } from "@/features/auth/authSlice";
@@ -520,7 +520,7 @@ export function OpenGradeView({
     return (
       <div className="grade-card-page">
         <div className="grade-card-toolbar">
-          <Link href={backHref}>Back</Link>
+          <BackLink href={backHref}>Back</BackLink>
           <button type="button" onClick={() => window.print()}>
             Print / PDF
           </button>
@@ -537,12 +537,11 @@ export function OpenGradeView({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href={backHref}
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to export grade card
-      </Link>
+      </BackLink>
       <OpenGradeTable
         registrationId={registrationId}
         yearId={yearId}

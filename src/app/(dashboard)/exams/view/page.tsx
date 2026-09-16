@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { Pencil } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { ExamScheduleView } from "@/features/school/components/ExamScheduleView";
@@ -20,12 +21,11 @@ export default async function ViewExamSchedulePage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/exams"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to exam schedules
-      </Link>
+      </BackLink>
       <PageHeader
         title="Exam schedule details"
         description="View exam dates, courses, and times"

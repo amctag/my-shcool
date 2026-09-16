@@ -11,8 +11,38 @@ import type {
 export const parentsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getParents: builder.query<DashboardParentsResponse, DashboardParentsQuery>({
-      query: ({ page, limit, search, name, id, status, sortBy, sortOrder }) =>
-        `/dashboard/parents${toQueryString({ page, limit, search, name, id, status, sortBy, sortOrder })}`,
+      query: ({
+        page,
+        limit,
+        search,
+        name,
+        firstName,
+        middleName,
+        lastName,
+        id,
+        status,
+        paid,
+        childrenCount,
+        childrenCountMin,
+        sortBy,
+        sortOrder,
+      }) =>
+        `/dashboard/parents${toQueryString({
+          page,
+          limit,
+          search,
+          name,
+          firstName,
+          middleName,
+          lastName,
+          id,
+          status,
+          paid,
+          childrenCount,
+          childrenCountMin,
+          sortBy,
+          sortOrder,
+        })}`,
       keepUnusedDataFor: 120,
       providesTags: (result) =>
         result

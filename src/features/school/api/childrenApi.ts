@@ -8,8 +8,32 @@ import type {
 export const childrenApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getChildren: builder.query<DashboardChildrenResponse, DashboardChildrenQuery>({
-      query: ({ page, limit, parentId, search, name, id }) =>
-        `/dashboard/children${toQueryString({ page, limit, parentId, search, name, id })}`,
+      query: ({
+        page,
+        limit,
+        parentId,
+        classId,
+        search,
+        name,
+        firstName,
+        middleName,
+        lastName,
+        parentName,
+        id,
+      }) =>
+        `/dashboard/children${toQueryString({
+          page,
+          limit,
+          parentId,
+          classId,
+          search,
+          name,
+          firstName,
+          middleName,
+          lastName,
+          parentName,
+          id,
+        })}`,
       keepUnusedDataFor: 120,
       providesTags: (result, _error, arg) =>
         result

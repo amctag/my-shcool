@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { CourseForm } from "@/features/school/components/CourseForm";
 
 export default async function EditCoursePage({
@@ -11,12 +11,11 @@ export default async function EditCoursePage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/courses"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to courses
-      </Link>
+      </BackLink>
       {Number.isInteger(courseId) && courseId > 0 ? (
         <CourseForm courseId={courseId} />
       ) : (

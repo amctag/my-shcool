@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
+import { TablePagination } from "@/components/dashboard/TablePagination";
 import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
@@ -292,32 +293,14 @@ export function ExportGradeCardPanel() {
         </div>
 
         {canLoadStudents && pagination && totalPages > 0 ? (
-          <div className="flex items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
-            <p className="text-sm text-muted">
-              Page {pagination.page} of {totalPages} · {pagination.total}{" "}
-              student{pagination.total === 1 ? "" : "s"}
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1 || isFetching}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                className="inline-flex h-11 cursor-pointer items-center rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={page >= totalPages || isFetching}
-                onClick={() =>
-                  setPage((current) => Math.min(totalPages, current + 1))
-                }
-                className="inline-flex h-11 cursor-pointer items-center rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            page={page}
+            totalPages={totalPages}
+            total={pagination.total}
+            label="students"
+            disabled={isFetching}
+            onPageChange={(next) => setPage(next)}
+          />
         ) : null}
       </article>
     </div>

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { GradeFormDetailsPanel } from "@/features/school/components/GradeFormDetailsPanel";
 
 export default async function GradeFormDetailsPage({
@@ -11,12 +11,11 @@ export default async function GradeFormDetailsPage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/grade-forms"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to grade forms
-      </Link>
+      </BackLink>
       {Number.isInteger(gradeFormId) && gradeFormId > 0 ? (
         <GradeFormDetailsPanel gradeFormId={gradeFormId} />
       ) : (

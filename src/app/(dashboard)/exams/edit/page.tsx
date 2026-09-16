@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { ExamScheduleForm } from "@/features/school/components/ExamScheduleForm";
@@ -18,12 +18,11 @@ export default async function EditExamSchedulePage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/exams"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to exam schedules
-      </Link>
+      </BackLink>
       <PageHeader
         title="Exam timetable"
         description="Add exam date, courses, and times for this exam"

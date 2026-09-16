@@ -6,8 +6,6 @@ import {
   User,
   Check,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   Eye,
   Pause,
@@ -17,8 +15,11 @@ import {
   X,
 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
+import { ChildrenCountFilterSelect } from "@/components/dashboard/ChildrenCountFilterSelect";
+import { PaidFilterSelect } from "@/components/dashboard/PaidFilterSelect";
 import { StatusFilterSelect } from "@/components/dashboard/StatusFilterSelect";
 import { LoadingDots, TableLoadingRow } from "@/components/dashboard/TableLoading";
+import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -28,45 +29,87 @@ import {
   applyParentsSearch,
   clearSelectedParent,
   selectParent,
-  selectParentsAppliedSearch,
+  selectParentsAppliedFirstName,
+  selectParentsAppliedLastName,
+  selectParentsAppliedMiddleName,
+  selectParentsChildrenCountFilter,
+  selectParentsChildrenCountFilterInput,
   selectParentsLimit,
   selectParentsPage,
-  selectParentsSearchInput,
+  selectParentsPaidFilter,
+  selectParentsPaidFilterInput,
+  selectParentsFirstNameInput,
+  selectParentsLastNameInput,
+  selectParentsMiddleNameInput,
   selectParentsSortBy,
   selectParentsSortOrder,
   selectParentsStatusFilter,
   selectParentsStatusFilterInput,
   selectSelectedParentId,
+  setParentsChildrenCountFilterInput,
+  setParentsFirstNameInput,
+  setParentsLastNameInput,
+  setParentsMiddleNameInput,
   setParentsPage,
-  setParentsSearchInput,
+  setParentsPaidFilterInput,
   setParentsSort,
   setParentsStatusFilterInput,
 } from "@/features/school/parentsSlice";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type {
+  ChildrenCountFilter,
   DashboardParentsQuery,
   ParentsSortBy,
   ParentsSortOrder,
+  PersonPaidFilter,
   PersonStatusFilter,
 } from "@/features/school/types";
+
+function applyChildrenCountFilter(
+  query: DashboardParentsQuery,
+  childrenCountFilter: ChildrenCountFilter,
+) {
+  if (childrenCountFilter === "all") {
+    return;
+  }
+  if (childrenCountFilter === "6+") {
+    query.childrenCountMin = 6;
+    return;
+  }
+  query.childrenCount = Number(childrenCountFilter);
+}
 
 function buildParentsQuery(
   page: number,
   limit: number,
-  appliedSearch: string,
+  appliedFirstName: string,
+  appliedMiddleName: string,
+  appliedLastName: string,
   sortBy: ParentsSortBy,
   sortOrder: ParentsSortOrder,
   statusFilter: PersonStatusFilter,
+  paidFilter: PersonPaidFilter,
+  childrenCountFilter: ChildrenCountFilter,
 ): DashboardParentsQuery {
   const query: DashboardParentsQuery = { page, limit, sortBy, sortOrder };
 
-  if (appliedSearch) {
-    query.search = appliedSearch;
+  if (appliedFirstName) {
+    query.firstName = appliedFirstName;
+  }
+  if (appliedMiddleName) {
+    query.middleName = appliedMiddleName;
+  }
+  if (appliedLastName) {
+    query.lastName = appliedLastName;
   }
   if (statusFilter !== "all") {
     query.status = statusFilter;
   }
+  if (paidFilter !== "all") {
+    query.paid = paidFilter;
+  }
+  applyChildrenCountFilter(query, childrenCountFilter);
 
   return query;
 }
@@ -77,6 +120,39 @@ function isParentActive(status?: boolean) {
 
 function isParentPaid(paid?: boolean) {
   return paid !== false;
+}
+
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+function formatBirthday(value?: string | null): string {
+  if (!value) {
+    return "—";
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) {
+    return value;
+  }
+
+  const month = MONTHS[Number(match[2]) - 1];
+  if (!month) {
+    return value;
+  }
+
+  return `${month} ${Number(match[3])}, ${match[1]}`;
 }
 
 function IconColumnHeader({
@@ -274,6 +350,9 @@ function ChildrenDrawer({
                       Name
                     </th>
                     <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                      Date of birth
+                    </th>
+                    <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
                       Class
                     </th>
                     <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
@@ -304,6 +383,9 @@ function ChildrenDrawer({
                             name={child.fullName}
                           />
                         </Link>
+                      </td>
+                      <td className="whitespace-nowrap px-5 py-4 text-foreground">
+                        {formatBirthday(child.birthday)}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-foreground">
                         {child.className ?? "—"}
@@ -339,14 +421,24 @@ export function ParentsTable() {
   const dispatch = useAppDispatch();
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
-  const searchInput = useAppSelector(selectParentsSearchInput);
-  const appliedSearch = useAppSelector(selectParentsAppliedSearch);
+  const firstNameInput = useAppSelector(selectParentsFirstNameInput);
+  const middleNameInput = useAppSelector(selectParentsMiddleNameInput);
+  const lastNameInput = useAppSelector(selectParentsLastNameInput);
+  const appliedFirstName = useAppSelector(selectParentsAppliedFirstName);
+  const appliedMiddleName = useAppSelector(selectParentsAppliedMiddleName);
+  const appliedLastName = useAppSelector(selectParentsAppliedLastName);
   const page = useAppSelector(selectParentsPage);
   const limit = useAppSelector(selectParentsLimit);
   const sortBy = useAppSelector(selectParentsSortBy);
   const sortOrder = useAppSelector(selectParentsSortOrder);
   const statusFilterInput = useAppSelector(selectParentsStatusFilterInput);
   const statusFilter = useAppSelector(selectParentsStatusFilter);
+  const paidFilterInput = useAppSelector(selectParentsPaidFilterInput);
+  const paidFilter = useAppSelector(selectParentsPaidFilter);
+  const childrenCountFilterInput = useAppSelector(
+    selectParentsChildrenCountFilterInput,
+  );
+  const childrenCountFilter = useAppSelector(selectParentsChildrenCountFilter);
   const selectedParentId = useAppSelector(selectSelectedParentId);
   const [deleteParent, deleteState] = useDeleteParentMutation();
   const [updateParentStatus, statusState] = useUpdateParentStatusMutation();
@@ -363,10 +455,14 @@ export function ParentsTable() {
   const query = buildParentsQuery(
     page,
     limit,
-    appliedSearch,
+    appliedFirstName,
+    appliedMiddleName,
+    appliedLastName,
     sortBy,
     sortOrder,
     statusFilter,
+    paidFilter,
+    childrenCountFilter,
   );
   const canFetch = ready && Boolean(accessToken);
 
@@ -433,16 +529,56 @@ export function ParentsTable() {
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-          <TableSearchBar
-            label="Search parents"
-            placeholder="Search by first, middle, or last name"
-            value={searchInput}
-            onChange={(value) => dispatch(setParentsSearchInput(value))}
-            onSearch={() => dispatch(applyParentsSearch())}
-          >
+          <TableSearchBar hideInput onSearch={() => dispatch(applyParentsSearch())}>
+            <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+              <span className="sr-only">First name</span>
+              <input
+                type="search"
+                value={firstNameInput}
+                onChange={(event) =>
+                  dispatch(setParentsFirstNameInput(event.target.value))
+                }
+                placeholder="First name"
+                className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              />
+            </label>
+            <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+              <span className="sr-only">Middle name</span>
+              <input
+                type="search"
+                value={middleNameInput}
+                onChange={(event) =>
+                  dispatch(setParentsMiddleNameInput(event.target.value))
+                }
+                placeholder="Middle name"
+                className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              />
+            </label>
+            <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+              <span className="sr-only">Family name</span>
+              <input
+                type="search"
+                value={lastNameInput}
+                onChange={(event) =>
+                  dispatch(setParentsLastNameInput(event.target.value))
+                }
+                placeholder="Family"
+                className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              />
+            </label>
             <StatusFilterSelect
               value={statusFilterInput}
               onChange={(next) => dispatch(setParentsStatusFilterInput(next))}
+            />
+            <PaidFilterSelect
+              value={paidFilterInput}
+              onChange={(next) => dispatch(setParentsPaidFilterInput(next))}
+            />
+            <ChildrenCountFilterSelect
+              value={childrenCountFilterInput ?? "all"}
+              onChange={(next) =>
+                dispatch(setParentsChildrenCountFilterInput(next))
+              }
             />
           </TableSearchBar>
         </div>
@@ -497,6 +633,9 @@ export function ParentsTable() {
                   sortOrder={sortOrder}
                   onSort={(column) => dispatch(setParentsSort(column))}
                 />
+                <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Date of birth
+                </th>
                 <SortHeader
                   label="Children in school"
                   column="childrenCount"
@@ -519,11 +658,11 @@ export function ParentsTable() {
             </thead>
             <tbody>
               {isLoading ? (
-                <TableLoadingRow colSpan={8} label="Loading parents" />
+                <TableLoadingRow colSpan={9} label="Loading parents" />
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
@@ -533,7 +672,7 @@ export function ParentsTable() {
               ) : parents.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     No parents match this search.
@@ -551,17 +690,25 @@ export function ParentsTable() {
                       {parent.id}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
-                      <NameWithInitials
-                        firstName={parent.firstName}
-                        lastName={parent.lastName}
-                        name={parent.fullName}
-                      />
+                      <Link
+                        href={`/parents/${parent.id}`}
+                        className="inline-flex cursor-pointer rounded-xl text-foreground transition-colors duration-200 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      >
+                        <NameWithInitials
+                          firstName={parent.firstName}
+                          lastName={parent.lastName}
+                          name={parent.fullName}
+                        />
+                      </Link>
                     </td>
                     <td className="px-5 py-4 text-foreground">
                       {parent.address ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 tabular-nums text-foreground">
                       {parent.phoneNumber ?? "—"}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 text-foreground">
+                      {formatBirthday(parent.birthday)}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4">
                       <button
@@ -668,31 +815,14 @@ export function ParentsTable() {
           </table>
         </div>
         {pagination && totalPages > 0 ? (
-          <div className="flex items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
-            <p className="text-sm text-muted">
-              Page {pagination.page} of {totalPages} · {pagination.total} parents
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1 || isFetching}
-                onClick={() => dispatch(setParentsPage(page - 1))}
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ChevronLeft aria-hidden className="h-4 w-4" />
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={page >= totalPages || isFetching}
-                onClick={() => dispatch(setParentsPage(page + 1))}
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Next
-                <ChevronRight aria-hidden className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            page={page}
+            totalPages={totalPages}
+            total={pagination.total}
+            label="parents"
+            disabled={isFetching}
+            onPageChange={(next) => dispatch(setParentsPage(next))}
+          />
         ) : null}
       </article>
       {selectedParentId ? (

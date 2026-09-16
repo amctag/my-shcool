@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { WeeklyScheduleView } from "@/features/school/components/WeeklyScheduleView";
 
@@ -21,12 +21,11 @@ export default async function ViewSchedulePage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/schedule"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to weekly schedule
-      </Link>
+      </BackLink>
       <PageHeader
         title="Weekly schedule details"
         description="View class sessions and courses"

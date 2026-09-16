@@ -1,15 +1,14 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { AgendaForm } from "@/features/school/components/AgendaForm";
 
 export default function AddAgendaPage() {
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/agenda"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to agenda
-      </Link>
+      </BackLink>
       <AgendaForm />
     </div>
   );

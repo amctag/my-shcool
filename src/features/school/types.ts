@@ -5,6 +5,7 @@ export type DashboardParent = {
   lastName?: string;
   address: string | null;
   phoneNumber: string | null;
+  birthday?: string | null;
   childrenCount: number;
   status?: boolean;
   paid?: boolean;
@@ -49,6 +50,7 @@ export type DashboardParentChild = {
   username?: string;
   parentId: number | null;
   parentName: string | null;
+  classId?: number | null;
   className: string | null;
   sectionName: string | null;
   yearTitle: string | null;
@@ -61,8 +63,13 @@ export type DashboardChildrenQuery = {
   page: number;
   limit: number;
   parentId?: number;
+  classId?: number;
   search?: string;
   name?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  parentName?: string;
   id?: number;
   sortBy?: StudentsSortBy;
   sortOrder?: StudentsSortOrder;
@@ -74,14 +81,30 @@ export type DashboardChildrenResponse = {
 };
 
 export type PersonStatusFilter = "all" | "active" | "closed";
+export type PersonPaidFilter = "all" | "paid" | "unpaid";
+export type ChildrenCountFilter =
+  | "all"
+  | "0"
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6+";
 
 export type DashboardParentsQuery = {
   page: number;
   limit: number;
   search?: string;
   name?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
   id?: number;
   status?: "active" | "closed";
+  paid?: "paid" | "unpaid";
+  childrenCount?: number;
+  childrenCountMin?: number;
   sortBy?: ParentsSortBy;
   sortOrder?: ParentsSortOrder;
 };
@@ -172,6 +195,9 @@ export type DashboardTeachersQuery = {
   limit: number;
   search?: string;
   name?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
   id?: number;
   status?: "active" | "closed";
   sortBy?: TeachersSortBy;
@@ -203,6 +229,7 @@ export type DashboardTeacherDetail = {
   placeOfBirth: string | null;
   birthday: string | null;
   status: boolean;
+  createdAt: string;
 };
 
 export type SaveTeacherBody = {
@@ -857,6 +884,9 @@ export type DashboardRegistrationsQuery = {
   page: number;
   limit: number;
   search?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
   classId?: number;
   sectionId?: number;
   yearId?: number;

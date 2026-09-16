@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { SectionTitleForm } from "@/features/school/components/SectionTitleForm";
 
 export default async function EditSectionTitlePage({
@@ -11,12 +11,11 @@ export default async function EditSectionTitlePage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/section-titles"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to section titles
-      </Link>
+      </BackLink>
       {Number.isInteger(titleId) && titleId > 0 ? (
         <SectionTitleForm titleId={titleId} />
       ) : (

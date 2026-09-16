@@ -4,14 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   Plus,
   Trash2,
 } from "lucide-react";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
+import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -41,7 +40,9 @@ function formatDate(value: string): string {
 
 function buildQuery(
   page: number,
-  appliedSearch: string,
+  appliedFirstName: string,
+  appliedMiddleName: string,
+  appliedLastName: string,
   appliedYearId: number | null,
   appliedClassId: number,
   sortBy: RegistrationsSortBy,
@@ -53,8 +54,14 @@ function buildQuery(
     sortBy,
     sortOrder,
   };
-  if (appliedSearch) {
-    query.search = appliedSearch;
+  if (appliedFirstName) {
+    query.firstName = appliedFirstName;
+  }
+  if (appliedMiddleName) {
+    query.middleName = appliedMiddleName;
+  }
+  if (appliedLastName) {
+    query.lastName = appliedLastName;
   }
   if (appliedYearId) {
     query.yearId = appliedYearId;
@@ -106,8 +113,12 @@ export function RegistrationsTable() {
   const canFetch = ready && Boolean(accessToken);
   const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
 
-  const [searchInput, setSearchInput] = useState("");
-  const [appliedSearch, setAppliedSearch] = useState("");
+  const [firstNameInput, setFirstNameInput] = useState("");
+  const [middleNameInput, setMiddleNameInput] = useState("");
+  const [lastNameInput, setLastNameInput] = useState("");
+  const [appliedFirstName, setAppliedFirstName] = useState("");
+  const [appliedMiddleName, setAppliedMiddleName] = useState("");
+  const [appliedLastName, setAppliedLastName] = useState("");
   const [draftClassId, setDraftClassId] = useState(0);
   const [appliedClassId, setAppliedClassId] = useState(0);
   const [draftYearId, setDraftYearId] = useState<number | null>(null);
@@ -128,7 +139,9 @@ export function RegistrationsTable() {
   const { data, error, isLoading, isFetching } = useGetRegistrationsQuery(
     buildQuery(
       page,
-      appliedSearch,
+      appliedFirstName,
+      appliedMiddleName,
+      appliedLastName,
       resolvedYearId,
       appliedClassId,
       sortBy,
@@ -169,17 +182,23 @@ export function RegistrationsTable() {
   }
 
   function applySearch() {
-    const next = searchInput.trim();
+    const nextFirstName = firstNameInput.trim();
+    const nextMiddleName = middleNameInput.trim();
+    const nextLastName = lastNameInput.trim();
     const nextYearId = draftYearId ?? defaultYearId;
     if (
-      next === appliedSearch &&
+      nextFirstName === appliedFirstName &&
+      nextMiddleName === appliedMiddleName &&
+      nextLastName === appliedLastName &&
       nextYearId === appliedYearId &&
       draftClassId === appliedClassId
     ) {
       return;
     }
     setPage(1);
-    setAppliedSearch(next);
+    setAppliedFirstName(nextFirstName);
+    setAppliedMiddleName(nextMiddleName);
+    setAppliedLastName(nextLastName);
     setAppliedYearId(nextYearId);
     setAppliedClassId(draftClassId);
   }
@@ -187,14 +206,37 @@ export function RegistrationsTable() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <TableSearchBar
-          label="Search registrations"
-          placeholder="Search by first, middle, or last name"
-          value={searchInput}
-          onChange={setSearchInput}
-          onSearch={applySearch}
-          compact
-        >
+        <TableSearchBar hideInput onSearch={applySearch} compact>
+          <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+            <span className="sr-only">First name</span>
+            <input
+              type="search"
+              value={firstNameInput}
+              onChange={(event) => setFirstNameInput(event.target.value)}
+              placeholder="First name"
+              className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
+          </label>
+          <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+            <span className="sr-only">Middle name</span>
+            <input
+              type="search"
+              value={middleNameInput}
+              onChange={(event) => setMiddleNameInput(event.target.value)}
+              placeholder="Middle name"
+              className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
+          </label>
+          <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+            <span className="sr-only">Family name</span>
+            <input
+              type="search"
+              value={lastNameInput}
+              onChange={(event) => setLastNameInput(event.target.value)}
+              placeholder="Family"
+              className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            />
+          </label>
           <YearFilterSelect
             years={years}
             value={draftYearId ?? defaultYearId}
@@ -346,34 +388,12 @@ export function RegistrationsTable() {
           </table>
         </div>
 
-        {totalPages > 1 ? (
-          <div className="flex items-center justify-between border-t border-stone-100 px-5 py-4">
-            <p className="text-sm text-muted">
-              Page {page} of {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-border disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Previous page"
-              >
-                <ChevronLeft aria-hidden className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                disabled={page >= totalPages}
-                onClick={() =>
-                  setPage((current) => Math.min(totalPages, current + 1))
-                }
-                className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-border disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Next page"
-              >
-                <ChevronRight aria-hidden className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+        {totalPages > 0 ? (
+          <TablePagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={(next) => setPage(next)}
+          />
         ) : null}
       </div>
     </div>

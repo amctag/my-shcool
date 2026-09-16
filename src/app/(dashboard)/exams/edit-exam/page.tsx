@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { ExamScheduleMetadataForm } from "@/features/school/components/ExamScheduleMetadataForm";
@@ -16,12 +16,11 @@ export default async function EditExamPage({ searchParams }: EditExamPageProps) 
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/exams"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to exam schedules
-      </Link>
+      </BackLink>
       <PageHeader
         title="Edit exam"
         description="Update title, class, grade type, date, and note"

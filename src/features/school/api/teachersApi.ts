@@ -10,8 +10,32 @@ import type {
 export const teachersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getTeachers: builder.query<DashboardTeachersResponse, DashboardTeachersQuery>({
-      query: ({ page, limit, search, name, id, status, sortBy, sortOrder }) =>
-        `/dashboard/teachers${toQueryString({ page, limit, search, name, id, status, sortBy, sortOrder })}`,
+      query: ({
+        page,
+        limit,
+        search,
+        name,
+        firstName,
+        middleName,
+        lastName,
+        id,
+        status,
+        sortBy,
+        sortOrder,
+      }) =>
+        `/dashboard/teachers${toQueryString({
+          page,
+          limit,
+          search,
+          name,
+          firstName,
+          middleName,
+          lastName,
+          id,
+          status,
+          sortBy,
+          sortOrder,
+        })}`,
       keepUnusedDataFor: 120,
       providesTags: (result) =>
         result

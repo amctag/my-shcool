@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { GradeByCourseForm } from "@/features/school/components/GradeByCourseForm";
 
@@ -23,12 +23,11 @@ export default async function AddGradeByCoursePage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/grades/by-course"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to grades by course
-      </Link>
+      </BackLink>
       <PageHeader
         title={isEdit ? "Edit grades by course" : "Add grades by course"}
         description="Select class, section, course, and grade type, then enter grades for students"

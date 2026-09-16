@@ -1,15 +1,14 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { AddParentForm } from "@/features/school/components/AddParentForm";
 
 export default function AddParentPage() {
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/parents"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to parents
-      </Link>
+      </BackLink>
       <AddParentForm />
     </div>
   );

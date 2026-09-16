@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { SectionForm } from "@/features/school/components/SectionForm";
 
 export default async function ViewSectionPage({
@@ -11,12 +11,11 @@ export default async function ViewSectionPage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/sections"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to sections
-      </Link>
+      </BackLink>
       {Number.isInteger(sectionId) && sectionId > 0 ? (
         <SectionForm sectionId={sectionId} readOnly />
       ) : (

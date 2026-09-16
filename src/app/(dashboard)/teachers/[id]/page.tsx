@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { TeacherForm } from "@/features/school/components/TeacherForm";
+import { BackLink } from "@/components/dashboard/BackLink";
+import { TeacherProfile } from "@/features/school/components/TeacherProfile";
 
 export default async function ViewTeacherPage({
   params,
@@ -11,14 +11,9 @@ export default async function ViewTeacherPage({
 
   return (
     <div className="space-y-4">
-      <Link
-        href="/teachers"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
-      >
-        Back to teachers
-      </Link>
+      <BackLink href="/teachers">Back to teachers</BackLink>
       {Number.isInteger(teacherId) && teacherId > 0 ? (
-        <TeacherForm teacherId={teacherId} readOnly />
+        <TeacherProfile teacherId={teacherId} />
       ) : (
         <p className="text-sm text-red-600">Invalid teacher id.</p>
       )}

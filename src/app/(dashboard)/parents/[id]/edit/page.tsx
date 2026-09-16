@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { ParentForm } from "@/features/school/components/ParentForm";
 
 export default async function EditParentPage({
@@ -11,12 +11,11 @@ export default async function EditParentPage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/parents"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to parents
-      </Link>
+      </BackLink>
       {Number.isInteger(parentId) && parentId > 0 ? (
         <ParentForm parentId={parentId} />
       ) : (

@@ -5,8 +5,6 @@ import Link from "next/link";
 import {
   Check,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   Eye,
   Pause,
@@ -17,6 +15,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { StatusFilterSelect } from "@/components/dashboard/StatusFilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
+import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -37,15 +36,23 @@ import type {
 function buildTeachersQuery(
   page: number,
   limit: number,
-  appliedSearch: string,
+  appliedFirstName: string,
+  appliedMiddleName: string,
+  appliedLastName: string,
   sortBy: TeachersSortBy,
   sortOrder: TeachersSortOrder,
   statusFilter: PersonStatusFilter,
 ): DashboardTeachersQuery {
   const query: DashboardTeachersQuery = { page, limit, sortBy, sortOrder };
 
-  if (appliedSearch) {
-    query.search = appliedSearch;
+  if (appliedFirstName) {
+    query.firstName = appliedFirstName;
+  }
+  if (appliedMiddleName) {
+    query.middleName = appliedMiddleName;
+  }
+  if (appliedLastName) {
+    query.lastName = appliedLastName;
   }
   if (statusFilter !== "all") {
     query.status = statusFilter;
@@ -171,8 +178,12 @@ function SortHeader({
 export function TeachersTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
-  const [searchInput, setSearchInput] = useState("");
-  const [appliedSearch, setAppliedSearch] = useState("");
+  const [firstNameInput, setFirstNameInput] = useState("");
+  const [middleNameInput, setMiddleNameInput] = useState("");
+  const [lastNameInput, setLastNameInput] = useState("");
+  const [appliedFirstName, setAppliedFirstName] = useState("");
+  const [appliedMiddleName, setAppliedMiddleName] = useState("");
+  const [appliedLastName, setAppliedLastName] = useState("");
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<TeachersSortBy>("id");
   const [sortOrder, setSortOrder] = useState<TeachersSortOrder>("asc");
@@ -192,7 +203,9 @@ export function TeachersTable() {
   const query = buildTeachersQuery(
     page,
     limit,
-    appliedSearch,
+    appliedFirstName,
+    appliedMiddleName,
+    appliedLastName,
     sortBy,
     sortOrder,
     statusFilter,
@@ -203,12 +216,21 @@ export function TeachersTable() {
   });
 
   function applySearch() {
-    const next = searchInput.trim();
-    if (next === appliedSearch && statusFilterInput === statusFilter) {
+    const nextFirstName = firstNameInput.trim();
+    const nextMiddleName = middleNameInput.trim();
+    const nextLastName = lastNameInput.trim();
+    if (
+      nextFirstName === appliedFirstName &&
+      nextMiddleName === appliedMiddleName &&
+      nextLastName === appliedLastName &&
+      statusFilterInput === statusFilter
+    ) {
       return;
     }
     setPage(1);
-    setAppliedSearch(next);
+    setAppliedFirstName(nextFirstName);
+    setAppliedMiddleName(nextMiddleName);
+    setAppliedLastName(nextLastName);
     setStatusFilter(statusFilterInput);
   }
 
@@ -270,13 +292,37 @@ export function TeachersTable() {
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
-          <TableSearchBar
-            label="Search teachers"
-            placeholder="Search by first, middle, or last name, id, or phone"
-            value={searchInput}
-            onChange={setSearchInput}
-            onSearch={applySearch}
-          >
+          <TableSearchBar hideInput onSearch={applySearch}>
+            <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+              <span className="sr-only">First name</span>
+              <input
+                type="search"
+                value={firstNameInput}
+                onChange={(event) => setFirstNameInput(event.target.value)}
+                placeholder="First name"
+                className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              />
+            </label>
+            <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+              <span className="sr-only">Middle name</span>
+              <input
+                type="search"
+                value={middleNameInput}
+                onChange={(event) => setMiddleNameInput(event.target.value)}
+                placeholder="Middle name"
+                className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              />
+            </label>
+            <label className="relative w-full min-w-0 shrink-0 sm:w-36">
+              <span className="sr-only">Family name</span>
+              <input
+                type="search"
+                value={lastNameInput}
+                onChange={(event) => setLastNameInput(event.target.value)}
+                placeholder="Family"
+                className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              />
+            </label>
             <StatusFilterSelect
               value={statusFilterInput}
               onChange={setStatusFilterInput}
@@ -378,15 +424,20 @@ export function TeachersTable() {
                       {teacher.id}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
-                      <NameWithInitials
-                        firstName={teacher.firstName}
-                        lastName={teacher.lastName}
-                        name={teacherName(
-                          teacher.firstName,
-                          teacher.lastName,
-                          teacher.fullName,
-                        )}
-                      />
+                      <Link
+                        href={`/teachers/${teacher.id}`}
+                        className="inline-flex cursor-pointer rounded-xl text-foreground transition-colors duration-200 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      >
+                        <NameWithInitials
+                          firstName={teacher.firstName}
+                          lastName={teacher.lastName}
+                          name={teacherName(
+                            teacher.firstName,
+                            teacher.lastName,
+                            teacher.fullName,
+                          )}
+                        />
+                      </Link>
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 tabular-nums text-foreground">
                       {teacher.phoneNumber ?? "—"}
@@ -464,32 +515,14 @@ export function TeachersTable() {
           </table>
         </div>
         {pagination && totalPages > 0 ? (
-          <div className="flex items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
-            <p className="text-sm text-muted">
-              Page {pagination.page} of {totalPages} · {pagination.total}{" "}
-              teachers
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1 || isFetching}
-                onClick={() => setPage(page - 1)}
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ChevronLeft aria-hidden className="h-4 w-4" />
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={page >= totalPages || isFetching}
-                onClick={() => setPage(page + 1)}
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Next
-                <ChevronRight aria-hidden className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            page={page}
+            totalPages={totalPages}
+            total={pagination.total}
+            label="teachers"
+            disabled={isFetching}
+            onPageChange={(next) => setPage(next)}
+          />
         ) : null}
       </article>
       {pendingDelete ? (

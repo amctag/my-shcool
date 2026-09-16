@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   Eye,
   Pencil,
@@ -15,6 +13,7 @@ import {
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
+import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -383,36 +382,14 @@ export function AgendaSectionsTable() {
         </div>
 
         {totalPages > 0 ? (
-          <div className="flex items-center justify-between gap-3 border-t border-stone-100 px-5 py-4">
-            <p className="text-sm text-muted">
-              Page {page} of {totalPages} · {total} record
-              {total === 1 ? "" : "s"}
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1 || isFetching}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Previous page"
-              >
-                <ChevronLeft aria-hidden className="h-4 w-4" />
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={page >= totalPages || isFetching}
-                onClick={() =>
-                  setPage((current) => Math.min(totalPages, current + 1))
-                }
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
-                aria-label="Next page"
-              >
-                Next
-                <ChevronRight aria-hidden className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            label="records"
+            disabled={isFetching}
+            onPageChange={(next) => setPage(next)}
+          />
         ) : null}
       </article>
 

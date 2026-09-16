@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { TakeAttendanceForm } from "@/features/school/components/TakeAttendanceForm";
 
@@ -13,12 +13,9 @@ export default async function EditAttendancePage({
 
   return (
     <div className="space-y-4">
-      <Link
-        href={valid ? `/attendance/${attendanceId}` : "/attendance"}
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
-      >
+      <BackLink href={valid ? `/attendance/${attendanceId}` : "/attendance"}>
         Back to attendance
-      </Link>
+      </BackLink>
       <PageHeader
         title="Edit attendance"
         description="Update present / absent marks and absence reasons"

@@ -10,6 +10,7 @@ import {
   useUpdateParentMutation,
 } from "@/features/school/api/parentsApi";
 import {
+  useCreateJobMutation,
   useGetGovernoratesQuery,
   useGetJobsQuery,
   useGetNationalitiesQuery,
@@ -183,6 +184,117 @@ function LookupSelect({
         ))}
       </select>
     </Field>
+  );
+}
+
+function JobLookupSelect({
+  id,
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  value: string;
+  options: LookupItem[];
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const [createJob, createState] = useCreateJobMutation();
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+
+  async function handleAdd() {
+    const name = newName.trim();
+    if (!name) {
+      setAddError("Enter a job name.");
+      return;
+    }
+
+    setAddError(null);
+    try {
+      const created = await createJob({ name }).unwrap();
+      onChange(String(created.id));
+      setNewName("");
+      setAdding(false);
+    } catch (error) {
+      setAddError(getApiErrorMessage(error, "Could not add job"));
+    }
+  }
+
+  return (
+    <div className="min-w-0 flex-1 space-y-2">
+      <div className="flex min-w-0 items-center gap-2">
+        {adding && !disabled ? (
+          <>
+            <input
+              id={id}
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void handleAdd();
+                }
+              }}
+              placeholder="New job name"
+              disabled={createState.isLoading}
+              className={`${inputClass} min-w-0 flex-1`}
+              aria-label="New job name"
+            />
+            <button
+              type="button"
+              disabled={createState.isLoading}
+              onClick={() => void handleAdd()}
+              className="h-11 shrink-0 cursor-pointer rounded-xl bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {createState.isLoading ? "Adding…" : "Add"}
+            </button>
+            <button
+              type="button"
+              disabled={createState.isLoading}
+              onClick={() => {
+                setAdding(false);
+                setNewName("");
+                setAddError(null);
+              }}
+              className="h-11 shrink-0 cursor-pointer rounded-xl border border-border bg-white px-4 text-sm font-medium text-foreground transition-colors duration-200 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="min-w-0 flex-1">
+              <LookupSelect
+                id={id}
+                label="Job"
+                placeholder="Job"
+                value={value}
+                options={options}
+                onChange={onChange}
+                disabled={disabled || createState.isLoading}
+              />
+            </div>
+            {disabled ? null : (
+              <button
+                type="button"
+                onClick={() => setAdding(true)}
+                className="inline-flex h-11 shrink-0 cursor-pointer items-center whitespace-nowrap rounded-xl border border-border bg-white px-3 text-sm font-medium text-primary transition-colors duration-200 hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                + Add
+              </button>
+            )}
+          </>
+        )}
+      </div>
+      {addError ? (
+        <p className="text-sm text-red-600" role="alert">
+          {addError}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -401,21 +513,36 @@ export function ParentForm({
             className={inputClass}
           />
         </Field>
-        <Field id="birthday" label="Date of Birth">
-          <input
-            id="birthday"
-            type="date"
-            value={form.birthday}
-            onChange={(event) => update("birthday", event.target.value)}
-            className={inputClass}
-          />
+        <Field id="birthday" label="Date of birth">
+          <div className="relative">
+            {!form.birthday ? (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 start-3 z-10 flex items-center text-sm text-muted"
+              >
+                Date of birth
+              </span>
+            ) : null}
+            <input
+              id="birthday"
+              type="date"
+              value={form.birthday}
+              onChange={(event) => update("birthday", event.target.value)}
+              placeholder="Date of birth"
+              title="Date of birth"
+              aria-label="Date of birth"
+              className={`${inputClass}${
+                form.birthday ? "" : " text-transparent [&::-webkit-datetime-edit]:text-transparent"
+              }`}
+            />
+          </div>
         </Field>
         <Field id="placeOfBirth" label="Place of birth">
           <input
             id="placeOfBirth"
             value={form.placeOfBirth}
             onChange={(event) => update("placeOfBirth", event.target.value)}
-            placeholder="Place Of birth"
+            placeholder="Place of birth"
             className={inputClass}
           />
         </Field>
@@ -500,13 +627,12 @@ export function ParentForm({
             <option value="0">Inactive</option>
           </select>
         </Field>
-        <LookupSelect
+        <JobLookupSelect
           id="jobId"
-          label="Job"
-          placeholder="Job"
           value={form.jobId}
           options={jobs}
           onChange={(value) => update("jobId", value)}
+          disabled={readOnly}
         />
       </div>
 

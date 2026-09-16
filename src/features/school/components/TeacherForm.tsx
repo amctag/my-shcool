@@ -46,13 +46,6 @@ type TeacherFormState = {
   address: string;
 };
 
-function todayInputDate() {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
-
 function emptyForm(): TeacherFormState {
   return {
     firstName: "",
@@ -186,7 +179,6 @@ export function TeacherForm({
   const isEdit = Boolean(teacherId) && !readOnly;
   const [form, setForm] = useState<TeacherFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
-  const [createdAt, setCreatedAt] = useState(todayInputDate);
 
   const { data: teacher, isLoading: teacherLoading } = useGetTeacherQuery(
     teacherId ?? 0,
@@ -277,7 +269,6 @@ export function TeacherForm({
 
       if (stayOnPage && !teacherId) {
         setForm(emptyForm());
-        setCreatedAt(todayInputDate());
         return;
       }
 
@@ -490,17 +481,14 @@ export function TeacherForm({
         ) : null}
 
         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <label className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <span className="text-lg font-semibold text-foreground">
-              Date Created
-            </span>
-            <input
-              type="date"
-              value={createdAt}
-              onChange={(event) => setCreatedAt(event.target.value)}
-              className={`${inputClass} sm:w-48`}
-            />
-          </label>
+          {teacher?.createdAt ? (
+            <p className="text-sm text-muted">
+              <span className="font-semibold text-foreground">Date created:</span>{" "}
+              {teacher.createdAt}
+            </p>
+          ) : (
+            <span />
+          )}
           {readOnly ? null : (
             <div className="flex flex-wrap gap-3">
               <button

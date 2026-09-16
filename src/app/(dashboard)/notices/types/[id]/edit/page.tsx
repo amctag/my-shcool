@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { NoticeTypeForm } from "@/features/school/components/NoticeTypeForm";
 
 export default async function EditNoticeTypePage({
@@ -11,12 +11,11 @@ export default async function EditNoticeTypePage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/notices/types"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to notice types
-      </Link>
+      </BackLink>
       {Number.isInteger(typeId) && typeId > 0 ? (
         <NoticeTypeForm typeId={typeId} />
       ) : (

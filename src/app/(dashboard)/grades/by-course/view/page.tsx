@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { BackLink } from "@/components/dashboard/BackLink";
 import { PageHeader } from "@/components/dashboard/PageHeader";
 import { GradeByCourseView } from "@/features/school/components/GradeByCourseView";
 
@@ -19,12 +19,11 @@ export default async function ViewGradeByCoursePage({
 
   return (
     <div className="space-y-4">
-      <Link
+      <BackLink
         href="/grades/by-course"
-        className="inline-flex min-h-11 items-center text-sm font-medium text-primary hover:text-primary-hover"
       >
         Back to grades by course
-      </Link>
+      </BackLink>
       <PageHeader
         title="Grade sheet details"
         description="View student grades for this course and grade type"

@@ -3,12 +3,11 @@
 import { useState } from "react";
 import {
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
 } from "lucide-react";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
+import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import {
   useGetClassesQuery,
@@ -183,31 +182,14 @@ export function ClassesTable() {
           </table>
         </div>
         {pagination && totalPages > 0 ? (
-          <div className="flex flex-col gap-3 border-t border-stone-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted">
-              Page {pagination.page} of {totalPages} · {pagination.total} classes
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={page <= 1 || isFetching}
-                onClick={() => setPage(page - 1)}
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:opacity-50"
-              >
-                <ChevronLeft aria-hidden className="h-4 w-4" />
-                Previous
-              </button>
-              <button
-                type="button"
-                disabled={page >= totalPages || isFetching}
-                onClick={() => setPage(page + 1)}
-                className="inline-flex h-11 cursor-pointer items-center gap-1 rounded-xl border border-border px-3 text-sm font-medium hover:bg-primary-soft disabled:opacity-50"
-              >
-                Next
-                <ChevronRight aria-hidden className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+          <TablePagination
+            page={page}
+            totalPages={totalPages}
+            total={pagination.total}
+            label="classes"
+            disabled={isFetching}
+            onPageChange={(next) => setPage(next)}
+          />
         ) : null}
       </article>
     </>
