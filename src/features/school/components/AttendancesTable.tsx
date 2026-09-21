@@ -324,6 +324,9 @@ export function AttendancesTable() {
                   sortOrder={sortOrder}
                   onSort={handleSort}
                 />
+                <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Course
+                </th>
                 <SortHeader
                   label="Year"
                   column="year"
@@ -345,11 +348,11 @@ export function AttendancesTable() {
             </thead>
             <tbody>
               {isLoading || !resolvedYearId ? (
-                <TableLoadingRow colSpan={6} label="Loading attendance" />
+                <TableLoadingRow colSpan={7} label="Loading attendance" />
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
@@ -359,7 +362,7 @@ export function AttendancesTable() {
               ) : items.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     No attendance records found. Click Add to create one.
@@ -379,6 +382,9 @@ export function AttendancesTable() {
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-foreground">
                       {item.sectionTitle}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 text-foreground">
+                      {item.courseTitle ?? "Class"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-foreground">
                       {item.yearTitle}

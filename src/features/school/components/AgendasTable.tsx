@@ -9,6 +9,7 @@ import {
   Eye,
   Pencil,
   Plus,
+  Send,
   Trash2,
 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
@@ -21,6 +22,7 @@ import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useDeleteDashboardAgendaMutation,
   useGetDashboardAgendasQuery,
+  usePublishDashboardAgendaMutation,
 } from "@/features/school/api/agendasApi";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import { useGetClassCoursesQuery } from "@/features/school/api/coursesApi";
@@ -133,6 +135,8 @@ export function AgendasTable() {
   const [sortOrder, setSortOrder] = useState<AgendasSortOrder>("desc");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [publishingId, setPublishingId] = useState<number | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!defaultYearId) {
@@ -196,6 +200,7 @@ export function AgendasTable() {
     },
   );
   const [deleteAgenda, deleteState] = useDeleteDashboardAgendaMutation();
+  const [publishAgenda, publishState] = usePublishDashboardAgendaMutation();
 
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
@@ -234,11 +239,28 @@ export function AgendasTable() {
     }
   }
 
+  async function confirmPublish(id: number) {
+    setPublishError(null);
+    setPublishingId(id);
+    try {
+      await publishAgenda(id).unwrap();
+    } catch (caught) {
+      setPublishError(getApiErrorMessage(caught, "Could not publish agenda"));
+    } finally {
+      setPublishingId(null);
+    }
+  }
+
   return (
     <div>
       {savedMessage ? (
         <p className="mb-4 rounded-xl bg-primary-soft px-4 py-3 text-sm text-primary">
           Agenda saved.
+        </p>
+      ) : null}
+      {publishError ? (
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {publishError}
         </p>
       ) : null}
       <div className="mb-5 flex flex-nowrap items-center gap-3 overflow-x-auto pb-1">
@@ -415,6 +437,20 @@ export function AgendasTable() {
                     </td>
                     <td className="whitespace-nowrap px-5 py-4">
                       <div className="flex items-center gap-2">
+                        {item.status !== 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => void confirmPublish(item.id)}
+                            disabled={
+                              publishState.isLoading && publishingId === item.id
+                            }
+                            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors hover:bg-primary-soft hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+                            aria-label={`Publish agenda ${item.id}`}
+                            title="Publish"
+                          >
+                            <Send aria-hidden className="h-4 w-4" />
+                          </button>
+                        ) : null}
                         <Link
                           href={`/agenda/${item.id}`}
                           className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors hover:bg-primary-soft hover:text-primary"

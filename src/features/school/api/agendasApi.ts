@@ -96,6 +96,17 @@ export const agendasApi = baseApi.injectEndpoints({
         { type: "DashboardAgendaSections", id: "LIST" },
       ],
     }),
+    publishDashboardAgenda: builder.mutation<DashboardAgenda, number>({
+      query: (id) => ({
+        url: `/dashboard/agendas/${id}/publish`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "DashboardAgendas", id },
+        { type: "DashboardAgendas", id: "LIST" },
+        { type: "DashboardAgendaSections", id: "LIST" },
+      ],
+    }),
   }),
 });
 
@@ -105,4 +116,5 @@ export const {
   useCreateDashboardAgendaMutation,
   useUpdateDashboardAgendaMutation,
   useDeleteDashboardAgendaMutation,
+  usePublishDashboardAgendaMutation,
 } = agendasApi;

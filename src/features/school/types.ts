@@ -453,6 +453,58 @@ export type TeachesSortBy =
   | "year";
 export type TeachesSortOrder = "asc" | "desc";
 
+export type TeacherSupervisorsSortBy = "id" | "teacher" | "class" | "year";
+export type TeacherSupervisorsSortOrder = "asc" | "desc";
+
+export type DashboardTeacherSupervisorClass = {
+  id: number;
+  classId: number;
+  className: string;
+};
+
+export type DashboardTeacherSupervisor = {
+  id: number;
+  teacherId: number;
+  teacherName: string;
+  classId: number;
+  className: string;
+  yearId: number;
+  yearTitle: string;
+  isCurrentYear: boolean;
+};
+
+export type DashboardTeacherSupervisorGroup = {
+  teacherId: number;
+  teacherName: string;
+  yearId: number;
+  yearTitle: string;
+  isCurrentYear: boolean;
+  classes: DashboardTeacherSupervisorClass[];
+};
+
+export type DashboardTeacherSupervisorsQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  classId?: number;
+  teacherId?: number;
+  yearId?: number;
+  sortBy?: TeacherSupervisorsSortBy;
+  sortOrder?: TeacherSupervisorsSortOrder;
+};
+
+export type DashboardTeacherSupervisorsResponse = {
+  items: DashboardTeacherSupervisorGroup[];
+  pagination: PaginationMeta;
+};
+
+export type SaveTeacherSupervisorBody = {
+  teacherId: number;
+  classId?: number;
+  classIds?: number[];
+  yearId?: number;
+};
+
 export type DashboardTeach = {
   id: number;
   teacherId: number;
@@ -1336,12 +1388,14 @@ export type DashboardAttendancesQuery = {
 export type DashboardAttendanceListItem = {
   id: number;
   date: string;
-  sectionId: number;
-  sectionTitle: string;
-  classId: number;
-  className: string;
-  yearId: number;
-  yearTitle: string;
+  sectionId: number | null;
+  sectionTitle: string | null;
+  classId: number | null;
+  className: string | null;
+  courseId: number | null;
+  courseTitle: string | null;
+  yearId: number | null;
+  yearTitle: string | null;
   status: boolean;
   studentCount: number;
   absentCount: number;
@@ -1372,6 +1426,8 @@ export type DashboardAttendanceSheet = {
   sectionTitle: string;
   classId: number;
   className: string;
+  courseId: number | null;
+  courseTitle: string | null;
   yearId: number;
   yearTitle: string;
   students: DashboardAttendanceStudentRow[];

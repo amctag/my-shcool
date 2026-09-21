@@ -23,6 +23,8 @@ import {
   ListOrdered,
   FileSpreadsheet,
   FileDown,
+  Settings,
+  Shield,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -60,6 +62,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { href: "/class-courses", label: "Classes & Courses", icon: Bookmark },
       { href: "/teaches", label: "Teach", icon: BookUser },
+      { href: "/teacher-supervisors", label: "Supervisors", icon: Shield },
       { href: "/section-titles", label: "Section titles", icon: Tags },
       { href: "/sections", label: "Sections", icon: Rows3 },
       { href: "/schedule", label: "Weekly schedule", icon: CalendarDays },
@@ -123,6 +126,7 @@ export const navGroups: NavGroup[] = [
       { href: "/activities", label: "Activities", icon: Sparkles },
       { href: "/albums", label: "Albums", icon: Images },
       { href: "/school", label: "School details", icon: School },
+      { href: "/settings", label: "Settings", icon: Settings },
     ],
   },
 ];

@@ -16,6 +16,7 @@ import {
   Phone,
   Presentation,
   Rows3,
+  Shield,
 } from "lucide-react";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -26,6 +27,7 @@ import {
   useGetRegionsQuery,
 } from "@/features/school/api/lookupsApi";
 import { useGetTeachesQuery } from "@/features/school/api/teachesApi";
+import { useGetTeacherSupervisorsQuery } from "@/features/school/api/teacherSupervisorsApi";
 import { useGetTeacherQuery } from "@/features/school/api/teachersApi";
 import { useAppSelector } from "@/store/hooks";
 import type { DashboardTeacherDetail } from "@/features/school/types";
@@ -136,6 +138,22 @@ export function TeacherProfile({ teacherId }: { teacherId: number }) {
     isLoading: teachesLoading,
     isFetching: teachesFetching,
   } = useGetTeachesQuery(
+    {
+      page: 1,
+      limit: 50,
+      teacherId,
+      sortBy: "year",
+      sortOrder: "desc",
+    },
+    { skip: !canFetch },
+  );
+
+  const {
+    data: supervisorsData,
+    error: supervisorsError,
+    isLoading: supervisorsLoading,
+    isFetching: supervisorsFetching,
+  } = useGetTeacherSupervisorsQuery(
     {
       page: 1,
       limit: 50,
@@ -494,6 +512,95 @@ export function TeacherProfile({ teacherId }: { teacherId: number }) {
                 </Link>
               </li>
             ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="overflow-hidden rounded-3xl border border-border bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border bg-stone-50/70 px-5 py-5 sm:px-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <Shield aria-hidden className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-semibold text-foreground">
+                Supervised classes
+              </h2>
+            </div>
+            <p className="mt-1 text-sm text-muted">
+              {(supervisorsData?.items ?? []).reduce(
+                (count, group) => count + group.classes.length,
+                0,
+              )}{" "}
+              shown
+            </p>
+          </div>
+          <Link
+            href="/teacher-supervisors/add"
+            className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground px-4 text-sm font-medium text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            Add supervisor
+          </Link>
+        </div>
+
+        {supervisorsLoading ? (
+          <div className="p-8">
+            <LoadingDots label="Loading supervisor assignments" />
+          </div>
+        ) : supervisorsError ? (
+          <p className="px-5 py-8 text-center text-sm text-red-600" role="alert">
+            {getApiErrorMessage(
+              supervisorsError,
+              "Could not load supervisor assignments",
+            )}
+          </p>
+        ) : (supervisorsData?.items ?? []).length === 0 ? (
+          <div className="px-5 py-14 text-center">
+            <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+              <Shield aria-hidden className="h-7 w-7" />
+            </div>
+            <p className="mt-4 text-sm font-semibold text-foreground">
+              No supervisor assignments yet
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Assign this teacher as supervisor of a class from Supervisors.
+            </p>
+          </div>
+        ) : (
+          <ul
+            className={`grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3 ${
+              supervisorsFetching ? "opacity-70" : ""
+            }`}
+          >
+            {(supervisorsData?.items ?? []).flatMap((group) =>
+              group.classes.map((cls) => (
+                <li key={cls.id}>
+                  <Link
+                    href={`/teacher-supervisors/${cls.id}`}
+                    className="group flex h-full cursor-pointer flex-col rounded-2xl border border-stone-200 bg-gradient-to-br from-white to-stone-50 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_12px_28px_rgba(28,25,23,0.08)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-foreground text-white transition-colors duration-200 group-hover:bg-primary">
+                        <Shield aria-hidden className="h-4 w-4" />
+                      </span>
+                      {group.isCurrentYear ? (
+                        <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+                          Current
+                        </span>
+                      ) : (
+                        <span className="rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
+                          Past
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-3 text-base font-semibold text-foreground group-hover:text-primary">
+                      {cls.className}
+                    </p>
+                    <p className="mt-3 text-xs font-medium uppercase tracking-wide text-stone-400">
+                      {group.yearTitle}
+                    </p>
+                  </Link>
+                </li>
+              )),
+            )}
           </ul>
         )}
       </section>
