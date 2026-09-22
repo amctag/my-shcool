@@ -12,9 +12,9 @@ import {
   IdCard,
   Mail,
   MapPin,
-  Minus,
   Pencil,
   Phone,
+  RefreshCw,
   Rows3,
   UserRound,
   Users,
@@ -164,8 +164,8 @@ function ProgressBadge({ kind }: { kind: ProgressKind }) {
   if (kind === "stay") {
     return (
       <span className="inline-flex items-center gap-1 rounded-md bg-sky-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-900">
-        <Minus aria-hidden className="h-3 w-3" />
-        Stay
+        <RefreshCw aria-hidden className="h-3 w-3" />
+        Re-reg
       </span>
     );
   }
@@ -559,7 +559,7 @@ export function StudentProfile({ studentId }: { studentId: number }) {
                         ) : kind === "down" ? (
                           <ArrowDown aria-hidden className="h-4 w-4" />
                         ) : kind === "stay" ? (
-                          <Minus aria-hidden className="h-4 w-4" />
+                          <RefreshCw aria-hidden className="h-4 w-4" />
                         ) : (
                           <GraduationCap aria-hidden className="h-4 w-4" />
                         )}

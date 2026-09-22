@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp, CheckCircle2, Minus, X, XCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, RefreshCw, X, XCircle } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useBulkProgressRegistrationsMutation } from "@/features/school/api/registrationsApi";
 import type { RegistrationProgressAction } from "@/features/school/types";
@@ -27,7 +27,7 @@ function actionLabel(action: RegistrationProgressAction): string {
   if (action === "down") {
     return "Down";
   }
-  return "Stay";
+  return "Re-registration";
 }
 
 function actionDescription(action: RegistrationProgressAction): string {
@@ -37,7 +37,7 @@ function actionDescription(action: RegistrationProgressAction): string {
   if (action === "down") {
     return "Create next-year registrations in the previous class level for the selected students.";
   }
-  return "Create next-year registrations in the same class for the selected students.";
+  return "Re-register the selected students in the same class for the next school year.";
 }
 
 function ActionIcon({ action }: { action: RegistrationProgressAction }) {
@@ -47,7 +47,7 @@ function ActionIcon({ action }: { action: RegistrationProgressAction }) {
   if (action === "down") {
     return <ArrowDown aria-hidden className="h-5 w-5" />;
   }
-  return <Minus aria-hidden className="h-5 w-5" />;
+  return <RefreshCw aria-hidden className="h-5 w-5" />;
 }
 
 export function RegistrationProgressDrawer({

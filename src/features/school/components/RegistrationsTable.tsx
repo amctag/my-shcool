@@ -12,6 +12,7 @@ import {
   Minus,
   Pencil,
   Plus,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
@@ -491,10 +492,10 @@ export function RegistrationsTable() {
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-white px-4 py-3 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <p className="me-auto text-sm text-muted">
           {!classFilterActive
-            ? "Filter by class and click Search before using Up, Stay, or Down"
+            ? "Filter by class and click Search before using Up, Re-registration, or Down"
             : selectedTargets.length > 0
               ? `${selectedTargets.length} selected on this page`
-              : "Select students, then choose Up, Stay, or Down"}
+              : "Select students, then choose Up, Re-registration, or Down"}
         </p>
         <button
           type="button"
@@ -511,8 +512,8 @@ export function RegistrationsTable() {
           onClick={() => setProgressAction("stay")}
           className="inline-flex h-9 cursor-pointer items-center gap-1 rounded-lg border border-border bg-white px-3 text-xs font-semibold text-foreground transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Minus aria-hidden className="h-3.5 w-3.5" />
-          Stay
+          <RefreshCw aria-hidden className="h-3.5 w-3.5" />
+          Re-registration
         </button>
         <button
           type="button"
