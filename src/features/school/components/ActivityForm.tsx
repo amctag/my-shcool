@@ -101,18 +101,19 @@ export function ActivityForm() {
   const [form, setForm] = useState<ActivityFormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { years, yearId: globalYearId, setYearId } =
+    useSchoolYearFilter(canFetch);
   const [createActivity, createState] = useCreateDashboardActivityMutation();
   const [uploadMedia] = useUploadDashboardMediaMutation();
 
   useEffect(() => {
-    if (!defaultYearId) {
+    if (!globalYearId) {
       return;
     }
     setForm((current) =>
-      current.yearId === 0 ? { ...current, yearId: defaultYearId } : current,
+      current.yearId === 0 ? { ...current, yearId: globalYearId } : current,
     );
-  }, [defaultYearId]);
+  }, [globalYearId]);
 
   async function uploadImage(file: File): Promise<void> {
     setFormError(null);
@@ -234,9 +235,12 @@ export function ActivityForm() {
                   label: year.isCurrent ? `${year.title} (current)` : year.title,
                 })),
               ]}
-              onChange={(yearId) =>
-                setForm((current) => ({ ...current, yearId }))
-              }
+              onChange={(nextYearId) => {
+                if (nextYearId > 0) {
+                  setYearId(nextYearId);
+                }
+                setForm((current) => ({ ...current, yearId: nextYearId }));
+              }}
             />
           </Field>
         </div>

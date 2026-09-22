@@ -51,9 +51,8 @@ export function TakeAttendanceForm({ attendanceId }: TakeAttendanceFormProps) {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { years, yearId, setYearId } = useSchoolYearFilter(canFetch);
 
-  const [yearId, setYearId] = useState<number | null>(null);
   const [classId, setClassId] = useState(0);
   const [sectionId, setSectionId] = useState(0);
   const [date, setDate] = useState(todayIsoDate);
@@ -66,8 +65,6 @@ export function TakeAttendanceForm({ attendanceId }: TakeAttendanceFormProps) {
   } | null>(null);
   const [editHydrated, setEditHydrated] = useState(false);
 
-  const resolvedYearId = yearId ?? defaultYearId;
-
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 20, sortOrder: "asc" },
     { skip: !canFetch || isEdit },
@@ -76,10 +73,10 @@ export function TakeAttendanceForm({ attendanceId }: TakeAttendanceFormProps) {
     {
       page: 1,
       limit: 20,
-      yearId: resolvedYearId ?? undefined,
+      yearId: yearId ?? undefined,
       classId: classId || undefined,
     },
-    { skip: !canFetch || isEdit || !resolvedYearId || !classId },
+    { skip: !canFetch || isEdit || !yearId || !classId },
   );
   const { data: reasons = [] } = useGetAttendanceReasonsQuery(
     { activeOnly: true },
@@ -99,12 +96,6 @@ export function TakeAttendanceForm({ attendanceId }: TakeAttendanceFormProps) {
 
   const classes = classesData?.items ?? [];
   const sections = sectionsData?.items ?? [];
-
-  useEffect(() => {
-    if (defaultYearId && yearId == null && !isEdit) {
-      setYearId(defaultYearId);
-    }
-  }, [defaultYearId, yearId, isEdit]);
 
   useEffect(() => {
     if (!existing || editHydrated) {
@@ -268,7 +259,7 @@ export function TakeAttendanceForm({ attendanceId }: TakeAttendanceFormProps) {
             <div className="min-w-[9rem] flex-1 sm:max-w-[11rem]">
               <YearFilterSelect
                 years={years}
-                value={resolvedYearId}
+                value={yearId}
                 onChange={(value) => {
                   setYearId(value);
                   setSectionId(0);

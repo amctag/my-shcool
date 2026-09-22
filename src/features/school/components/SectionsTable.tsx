@@ -13,7 +13,6 @@ import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
@@ -92,25 +91,28 @@ export function SectionsTable() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [draftClassId, setDraftClassId] = useState(0);
   const [appliedClassId, setAppliedClassId] = useState(0);
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+
   const [sortBy, setSortBy] = useState<SectionsSortBy>("id");
   const [sortOrder, setSortOrder] = useState<SectionsSortOrder>("asc");
   const limit = 10;
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const query = buildQuery(
     page,
     limit,
     appliedSearch,
     sortBy,
     sortOrder,
-    appliedYearId,
+    yearId,
     appliedClassId,
   );
   const { data, error, isLoading, isFetching } = useGetSectionsQuery(query, {
-    skip: !canFetch || !appliedYearId,
+    skip: !canFetch || !yearId,
   });
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 20 },
@@ -118,26 +120,13 @@ export function SectionsTable() {
   );
   const classes = classesData?.items ?? [];
 
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
-
   function applySearch() {
     const next = searchInput.trim();
-    if (
-      next === appliedSearch &&
-      draftYearId === appliedYearId &&
-      draftClassId === appliedClassId
-    ) {
+    if (next === appliedSearch && draftClassId === appliedClassId) {
       return;
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(draftYearId);
     setAppliedClassId(draftClassId);
   }
 
@@ -166,11 +155,6 @@ export function SectionsTable() {
           onSearch={applySearch}
           compact
         >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId}
-            onChange={setDraftYearId}
-          />
           <FilterSelect
             label="Filter by class"
             value={draftClassId}
@@ -210,7 +194,7 @@ export function SectionsTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !appliedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={6} label="Loading sections" />
               ) : error ? (
                 <tr>

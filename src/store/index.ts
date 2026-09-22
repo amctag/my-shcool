@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "@/features/auth/authSlice";
 import parentsReducer from "@/features/school/parentsSlice";
+import schoolYearReducer from "@/features/school/schoolYearSlice";
 import { baseApi } from "@/store/api/baseApi";
 
 import "@/features/auth/api/authApi";
@@ -39,6 +40,7 @@ export const makeStore = () =>
     reducer: {
       auth: authReducer,
       parents: parentsReducer,
+      schoolYear: schoolYearReducer,
       [baseApi.reducerPath]: baseApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>

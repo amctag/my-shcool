@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { personNameMatches } from "@/lib/personNameSearch";
 import { selectAuthReady } from "@/features/auth/authSlice";
@@ -547,13 +549,27 @@ export function StudentForm({
           />
         </Field>
         <Field id="parentId" label="Parent" required>
-          <ParentPicker
-            id="parentId"
-            parentId={form.parentId}
-            disabled={readOnly}
-            selectedParent={selectedParent}
-            onSelect={(parentId) => update("parentId", parentId)}
-          />
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <ParentPicker
+                id="parentId"
+                parentId={form.parentId}
+                disabled={readOnly}
+                selectedParent={selectedParent}
+                onSelect={(parentId) => update("parentId", parentId)}
+              />
+            </div>
+            {!readOnly ? (
+              <Link
+                href="/parents/add"
+                className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                aria-label="Add new parent"
+                title="Add parent"
+              >
+                <Plus aria-hidden className="h-4 w-4" />
+              </Link>
+            ) : null}
+          </div>
         </Field>
         <Field id="gender" label="Gender">
           <select

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
+import { TableExportButtons } from "@/components/dashboard/TableExportButtons";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -67,13 +68,36 @@ export function CoursesTable() {
           onChange={setSearchInput}
           onSearch={applySearch}
         />
-        <Link
-          href="/courses/add"
-          className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
-        >
-          <Plus aria-hidden className="h-4 w-4" />
-          Add
-        </Link>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <TableExportButtons
+            title="Courses"
+            filename="courses"
+            columns={[
+              { key: "id", header: "ID" },
+              { key: "title", header: "Title" },
+              { key: "description", header: "Description" },
+              { key: "status", header: "Status" },
+              { key: "classes", header: "Class links" },
+            ]}
+            fetchRows={async () =>
+              filtered.map((item) => ({
+                id: item.id,
+                title: item.title,
+                description: item.description ?? "",
+                status: item.status ? "Active" : "Inactive",
+                classes: item.classCourseCount,
+              }))
+            }
+            disabled={!canFetch || isLoading}
+          />
+          <Link
+            href="/courses/add"
+            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
+          >
+            <Plus aria-hidden className="h-4 w-4" />
+            Add
+          </Link>
+        </div>
       </div>
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="overflow-x-auto">

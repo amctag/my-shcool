@@ -6,15 +6,18 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
+import { TableExportButtons } from "@/components/dashboard/TableExportButtons";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import {
   useGetClassesQuery,
   useGetStagesQuery,
+  useLazyGetClassesQuery,
 } from "@/features/school/api/classesApi";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { fetchAllPaginatedItems } from "@/lib/exportTable";
 import { useAppSelector } from "@/store/hooks";
 import type {
   ClassesSortOrder,
@@ -58,6 +61,27 @@ export function ClassesTable() {
   const { data: stages = [] } = useGetStagesQuery(undefined, {
     skip: !canFetch,
   });
+  const [fetchClasses] = useLazyGetClassesQuery();
+
+  async function fetchExportRows() {
+    const items = await fetchAllPaginatedItems(async (exportPage, exportLimit) => {
+      const response = await fetchClasses(
+        buildQuery(exportPage, exportLimit, appliedSearch, sortOrder, appliedStageId),
+      ).unwrap();
+      return {
+        items: response.items,
+        pagination: response.pagination,
+      };
+    });
+
+    return items.map((item) => ({
+      id: item.id,
+      class: item.className,
+      stage: item.stageTitle,
+      level: item.classLevel,
+      position: item.position,
+    }));
+  }
 
   function applySearch() {
     const next = searchInput.trim();
@@ -96,6 +120,19 @@ export function ClassesTable() {
             onChange={setDraftStageId}
           />
         </TableSearchBar>
+        <TableExportButtons
+          title="Classes"
+          filename="classes"
+          columns={[
+            { key: "id", header: "ID" },
+            { key: "class", header: "Class" },
+            { key: "stage", header: "Stage" },
+            { key: "level", header: "Level" },
+            { key: "position", header: "Position" },
+          ]}
+          fetchRows={fetchExportRows}
+          disabled={!canFetch}
+        />
       </div>
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="overflow-x-auto">

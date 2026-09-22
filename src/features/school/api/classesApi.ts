@@ -35,5 +35,9 @@ export const classesApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useGetClassesQuery, useGetClassQuery, useGetStagesQuery } =
-  classesApi;
+export const {
+  useGetClassesQuery,
+  useLazyGetClassesQuery,
+  useGetClassQuery,
+  useGetStagesQuery,
+} = classesApi;

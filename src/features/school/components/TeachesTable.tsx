@@ -16,7 +16,6 @@ import { TeacherFilterSearch } from "@/components/dashboard/TeacherFilterSearch"
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import { useGetCoursesQuery } from "@/features/school/api/coursesApi";
@@ -130,9 +129,8 @@ export function TeachesTable() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [draftFilters, setDraftFilters] = useState<TeachFilters>(emptyFilters);
   const [appliedFilters, setAppliedFilters] = useState<TeachFilters>(emptyFilters);
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+
   const [sortBy, setSortBy] = useState<TeachesSortBy>("id");
   const [sortOrder, setSortOrder] = useState<TeachesSortOrder>("asc");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -142,18 +140,22 @@ export function TeachesTable() {
   } | null>(null);
   const limit = 10;
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const query = buildQuery(
     page,
     limit,
     appliedSearch,
     sortBy,
     sortOrder,
-    appliedYearId,
+    yearId,
     appliedFilters,
   );
   const { data, error, isLoading, isFetching } = useGetTeachesQuery(query, {
-    skip: !canFetch || !appliedYearId,
+    skip: !canFetch || !yearId,
   });
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 20 },
@@ -167,36 +169,26 @@ export function TeachesTable() {
       page: 1,
       limit: 20,
       classId: draftFilters.classId,
-      yearId: draftYearId ?? 0,
+      yearId: yearId ?? 0,
       sortBy: "section",
       sortOrder: "asc",
     },
-    { skip: !canFetch || !draftFilters.classId || !draftYearId },
+    { skip: !canFetch || !draftFilters.classId || !yearId },
   );
   const [deleteTeach, deleteState] = useDeleteTeachMutation();
   const sections = sectionsData?.items ?? [];
   const classes = classesData?.items ?? [];
 
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
-
   function applySearch() {
     const next = searchInput.trim();
     if (
       next === appliedSearch &&
-      draftYearId === appliedYearId &&
       filtersEqual(draftFilters, appliedFilters)
     ) {
       return;
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(draftYearId);
     setAppliedFilters(draftFilters);
   }
 
@@ -238,14 +230,6 @@ export function TeachesTable() {
           onSearch={applySearch}
           compact
         >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId}
-            onChange={(nextYearId) => {
-              setDraftYearId(nextYearId);
-              setDraftFilters((current) => ({ ...current, sectionId: 0 }));
-            }}
-          />
           <FilterSelect
             label="Filter by class"
             value={draftFilters.classId}
@@ -328,7 +312,7 @@ export function TeachesTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !appliedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={7} label="Loading teach" />
               ) : error ? (
                 <tr>

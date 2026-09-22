@@ -9,6 +9,7 @@ import {
   selectAuthName,
   selectSchoolName,
 } from "@/features/auth/authSlice";
+import { SchoolYearSwitcher } from "@/components/dashboard/SchoolYearSwitcher";
 import { useAppSelector } from "@/store/hooks";
 import { navGroups, type NavItem } from "@/lib/nav";
 
@@ -408,6 +409,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <p className="hidden text-sm text-muted sm:block">
             {schoolName} <span className="mx-1">&gt;</span> School admin
           </p>
+          <SchoolYearSwitcher />
         </header>
         <main className="flex-1 overflow-y-auto px-4 pb-8 sm:px-8">
           {children}

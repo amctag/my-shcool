@@ -88,6 +88,16 @@ export const teachersApi = baseApi.injectEndpoints({
         { type: "Teachers", id: "LIST" },
       ],
     }),
+    resetTeacherPassword: builder.mutation<
+      { id: number; reset: boolean },
+      { id: number; body: { newPassword: string; confirmPassword: string } }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dashboard/teachers/${id}/password`,
+        method: "PATCH",
+        body,
+      }),
+    }),
     deleteTeacher: builder.mutation<void, number>({
       query: (id) => ({
         url: `/dashboard/teachers/${id}`,
@@ -104,9 +114,11 @@ export const teachersApi = baseApi.injectEndpoints({
 
 export const {
   useGetTeachersQuery,
+  useLazyGetTeachersQuery,
   useGetTeacherQuery,
   useCreateTeacherMutation,
   useUpdateTeacherMutation,
   useUpdateTeacherStatusMutation,
+  useResetTeacherPasswordMutation,
   useDeleteTeacherMutation,
 } = teachersApi;

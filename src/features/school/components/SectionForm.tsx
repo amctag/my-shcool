@@ -9,9 +9,9 @@ import {
   useCreateSectionMutation,
   useGetSectionQuery,
   useGetSectionTitlesQuery,
-  useGetYearsQuery,
   useUpdateSectionMutation,
 } from "@/features/school/api/sectionsApi";
+import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { useAppSelector } from "@/store/hooks";
 import type { SaveSectionBody } from "@/features/school/types";
 
@@ -80,9 +80,8 @@ export function SectionForm({
   const { data: titles = [] } = useGetSectionTitlesQuery(undefined, {
     skip: !authReady,
   });
-  const { data: years = [] } = useGetYearsQuery(undefined, {
-    skip: !authReady,
-  });
+  const { years, yearId: globalYearId, setYearId } =
+    useSchoolYearFilter(authReady);
   const [createSection, createState] = useCreateSectionMutation();
   const [updateSection, updateState] = useUpdateSectionMutation();
   const saving = createState.isLoading || updateState.isLoading;
@@ -97,19 +96,15 @@ export function SectionForm({
   );
 
   useEffect(() => {
-    if (sectionId || form.yearId) {
-      return;
-    }
-    const current = years.find((year) => year.isCurrent) ?? years[0];
-    if (!current) {
+    if (sectionId || form.yearId || !globalYearId) {
       return;
     }
     setForm((currentForm) =>
       currentForm.yearId
         ? currentForm
-        : { ...currentForm, yearId: String(current.id) },
+        : { ...currentForm, yearId: String(globalYearId) },
     );
-  }, [form.yearId, sectionId, years]);
+  }, [form.yearId, globalYearId, sectionId]);
 
   useEffect(() => {
     if (!section) {
@@ -223,9 +218,14 @@ export function SectionForm({
               id="yearId"
               required
               value={form.yearId}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, yearId: event.target.value }))
-              }
+              onChange={(event) => {
+                const nextYearId = event.target.value;
+                setForm((current) => ({ ...current, yearId: nextYearId }));
+                const parsed = Number(nextYearId);
+                if (parsed > 0) {
+                  setYearId(parsed);
+                }
+              }}
               className={`${inputClass} cursor-pointer`}
             >
               <option value="">Choose year</option>

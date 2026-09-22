@@ -6,7 +6,6 @@ import { Search } from "lucide-react";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
@@ -36,22 +35,22 @@ export function ExportGradeCardPanel() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
 
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
   const [draftClassId, setDraftClassId] = useState(0);
   const [draftSectionId, setDraftSectionId] = useState(0);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [appliedClassId, setAppliedClassId] = useState(0);
   const [appliedSectionId, setAppliedSectionId] = useState(0);
   const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const [filtersApplied, setFiltersApplied] = useState(false);
 
-  const resolvedDraftYearId = draftYearId ?? defaultYearId;
-  const resolvedAppliedYearId = appliedYearId ?? defaultYearId;
   const canLoadStudents =
     filtersApplied &&
-    Boolean(resolvedAppliedYearId) &&
+    Boolean(yearId) &&
     appliedClassId > 0 &&
     appliedSectionId > 0;
 
@@ -66,11 +65,11 @@ export function ExportGradeCardPanel() {
       page: 1,
       limit: 20,
       classId: draftClassId > 0 ? draftClassId : undefined,
-      yearId: resolvedDraftYearId ?? undefined,
+      yearId: yearId ?? undefined,
       sortBy: "section",
       sortOrder: "asc",
     },
-    { skip: !canFetch || !resolvedDraftYearId || draftClassId <= 0 },
+    { skip: !canFetch || !yearId || draftClassId <= 0 },
   );
   const sections = sectionsData?.items ?? [];
 
@@ -78,7 +77,7 @@ export function ExportGradeCardPanel() {
     {
       page,
       limit: PAGE_SIZE,
-      yearId: resolvedAppliedYearId ?? undefined,
+      yearId: yearId ?? undefined,
       classId: appliedClassId,
       sectionId: appliedSectionId,
       sortBy: "student",
@@ -103,7 +102,7 @@ export function ExportGradeCardPanel() {
 
   useEffect(() => {
     setDraftSectionId(0);
-  }, [draftClassId, draftYearId]);
+  }, [draftClassId, yearId]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -116,21 +115,18 @@ export function ExportGradeCardPanel() {
     if (!yearId || !classId || !sectionId) {
       return;
     }
-    setDraftYearId(yearId);
     setDraftClassId(classId);
     setDraftSectionId(sectionId);
-    setAppliedYearId(yearId);
     setAppliedClassId(classId);
     setAppliedSectionId(sectionId);
     setFiltersApplied(true);
   }, []);
 
   function applyFilters() {
-    if (!resolvedDraftYearId || draftClassId <= 0 || draftSectionId <= 0) {
+    if (!yearId || draftClassId <= 0 || draftSectionId <= 0) {
       return;
     }
     setPage(1);
-    setAppliedYearId(resolvedDraftYearId);
     setAppliedClassId(draftClassId);
     setAppliedSectionId(draftSectionId);
     setFiltersApplied(true);
@@ -145,11 +141,6 @@ export function ExportGradeCardPanel() {
       <div className="rounded-2xl border border-border bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <YearFilterSelect
-              years={years}
-              value={resolvedDraftYearId}
-              onChange={setDraftYearId}
-            />
             <FilterSelect
               label="Class"
               value={draftClassId}
@@ -173,14 +164,14 @@ export function ExportGradeCardPanel() {
                 })),
               ]}
               onChange={setDraftSectionId}
-              disabled={draftClassId <= 0 || !resolvedDraftYearId}
+              disabled={draftClassId <= 0 || !yearId}
             />
           </div>
           <button
             type="button"
             onClick={applyFilters}
             disabled={
-              !resolvedDraftYearId || draftClassId <= 0 || draftSectionId <= 0
+              !yearId || draftClassId <= 0 || draftSectionId <= 0
             }
             className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -228,7 +219,7 @@ export function ExportGradeCardPanel() {
                     colSpan={6}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
-                    Select year, class, and section, then click Search.
+                    Select class and section, then click Search.
                   </td>
                 </tr>
               ) : isLoading ? (

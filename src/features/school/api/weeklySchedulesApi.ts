@@ -107,6 +107,7 @@ export const dashboardWeeklySchedulesApi = baseApi.injectEndpoints({
 
 export const {
   useGetDashboardWeeklySchedulesQuery,
+  useLazyGetDashboardWeeklySchedulesQuery,
   useGetDashboardWeeklyScheduleGridQuery,
   useGetDashboardWeeklyScheduleGridsQuery,
   useSaveDashboardWeeklyScheduleMutation,

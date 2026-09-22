@@ -16,7 +16,6 @@ import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
@@ -63,7 +62,7 @@ function formatExamDateRange(
 function buildQuery(
   page: number,
   appliedSearch: string,
-  appliedYearId: number | null,
+  yearId: number | null,
   appliedClassId: number,
   sortBy: ExamSchedulesSortBy,
   sortOrder: ExamSchedulesSortOrder,
@@ -77,8 +76,8 @@ function buildQuery(
   if (appliedSearch) {
     query.search = appliedSearch;
   }
-  if (appliedYearId) {
-    query.yearId = appliedYearId;
+  if (yearId) {
+    query.yearId = yearId;
   }
   if (appliedClassId) {
     query.classId = appliedClassId;
@@ -128,11 +127,10 @@ export function ExamSchedulesTable() {
   const canFetch = ready && Boolean(accessToken);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [draftClassId, setDraftClassId] = useState(0);
   const [appliedClassId, setAppliedClassId] = useState(0);
   const [page, setPage] = useState(1);
+
   const [sortBy, setSortBy] = useState<ExamSchedulesSortBy>("id");
   const [sortOrder, setSortOrder] = useState<ExamSchedulesSortOrder>("asc");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -140,15 +138,11 @@ export function ExamSchedulesTable() {
     id: number;
     label: string;
   } | null>(null);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
-
+  const { yearId } = useSchoolYearFilter(canFetch);
   useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
+    setPage(1);
+  }, [yearId]);
+
 
   const savedMessage = searchParams.get("saved") === "1";
   const updatedMessage = searchParams.get("updated") === "1";
@@ -161,7 +155,7 @@ export function ExamSchedulesTable() {
   const query = buildQuery(
     page,
     appliedSearch,
-    appliedYearId,
+    yearId,
     appliedClassId,
     sortBy,
     sortOrder,
@@ -169,17 +163,16 @@ export function ExamSchedulesTable() {
 
   const { data, error, isLoading, isFetching } =
     useGetDashboardExamSchedulesQuery(query, {
-      skip: !canFetch || !appliedYearId,
+      skip: !canFetch || !yearId,
     });
 
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 20, sortOrder: "asc" },
-    { skip: !canFetch || !appliedYearId },
+    { skip: !canFetch || !yearId },
   );
 
   const [deleteExamSchedule, deleteState] =
     useDeleteDashboardExamScheduleMutation();
-
   const items = data?.items ?? [];
   const pagination = data?.pagination;
   const totalPages = pagination?.totalPages ?? 0;
@@ -195,14 +188,12 @@ export function ExamSchedulesTable() {
     const next = searchInput.trim();
     if (
       next === appliedSearch &&
-      draftYearId === appliedYearId &&
       draftClassId === appliedClassId
     ) {
       return;
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(draftYearId);
     setAppliedClassId(draftClassId);
   }
 
@@ -260,14 +251,6 @@ export function ExamSchedulesTable() {
           onSearch={applySearch}
           compact
         >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId}
-            onChange={(yearId) => {
-              setDraftYearId(yearId);
-              setDraftClassId(0);
-            }}
-          />
           <FilterSelect
             label="Filter by class"
             value={draftClassId}
@@ -337,7 +320,7 @@ export function ExamSchedulesTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !appliedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={7} label="Loading exam schedules" />
               ) : error ? (
                 <tr>

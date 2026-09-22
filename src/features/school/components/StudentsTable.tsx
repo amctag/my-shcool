@@ -1,18 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
+import { TableExportButtons } from "@/components/dashboard/TableExportButtons";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { fetchAllPaginatedItems } from "@/lib/exportTable";
 import {
   useDeleteStudentMutation,
   useGetStudentsQuery,
+  useLazyGetStudentsQuery,
 } from "@/features/school/api/studentsApi";
+import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 import type {
@@ -21,6 +25,16 @@ import type {
   StudentsSortOrder,
 } from "@/features/school/types";
 
+const STUDENT_EXPORT_COLUMNS = [
+  { key: "id", header: "ID" },
+  { key: "name", header: "Name" },
+  { key: "parent", header: "Parent" },
+  { key: "phone", header: "Phone" },
+  { key: "birthday", header: "Birthday" },
+  { key: "class", header: "Class" },
+  { key: "section", header: "Section" },
+  { key: "address", header: "Address" },
+] as const;
 function buildStudentsQuery(
   page: number,
   limit: number,
@@ -30,6 +44,7 @@ function buildStudentsQuery(
   appliedParentName: string,
   sortBy: StudentsSortBy,
   sortOrder: StudentsSortOrder,
+  yearId?: number | null,
 ): DashboardChildrenQuery {
   const query: DashboardChildrenQuery = { page, limit, sortBy, sortOrder };
 
@@ -44,6 +59,9 @@ function buildStudentsQuery(
   }
   if (appliedParentName) {
     query.parentName = appliedParentName;
+  }
+  if (yearId) {
+    query.yearId = yearId;
   }
 
   return query;
@@ -153,6 +171,12 @@ export function StudentsTable() {
     name: string;
   } | null>(null);
   const canFetch = ready && Boolean(accessToken);
+  const { yearId } = useSchoolYearFilter(canFetch);
+
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const query = buildStudentsQuery(
     page,
     limit,
@@ -162,11 +186,43 @@ export function StudentsTable() {
     appliedParentName,
     sortBy,
     sortOrder,
+    yearId,
   );
 
   const { data, error, isLoading, isFetching } = useGetStudentsQuery(query, {
-    skip: !canFetch,
+    skip: !canFetch || !yearId,
   });
+  const [fetchStudents] = useLazyGetStudentsQuery();
+
+  async function fetchExportRows() {
+    const items = await fetchAllPaginatedItems(async (exportPage, exportLimit) => {
+      const response = await fetchStudents(
+        buildStudentsQuery(
+          exportPage,
+          exportLimit,
+          appliedFirstName,
+          appliedMiddleName,
+          appliedLastName,
+          appliedParentName,
+          sortBy,
+          sortOrder,
+          yearId,
+        ),
+      ).unwrap();
+      return response;
+    });
+
+    return items.map((student) => ({
+      id: student.id,
+      name: studentName(student.firstName, student.lastName, student.fullName),
+      parent: student.parentName ?? "",
+      phone: student.phoneNumber ?? "",
+      birthday: formatBirthday(student.birthday),
+      class: student.className ?? "",
+      section: student.sectionName ?? "",
+      address: student.address ?? "",
+    }));
+  }
 
   function applySearch() {
     const nextFirstName = firstNameInput.trim();
@@ -275,13 +331,22 @@ export function StudentsTable() {
             />
           </label>
         </TableSearchBar>
-        <Link
-          href="/students/add"
-          className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          <Plus aria-hidden className="h-4 w-4" />
-          Add
-        </Link>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <TableExportButtons
+            title="Students"
+            filename="students"
+            columns={[...STUDENT_EXPORT_COLUMNS]}
+            fetchRows={fetchExportRows}
+            disabled={!canFetch || !yearId}
+          />
+          <Link
+            href="/students/add"
+            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <Plus aria-hidden className="h-4 w-4" />
+            Add
+          </Link>
+        </div>
       </div>
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
         <div className="overflow-x-auto">
@@ -376,15 +441,20 @@ export function StudentsTable() {
                       {student.id}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
-                      <NameWithInitials
-                        firstName={student.firstName}
-                        lastName={student.lastName}
-                        name={studentName(
-                          student.firstName,
-                          student.lastName,
-                          student.fullName,
-                        )}
-                      />
+                      <Link
+                        href={`/students/${student.id}`}
+                        className="cursor-pointer transition-colors duration-200 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                      >
+                        <NameWithInitials
+                          firstName={student.firstName}
+                          lastName={student.lastName}
+                          name={studentName(
+                            student.firstName,
+                            student.lastName,
+                            student.fullName,
+                          )}
+                        />
+                      </Link>
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-foreground">
                       {student.parentId && student.parentName ? (

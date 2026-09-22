@@ -7,7 +7,6 @@ import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetDashboardAnnouncementsQuery } from "@/features/school/api/announcementsApi";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
@@ -29,7 +28,7 @@ function formatDateTime(value: string): string {
 function buildQuery(
   page: number,
   appliedSearch: string,
-  appliedYearId: number | null,
+  yearId: number | null,
   appliedClassId: number,
   appliedSectionId: number,
 ): DashboardAnnouncementsQuery {
@@ -40,8 +39,8 @@ function buildQuery(
   if (appliedSearch) {
     query.search = appliedSearch;
   }
-  if (appliedYearId) {
-    query.yearId = appliedYearId;
+  if (yearId) {
+    query.yearId = yearId;
   }
   if (appliedClassId) {
     query.classId = appliedClassId;
@@ -58,25 +57,28 @@ export function AnnouncementsList() {
   const canFetch = ready && Boolean(accessToken);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [draftClassId, setDraftClassId] = useState(0);
   const [appliedClassId, setAppliedClassId] = useState(0);
   const [draftSectionId, setDraftSectionId] = useState(0);
   const [appliedSectionId, setAppliedSectionId] = useState(0);
   const [page, setPage] = useState(1);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+
+  const { yearId } = useSchoolYearFilter(canFetch);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
 
   const query = buildQuery(
     page,
     appliedSearch,
-    appliedYearId,
+    yearId,
     appliedClassId,
     appliedSectionId,
   );
   const { data, error, isLoading, isFetching } = useGetDashboardAnnouncementsQuery(
     query,
-    { skip: !canFetch || !appliedYearId },
+    { skip: !canFetch || !yearId },
   );
 
   const { data: classesData } = useGetClassesQuery(
@@ -90,28 +92,19 @@ export function AnnouncementsList() {
     {
       page: 1,
       limit: 20,
-      yearId: draftYearId ?? undefined,
+      yearId: yearId ?? undefined,
       classId: draftClassId,
       sortBy: "section",
       sortOrder: "asc",
     },
-    { skip: !canFetch || !draftYearId || !classSelected },
+    { skip: !canFetch || !yearId || !classSelected },
   );
   const sections = sectionsData?.items ?? [];
-
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
 
   function applySearch() {
     const next = searchInput.trim();
     if (
       next === appliedSearch &&
-      draftYearId === appliedYearId &&
       draftClassId === appliedClassId &&
       draftSectionId === appliedSectionId
     ) {
@@ -119,12 +112,11 @@ export function AnnouncementsList() {
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(draftYearId);
     setAppliedClassId(draftClassId);
     setAppliedSectionId(draftSectionId);
   }
 
-  if (isLoading || !canFetch || !appliedYearId) {
+  if (isLoading || !canFetch || !yearId) {
     return <LoadingDots label="Loading announcements" />;
   }
 
@@ -143,15 +135,6 @@ export function AnnouncementsList() {
           onSearch={applySearch}
           compact
         >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId}
-            onChange={(yearId) => {
-              setDraftYearId(yearId);
-              setDraftClassId(0);
-              setDraftSectionId(0);
-            }}
-          />
           <FilterSelect
             label="Filter by class"
             value={draftClassId}

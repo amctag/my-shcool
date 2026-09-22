@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
-import { CalendarDays } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CalendarDays, FileDown, LoaderCircle } from "lucide-react";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { exportMatrixToPdf } from "@/lib/exportTable";
 import { useGetDashboardWeeklyScheduleGridQuery } from "@/features/school/api/weeklySchedulesApi";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
@@ -23,6 +24,8 @@ export function WeeklyScheduleView({
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const { data, error, isLoading } = useGetDashboardWeeklyScheduleGridQuery(
     { sectionId, yearId, classId },
@@ -36,6 +39,35 @@ export function WeeklyScheduleView({
     }
     return map;
   }, [data?.cells]);
+
+  function exportPdf() {
+    if (!data) {
+      return;
+    }
+    setExporting(true);
+    setExportError(null);
+    try {
+      const head = ["", ...data.days.map((day) => day.dayName.toUpperCase())];
+      const body = data.sessions.map((session) => [
+        String(session.position),
+        ...data.days.map((day) => {
+          const cell = cellMap.get(`${day.id}:${session.id}`);
+          return cell?.courseTitle ?? "";
+        }),
+      ]);
+      exportMatrixToPdf(
+        `weekly-schedule-${data.className}-${data.sectionTitle}`,
+        "Weekly schedule",
+        `${data.yearTitle} · ${data.className} · Section ${data.sectionTitle}`,
+        head,
+        body,
+      );
+    } catch (caught) {
+      setExportError(getApiErrorMessage(caught, "Could not export PDF"));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -65,10 +97,30 @@ export function WeeklyScheduleView({
 
   return (
     <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-      <div className="border-b border-stone-100 px-5 py-4">
+      <div className="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted">
           {data.yearTitle} · {data.className} · Section {data.sectionTitle}
         </p>
+        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          <button
+            type="button"
+            disabled={exporting || data.sessions.length === 0}
+            onClick={exportPdf}
+            className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border bg-white px-3 text-sm font-medium text-foreground transition-colors hover:bg-primary-soft hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {exporting ? (
+              <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown aria-hidden className="h-4 w-4" />
+            )}
+            PDF
+          </button>
+          {exportError ? (
+            <p className="text-xs text-red-600" role="alert">
+              {exportError}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="overflow-x-auto">

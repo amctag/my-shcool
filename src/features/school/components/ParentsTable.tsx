@@ -8,6 +8,7 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  KeyRound,
   Pause,
   Pencil,
   Plus,
@@ -17,14 +18,17 @@ import {
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { ChildrenCountFilterSelect } from "@/components/dashboard/ChildrenCountFilterSelect";
 import { PaidFilterSelect } from "@/components/dashboard/PaidFilterSelect";
+import { ResetPasswordDrawer } from "@/components/dashboard/ResetPasswordDrawer";
 import { StatusFilterSelect } from "@/components/dashboard/StatusFilterSelect";
+import { TableExportButtons } from "@/components/dashboard/TableExportButtons";
 import { LoadingDots, TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { fetchAllPaginatedItems } from "@/lib/exportTable";
 import { useGetChildrenQuery } from "@/features/school/api/childrenApi";
-import { useDeleteParentMutation, useGetParentsQuery, useUpdateParentPaidMutation, useUpdateParentStatusMutation } from "@/features/school/api/parentsApi";
+import { useDeleteParentMutation, useGetParentsQuery, useLazyGetParentsQuery, useResetParentPasswordMutation, useUpdateParentPaidMutation, useUpdateParentStatusMutation } from "@/features/school/api/parentsApi";
 import {
   applyParentsSearch,
   clearSelectedParent,
@@ -443,6 +447,8 @@ export function ParentsTable() {
   const [deleteParent, deleteState] = useDeleteParentMutation();
   const [updateParentStatus, statusState] = useUpdateParentStatusMutation();
   const [updateParentPaid, paidState] = useUpdateParentPaidMutation();
+  const [resetParentPassword, resetPasswordState] =
+    useResetParentPasswordMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [paidError, setPaidError] = useState<string | null>(null);
@@ -450,6 +456,10 @@ export function ParentsTable() {
     id: number;
     fullName: string;
     childrenCount: number;
+  } | null>(null);
+  const [pendingResetPassword, setPendingResetPassword] = useState<{
+    id: number;
+    fullName: string;
   } | null>(null);
 
   const query = buildParentsQuery(
@@ -469,6 +479,37 @@ export function ParentsTable() {
   const { data, error, isLoading, isFetching } = useGetParentsQuery(query, {
     skip: !canFetch,
   });
+  const [fetchParents] = useLazyGetParentsQuery();
+
+  async function fetchExportRows() {
+    const items = await fetchAllPaginatedItems(async (exportPage, exportLimit) =>
+      fetchParents(
+        buildParentsQuery(
+          exportPage,
+          exportLimit,
+          appliedFirstName,
+          appliedMiddleName,
+          appliedLastName,
+          sortBy,
+          sortOrder,
+          statusFilter,
+          paidFilter,
+          childrenCountFilter,
+        ),
+      ).unwrap(),
+    );
+
+    return items.map((parent) => ({
+      id: parent.id,
+      name: parent.fullName,
+      phone: parent.phoneNumber ?? "",
+      address: parent.address ?? "",
+      children: parent.childrenCount,
+      status: isParentActive(parent.status) ? "Active" : "Closed",
+      paid: isParentPaid(parent.paid) ? "Paid" : "Unpaid",
+      birthday: formatBirthday(parent.birthday),
+    }));
+  }
 
   const parents = data?.items ?? [];
   const pagination = data?.pagination;
@@ -582,13 +623,31 @@ export function ParentsTable() {
             />
           </TableSearchBar>
         </div>
-        <Link
-          href="/parents/add"
-          className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          <Plus aria-hidden className="h-4 w-4" />
-          Add
-        </Link>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <TableExportButtons
+            title="Parents"
+            filename="parents"
+            columns={[
+              { key: "id", header: "ID" },
+              { key: "name", header: "Name" },
+              { key: "phone", header: "Phone" },
+              { key: "address", header: "Address" },
+              { key: "children", header: "Children" },
+              { key: "status", header: "Status" },
+              { key: "paid", header: "Paid" },
+              { key: "birthday", header: "Birthday" },
+            ]}
+            fetchRows={fetchExportRows}
+            disabled={!canFetch}
+          />
+          <Link
+            href="/parents/add"
+            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <Plus aria-hidden className="h-4 w-4" />
+            Add
+          </Link>
+        </div>
       </div>
       {statusError ? (
         <p className="mb-4 text-sm text-red-600" role="alert">
@@ -799,6 +858,17 @@ export function ParentsTable() {
                           <Pencil aria-hidden className="h-4 w-4" />
                         </Link>
                         <ActionButton
+                          label="Reset password"
+                          onClick={() =>
+                            setPendingResetPassword({
+                              id: parent.id,
+                              fullName: parent.fullName,
+                            })
+                          }
+                        >
+                          <KeyRound aria-hidden className="h-4 w-4" />
+                        </ActionButton>
+                        <ActionButton
                           label="Delete"
                           tone="danger"
                           disabled={deleteState.isLoading}
@@ -850,6 +920,25 @@ export function ParentsTable() {
             }
           }}
           onConfirm={() => void confirmDeleteParent()}
+        />
+      ) : null}
+      {pendingResetPassword ? (
+        <ResetPasswordDrawer
+          personName={pendingResetPassword.fullName}
+          roleLabel="parent"
+          busy={resetPasswordState.isLoading}
+          onClose={() => {
+            if (!resetPasswordState.isLoading) {
+              setPendingResetPassword(null);
+            }
+          }}
+          onSubmit={async (body) => {
+            await resetParentPassword({
+              id: pendingResetPassword.id,
+              body,
+            }).unwrap();
+            setPendingResetPassword(null);
+          }}
         />
       ) : null}
     </>

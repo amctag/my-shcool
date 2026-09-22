@@ -33,14 +33,13 @@ export function ExamScheduleMetadataForm({
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
-  const { yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
 
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [examDate, setExamDate] = useState("");
   const [classId, setClassId] = useState(0);
   const [gradeTypeId, setGradeTypeId] = useState(0);
-  const [yearId, setYearId] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [existingDates, setExistingDates] = useState<SaveExamScheduleDateBody[]>(
@@ -76,7 +75,6 @@ export function ExamScheduleMetadataForm({
     setExamDate(existing.dates[0]?.date ?? "");
     setClassId(existing.classId);
     setGradeTypeId(existing.gradeTypeId);
-    setYearId(existing.yearId);
     setExistingDates(
       existing.dates.map((examDate) => ({
         date: examDate.date,
@@ -113,7 +111,7 @@ export function ExamScheduleMetadataForm({
       return;
     }
 
-    const resolvedYearId = yearId ?? defaultYearId;
+    const resolvedYearId = existing?.yearId ?? yearId;
     if (!resolvedYearId) {
       setFormError("Year is required.");
       return;

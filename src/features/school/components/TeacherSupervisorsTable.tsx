@@ -17,7 +17,6 @@ import { TeacherFilterSearch } from "@/components/dashboard/TeacherFilterSearch"
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
@@ -208,9 +207,8 @@ export function TeacherSupervisorsTable() {
   const [appliedSearch, setAppliedSearch] = useState("");
   const [draftFilters, setDraftFilters] = useState<SupervisorFilters>(emptyFilters);
   const [appliedFilters, setAppliedFilters] = useState<SupervisorFilters>(emptyFilters);
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+
   const [sortBy, setSortBy] = useState<TeacherSupervisorsSortBy>("teacher");
   const [sortOrder, setSortOrder] = useState<TeacherSupervisorsSortOrder>("asc");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -221,19 +219,23 @@ export function TeacherSupervisorsTable() {
     useState<DashboardTeacherSupervisorGroup | null>(null);
   const limit = 10;
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const query = buildQuery(
     page,
     limit,
     appliedSearch,
     sortBy,
     sortOrder,
-    appliedYearId,
+    yearId,
     appliedFilters,
   );
   const { data, error, isLoading, isFetching } = useGetTeacherSupervisorsQuery(
     query,
-    { skip: !canFetch || !appliedYearId },
+    { skip: !canFetch || !yearId },
   );
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 100 },
@@ -242,26 +244,16 @@ export function TeacherSupervisorsTable() {
   const [deleteSupervisor, deleteState] = useDeleteTeacherSupervisorMutation();
   const classes = classesData?.items ?? [];
 
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
-
   function applySearch() {
     const next = searchInput.trim();
     if (
       next === appliedSearch &&
-      draftYearId === appliedYearId &&
       filtersEqual(draftFilters, appliedFilters)
     ) {
       return;
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(draftYearId);
     setAppliedFilters(draftFilters);
   }
 
@@ -305,13 +297,6 @@ export function TeacherSupervisorsTable() {
           onSearch={applySearch}
           compact
         >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId}
-            onChange={(nextYearId) => {
-              setDraftYearId(nextYearId);
-            }}
-          />
           <FilterSelect
             label="Filter by class"
             value={draftFilters.classId}
@@ -358,7 +343,7 @@ export function TeacherSupervisorsTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !appliedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={4} label="Loading supervisors" />
               ) : error ? (
                 <tr>

@@ -55,5 +55,7 @@ export const selectAuthReady = (state: { auth: AuthState }) => state.auth.ready;
 export const selectAuthName = (state: { auth: AuthState }) => state.auth.name;
 export const selectSchoolName = (state: { auth: AuthState }) =>
   state.auth.schoolName;
+export const selectSchoolId = (state: { auth: AuthState }) =>
+  state.auth.schoolId;
 
 export default authSlice.reducer;

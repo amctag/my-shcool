@@ -115,6 +115,16 @@ export const parentsApi = baseApi.injectEndpoints({
         { type: "Parents", id: "LIST" },
       ],
     }),
+    resetParentPassword: builder.mutation<
+      { id: number; reset: boolean },
+      { id: number; body: { newPassword: string; confirmPassword: string } }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dashboard/parents/${id}/password`,
+        method: "PATCH",
+        body,
+      }),
+    }),
     deleteParent: builder.mutation<void, number>({
       query: (id) => ({
         url: `/dashboard/parents/${id}`,
@@ -136,11 +146,13 @@ export const parentsApi = baseApi.injectEndpoints({
 
 export const {
   useGetParentsQuery,
+  useLazyGetParentsQuery,
   useGetParentOptionsQuery,
   useGetParentQuery,
   useCreateParentMutation,
   useUpdateParentMutation,
   useUpdateParentStatusMutation,
   useUpdateParentPaidMutation,
+  useResetParentPasswordMutation,
   useDeleteParentMutation,
 } = parentsApi;

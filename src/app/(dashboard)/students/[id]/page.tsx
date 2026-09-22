@@ -1,5 +1,5 @@
 import { BackLink } from "@/components/dashboard/BackLink";
-import { StudentForm } from "@/features/school/components/StudentForm";
+import { StudentProfile } from "@/features/school/components/StudentProfile";
 
 export default async function ViewStudentPage({
   params,
@@ -11,13 +11,9 @@ export default async function ViewStudentPage({
 
   return (
     <div className="space-y-4">
-      <BackLink
-        href="/students"
-      >
-        Back to students
-      </BackLink>
+      <BackLink href="/students">Back to students</BackLink>
       {Number.isInteger(studentId) && studentId > 0 ? (
-        <StudentForm studentId={studentId} readOnly />
+        <StudentProfile studentId={studentId} />
       ) : (
         <p className="text-sm text-red-600">Invalid student id.</p>
       )}

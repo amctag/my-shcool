@@ -64,6 +64,7 @@ export type DashboardChildrenQuery = {
   limit: number;
   parentId?: number;
   classId?: number;
+  yearId?: number;
   search?: string;
   name?: string;
   firstName?: string;
@@ -915,11 +916,37 @@ export type DashboardRegistration = {
   studentName: string;
   classId: number;
   className: string;
+  classLevel: number;
   sectionId: number;
   sectionTitle: string;
   yearId: number;
   yearTitle: string;
   createdAt: string;
+};
+
+export type RegistrationProgressAction = "up" | "down" | "stay";
+
+export type ProgressRegistrationBody = {
+  action: RegistrationProgressAction;
+};
+
+export type BulkProgressRegistrationBody = {
+  action: RegistrationProgressAction;
+  registrationIds: number[];
+};
+
+export type BulkProgressRegistrationResult = {
+  registrationId: number;
+  studentName: string;
+  ok: boolean;
+  message: string;
+  created?: DashboardRegistration;
+};
+
+export type BulkProgressRegistrationsResponse = {
+  items: BulkProgressRegistrationResult[];
+  successCount: number;
+  failCount: number;
 };
 
 export type RegistrationsSortBy =
@@ -942,6 +969,7 @@ export type DashboardRegistrationsQuery = {
   classId?: number;
   sectionId?: number;
   yearId?: number;
+  studentId?: number;
   sortBy?: RegistrationsSortBy;
   sortOrder?: RegistrationsSortOrder;
 };

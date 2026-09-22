@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Pencil, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, FileDown, LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { ScheduleCourseDrawer } from "@/features/school/components/ScheduleCourseDrawer";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { exportExamScheduleGridToPdf } from "@/lib/exportTable";
 import { useGetClassCoursesQuery } from "@/features/school/api/coursesApi";
 import {
   useGetDashboardExamScheduleQuery,
@@ -155,6 +156,7 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
   const [hydrated, setHydrated] = useState(false);
   const [editingExam, setEditingExam] = useState<EditingExam | null>(null);
   const [drawerCourseId, setDrawerCourseId] = useState(0);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const { data: existing, isLoading: existingLoading } =
     useGetDashboardExamScheduleQuery(scheduleId, {
@@ -407,6 +409,33 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
     return null;
   }
 
+  function exportSchedulePdf() {
+    setExportingPdf(true);
+    try {
+      exportExamScheduleGridToPdf(
+        `exam-schedule-${title || "schedule"}`,
+        title.trim() || "Exam schedule",
+        `${yearTitle} · ${className} · ${gradeTypeTitle}`,
+        dates.map((dateRow) => ({
+          dateLabel: formatDisplayDate(dateRow.date),
+          rows: dateRow.exams.map((exam, index) => ({
+            index: index + 1,
+            course: exam.courseId
+              ? (courseTitleById.get(exam.courseId) ?? "")
+              : "",
+            start: exam.startTime,
+            duration: `${exam.duration} min`,
+            note: exam.note.trim(),
+          })),
+        })),
+      );
+    } catch (caught) {
+      setFormError(getApiErrorMessage(caught, "Could not export PDF"));
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
   function buildBody(): SaveExamScheduleBody {
     return {
       title: title.trim(),
@@ -470,14 +499,29 @@ export function ExamScheduleForm({ scheduleId }: { scheduleId: number }) {
       ) : null}
 
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-        <div className="border-b border-stone-100 px-5 py-4">
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          <p className="mt-1 text-sm text-muted">
-            {yearTitle} · {className} · {gradeTypeTitle}
-          </p>
-          {note ? (
-            <p className="mt-3 text-sm text-foreground">{note}</p>
-          ) : null}
+        <div className="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+            <p className="mt-1 text-sm text-muted">
+              {yearTitle} · {className} · {gradeTypeTitle}
+            </p>
+            {note ? (
+              <p className="mt-3 text-sm text-foreground">{note}</p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            disabled={exportingPdf || dates.length === 0}
+            onClick={exportSchedulePdf}
+            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border bg-white px-3 text-sm font-medium text-foreground transition-colors hover:bg-primary-soft hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {exportingPdf ? (
+              <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown aria-hidden className="h-4 w-4" />
+            )}
+            PDF
+          </button>
         </div>
         <div className="space-y-5 p-5">
         {dates.map((dateRow) => (

@@ -23,13 +23,12 @@ const inputClass =
 
 type FormState = {
   agendaId: number;
-  yearId: number;
   classId: number;
   sectionId: number;
 };
 
 function emptyForm(): FormState {
-  return { agendaId: 0, yearId: 0, classId: 0, sectionId: 0 };
+  return { agendaId: 0, classId: 0, sectionId: 0 };
 }
 
 function Field({
@@ -68,7 +67,7 @@ export function AgendaSectionForm({
   const isEdit = Boolean(assignmentId) && !readOnly;
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { years, yearId, setYearId } = useSchoolYearFilter(canFetch);
 
   const { data: item, isLoading } = useGetAgendaSectionQuery(
     assignmentId ?? 0,
@@ -87,7 +86,6 @@ export function AgendaSectionForm({
     { skip: !canFetch },
   );
 
-  const yearId = form.yearId || defaultYearId || 0;
   const { data: sectionsData } = useGetSectionsQuery(
     {
       page: 1,
@@ -108,20 +106,13 @@ export function AgendaSectionForm({
     if (!item) {
       return;
     }
+    setYearId(item.yearId);
     setForm({
       agendaId: item.agendaId,
-      yearId: item.yearId,
       classId: item.classId,
       sectionId: item.sectionId,
     });
   }, [item]);
-
-  useEffect(() => {
-    if (form.yearId || !defaultYearId) {
-      return;
-    }
-    setForm((current) => ({ ...current, yearId: defaultYearId }));
-  }, [defaultYearId, form.yearId]);
 
   async function onSave() {
     setFormError(null);
@@ -210,15 +201,15 @@ export function AgendaSectionForm({
             <div className="mb-3 flex flex-wrap gap-2">
               <YearFilterSelect
                 years={years}
-                value={yearId || null}
-                onChange={(nextYearId) =>
+                value={yearId}
+                onChange={(nextYearId) => {
+                  setYearId(nextYearId);
                   setForm((current) => ({
                     ...current,
-                    yearId: nextYearId,
                     classId: 0,
                     sectionId: 0,
-                  }))
-                }
+                  }));
+                }}
               />
               <FilterSelect
                 label="Class"

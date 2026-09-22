@@ -8,15 +8,17 @@ export function YearFilterSelect({
   value,
   onChange,
   disabled,
+  label = "Year",
 }: {
   years: DashboardYear[];
   value: number | null;
   onChange: (yearId: number) => void;
   disabled?: boolean;
+  label?: string;
 }) {
   return (
     <FilterSelect
-      label="Filter by year"
+      label={label}
       value={value}
       disabled={disabled || years.length === 0}
       options={

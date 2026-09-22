@@ -13,7 +13,6 @@ import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog"
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useDeleteDashboardAlbumMutation,
@@ -35,7 +34,7 @@ function formatDate(value: string): string {
 function buildQuery(
   page: number,
   appliedSearch: string,
-  appliedYearId: number | null,
+  yearId: number | null,
 ): DashboardAlbumsQuery {
   const query: DashboardAlbumsQuery = {
     page,
@@ -44,8 +43,8 @@ function buildQuery(
   if (appliedSearch) {
     query.search = appliedSearch;
   }
-  if (appliedYearId) {
-    query.yearId = appliedYearId;
+  if (yearId) {
+    query.yearId = yearId;
   }
   return query;
 }
@@ -56,36 +55,30 @@ export function AlbumsList() {
   const canFetch = ready && Boolean(accessToken);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const [deleteAlbum, deleteState] = useDeleteDashboardAlbumMutation();
 
-  const query = buildQuery(page, appliedSearch, appliedYearId);
+  const query = buildQuery(page, appliedSearch, yearId);
   const { data, error, isLoading, isFetching } = useGetDashboardAlbumsQuery(
     query,
-    { skip: !canFetch || !appliedYearId },
+    { skip: !canFetch || !yearId },
   );
-
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
 
   function applySearch() {
     const next = searchInput.trim();
-    if (next === appliedSearch && draftYearId === appliedYearId) {
+    if (next === appliedSearch) {
       return;
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(draftYearId);
   }
 
   async function confirmDelete() {
@@ -101,7 +94,7 @@ export function AlbumsList() {
     }
   }
 
-  if (isLoading || !canFetch || !appliedYearId) {
+  if (isLoading || !canFetch || !yearId) {
     return <LoadingDots label="Loading albums" />;
   }
 
@@ -119,13 +112,7 @@ export function AlbumsList() {
           onChange={setSearchInput}
           onSearch={applySearch}
           compact
-        >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId}
-            onChange={setDraftYearId}
-          />
-        </TableSearchBar>
+        />
         <Link
           href="/albums/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"

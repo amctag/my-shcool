@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -12,7 +12,6 @@ import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
@@ -35,7 +34,7 @@ const PAGE_SIZE = 10;
 function buildQuery(
   page: number,
   appliedSearch: string,
-  appliedYearId: number | null,
+  yearId: number | null,
   appliedClassId: number,
   appliedSectionId: number,
   appliedCourseId: number,
@@ -50,7 +49,7 @@ function buildQuery(
     sortOrder,
   };
   if (appliedSearch) query.search = appliedSearch;
-  if (appliedYearId) query.yearId = appliedYearId;
+  if (yearId) query.yearId = yearId;
   if (appliedClassId) query.classId = appliedClassId;
   if (appliedSectionId) query.sectionId = appliedSectionId;
   if (appliedCourseId) query.courseId = appliedCourseId;
@@ -97,7 +96,7 @@ export function GradesByCourseTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
 
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
@@ -109,14 +108,13 @@ export function GradesByCourseTable() {
   const [appliedSectionId, setAppliedSectionId] = useState(0);
   const [appliedCourseId, setAppliedCourseId] = useState(0);
   const [appliedGradeTypeId, setAppliedGradeTypeId] = useState(0);
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const [sortBy, setSortBy] = useState<GradesByCourseSortBy>("id");
   const [sortOrder, setSortOrder] = useState<GradesByCourseSortOrder>("desc");
-
-  const resolvedYearId = appliedYearId ?? defaultYearId;
-  const draftResolvedYearId = draftYearId ?? defaultYearId;
 
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 20, sortOrder: "asc" },
@@ -129,11 +127,11 @@ export function GradesByCourseTable() {
       page: 1,
       limit: 20,
       classId: draftClassId > 0 ? draftClassId : undefined,
-      yearId: draftResolvedYearId ?? undefined,
+      yearId: yearId ?? undefined,
       sortBy: "section",
       sortOrder: "asc",
     },
-    { skip: !canFetch || !draftResolvedYearId || draftClassId <= 0 },
+    { skip: !canFetch || !yearId || draftClassId <= 0 },
   );
   const sections = sectionsData?.items ?? [];
 
@@ -142,12 +140,12 @@ export function GradesByCourseTable() {
       page: 1,
       limit: 20,
       classId: draftClassId > 0 ? draftClassId : undefined,
-      yearId: draftResolvedYearId ?? undefined,
+      yearId: yearId ?? undefined,
       status: "active",
       sortBy: "course",
       sortOrder: "asc",
     },
-    { skip: !canFetch || !draftResolvedYearId || draftClassId <= 0 },
+    { skip: !canFetch || !yearId || draftClassId <= 0 },
   );
   const courses = classCoursesData?.items ?? [];
 
@@ -160,7 +158,7 @@ export function GradesByCourseTable() {
     buildQuery(
       page,
       appliedSearch,
-      resolvedYearId,
+      yearId,
       appliedClassId,
       appliedSectionId,
       appliedCourseId,
@@ -168,7 +166,7 @@ export function GradesByCourseTable() {
       sortBy,
       sortOrder,
     ),
-    { skip: !canFetch || !resolvedYearId },
+    { skip: !canFetch || !yearId },
   );
 
   const items = data?.items ?? [];
@@ -177,10 +175,8 @@ export function GradesByCourseTable() {
 
   function applySearch() {
     const next = searchInput.trim();
-    const nextYearId = draftYearId ?? defaultYearId;
     if (
       next === appliedSearch &&
-      nextYearId === appliedYearId &&
       draftClassId === appliedClassId &&
       draftSectionId === appliedSectionId &&
       draftCourseId === appliedCourseId &&
@@ -190,7 +186,6 @@ export function GradesByCourseTable() {
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(nextYearId);
     setAppliedClassId(draftClassId);
     setAppliedSectionId(draftSectionId);
     setAppliedCourseId(draftCourseId);
@@ -218,15 +213,6 @@ export function GradesByCourseTable() {
           onSearch={applySearch}
           compact
         >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId ?? defaultYearId}
-            onChange={(yearId) => {
-              setDraftYearId(yearId);
-              setDraftSectionId(0);
-              setDraftCourseId(0);
-            }}
-          />
           <FilterSelect
             label="Class"
             value={draftClassId}
@@ -338,7 +324,7 @@ export function GradesByCourseTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !resolvedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={7} label="Loading grades" />
               ) : error ? (
                 <tr>

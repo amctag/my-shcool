@@ -1,9 +1,12 @@
 import { baseApi } from "@/store/api/baseApi";
 import { toQueryString } from "@/lib/toQueryString";
 import type {
+  BulkProgressRegistrationBody,
+  BulkProgressRegistrationsResponse,
   DashboardRegistration,
   DashboardRegistrationsQuery,
   DashboardRegistrationsResponse,
+  ProgressRegistrationBody,
   SaveRegistrationBody,
 } from "@/features/school/types";
 
@@ -23,6 +26,7 @@ export const registrationsApi = baseApi.injectEndpoints({
         classId,
         sectionId,
         yearId,
+        studentId,
         sortBy,
         sortOrder,
       }) =>
@@ -36,6 +40,7 @@ export const registrationsApi = baseApi.injectEndpoints({
           classId,
           sectionId,
           yearId,
+          studentId,
           sortBy,
           sortOrder,
         })}`,
@@ -69,6 +74,49 @@ export const registrationsApi = baseApi.injectEndpoints({
         { type: "Child", id: "LIST" },
       ],
     }),
+    updateRegistration: builder.mutation<
+      DashboardRegistration,
+      { id: number; body: SaveRegistrationBody }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dashboard/registrations/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Registrations", id },
+        { type: "Registrations", id: "LIST" },
+        { type: "Child", id: "LIST" },
+      ],
+    }),
+    progressRegistration: builder.mutation<
+      DashboardRegistration,
+      { id: number; body: ProgressRegistrationBody }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dashboard/registrations/${id}/progress`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: [
+        { type: "Registrations", id: "LIST" },
+        { type: "Child", id: "LIST" },
+      ],
+    }),
+    bulkProgressRegistrations: builder.mutation<
+      BulkProgressRegistrationsResponse,
+      BulkProgressRegistrationBody
+    >({
+      query: (body) => ({
+        url: "/dashboard/registrations/progress",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: [
+        { type: "Registrations", id: "LIST" },
+        { type: "Child", id: "LIST" },
+      ],
+    }),
     deleteRegistration: builder.mutation<void, number>({
       query: (id) => ({
         url: `/dashboard/registrations/${id}`,
@@ -85,7 +133,11 @@ export const registrationsApi = baseApi.injectEndpoints({
 
 export const {
   useGetRegistrationsQuery,
+  useLazyGetRegistrationsQuery,
   useGetRegistrationQuery,
   useCreateRegistrationMutation,
+  useUpdateRegistrationMutation,
+  useProgressRegistrationMutation,
+  useBulkProgressRegistrationsMutation,
   useDeleteRegistrationMutation,
 } = registrationsApi;

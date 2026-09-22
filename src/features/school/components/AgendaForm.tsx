@@ -28,7 +28,6 @@ type FormState = {
   agendaDate: string;
   time: string;
   courseId: number;
-  yearId: number;
   classId: number;
   sectionIds: number[];
   imageLink: string;
@@ -45,7 +44,6 @@ function emptyForm(): FormState {
     agendaDate: "",
     time: "",
     courseId: 0,
-    yearId: 0,
     classId: 0,
     sectionIds: [],
     imageLink: "",
@@ -122,7 +120,7 @@ export function AgendaForm({
   const isEdit = Boolean(agendaId) && !readOnly;
   const [form, setForm] = useState<FormState>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { years, yearId, setYearId } = useSchoolYearFilter(canFetch);
 
   const { data: item, isLoading } = useGetDashboardAgendaQuery(agendaId ?? 0, {
     skip: !canFetch || !agendaId,
@@ -140,7 +138,6 @@ export function AgendaForm({
     { skip: !canFetch },
   );
 
-  const yearId = form.yearId || defaultYearId || 0;
   const classSelected = form.classId > 0;
   const { data: classCoursesData } = useGetClassCoursesQuery(
     {
@@ -175,13 +172,15 @@ export function AgendaForm({
       return;
     }
     const firstSection = item.sections[0];
+    if (firstSection?.yearId) {
+      setYearId(firstSection.yearId);
+    }
     setForm({
       title: item.title ?? "",
       description: item.description,
       agendaDate: item.agendaDate,
       time: item.time,
       courseId: item.courseId,
-      yearId: firstSection?.yearId ?? 0,
       classId: firstSection?.classId ?? 0,
       sectionIds: item.sections.map((section) => section.sectionId),
       imageLink: item.imageLink,
@@ -191,13 +190,6 @@ export function AgendaForm({
       status: String(item.status),
     });
   }, [item]);
-
-  useEffect(() => {
-    if (form.yearId || !defaultYearId) {
-      return;
-    }
-    setForm((current) => ({ ...current, yearId: defaultYearId }));
-  }, [defaultYearId, form.yearId]);
 
   function toggleSection(sectionId: number) {
     setForm((current) => {
@@ -425,15 +417,15 @@ export function AgendaForm({
             <div className="mb-2">
               <YearFilterSelect
                 years={years}
-                value={yearId || null}
-                onChange={(nextYearId) =>
+                value={yearId}
+                onChange={(nextYearId) => {
+                  setYearId(nextYearId);
                   setForm((current) => ({
                     ...current,
-                    yearId: nextYearId,
                     courseId: 0,
                     sectionIds: [],
-                  }))
-                }
+                  }));
+                }}
               />
             </div>
             <div

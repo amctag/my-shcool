@@ -113,7 +113,8 @@ export function AlbumForm({ albumId }: { albumId?: number }) {
   const [hydrated, setHydrated] = useState(!isEditing);
   const [formError, setFormError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { years, yearId: globalYearId, setYearId } =
+    useSchoolYearFilter(canFetch);
   const albumQuery = useGetDashboardAlbumQuery(albumId ?? 0, {
     skip: !canFetch || !albumId,
   });
@@ -123,18 +124,19 @@ export function AlbumForm({ albumId }: { albumId?: number }) {
   const saving = createState.isLoading || updateState.isLoading;
 
   useEffect(() => {
-    if (!defaultYearId || isEditing) {
+    if (!globalYearId || isEditing) {
       return;
     }
     setForm((current) =>
-      current.yearId === 0 ? { ...current, yearId: defaultYearId } : current,
+      current.yearId === 0 ? { ...current, yearId: globalYearId } : current,
     );
-  }, [defaultYearId, isEditing]);
+  }, [globalYearId, isEditing]);
 
   useEffect(() => {
     if (!albumQuery.data || hydrated) {
       return;
     }
+    setYearId(albumQuery.data.yearId);
     setForm({
       title: albumQuery.data.title,
       description: albumQuery.data.description,
@@ -299,9 +301,10 @@ export function AlbumForm({ albumId }: { albumId?: number }) {
                 value: year.id,
                 label: year.isCurrent ? `${year.title} (current)` : year.title,
               }))}
-              onChange={(yearId) =>
-                setForm((current) => ({ ...current, yearId }))
-              }
+              onChange={(nextYearId) => {
+                setYearId(nextYearId);
+                setForm((current) => ({ ...current, yearId: nextYearId }));
+              }}
             />
           </Field>
         </div>

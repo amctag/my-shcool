@@ -15,7 +15,6 @@ import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
@@ -122,9 +121,8 @@ export function ClassCoursesTable() {
   const [draftFilters, setDraftFilters] = useState<ClassCourseFilters>(emptyFilters);
   const [appliedFilters, setAppliedFilters] =
     useState<ClassCourseFilters>(emptyFilters);
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+
   const [sortBy, setSortBy] = useState<ClassCoursesSortBy>("id");
   const [sortOrder, setSortOrder] = useState<ClassCoursesSortOrder>("asc");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -134,17 +132,21 @@ export function ClassCoursesTable() {
   } | null>(null);
   const limit = 10;
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const query = buildQuery(
     page,
     limit,
     sortBy,
     sortOrder,
-    appliedYearId,
+    yearId,
     appliedFilters,
   );
   const { data, error, isLoading, isFetching } = useGetClassCoursesQuery(query, {
-    skip: !canFetch || !appliedYearId,
+    skip: !canFetch || !yearId,
   });
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 20 },
@@ -156,23 +158,11 @@ export function ClassCoursesTable() {
   const classes = classesData?.items ?? [];
   const [deleteClassCourse, deleteState] = useDeleteClassCourseMutation();
 
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
-
   function applySearch() {
-    if (
-      draftYearId === appliedYearId &&
-      filtersEqual(draftFilters, appliedFilters)
-    ) {
+    if (filtersEqual(draftFilters, appliedFilters)) {
       return;
     }
     setPage(1);
-    setAppliedYearId(draftYearId);
     setAppliedFilters(draftFilters);
   }
 
@@ -207,11 +197,6 @@ export function ClassCoursesTable() {
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <TableSearchBar onSearch={applySearch} compact hideInput>
-          <YearFilterSelect
-            years={years}
-            value={draftYearId}
-            onChange={setDraftYearId}
-          />
           <FilterSelect
             label="Filter by class"
             value={draftFilters.classId}
@@ -280,7 +265,7 @@ export function ClassCoursesTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !appliedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={7} label="Loading class courses" />
               ) : error ? (
                 <tr>

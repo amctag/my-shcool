@@ -15,6 +15,7 @@ export const studentsApi = baseApi.injectEndpoints({
         limit,
         parentId,
         classId,
+        yearId,
         search,
         name,
         firstName,
@@ -30,6 +31,7 @@ export const studentsApi = baseApi.injectEndpoints({
           limit,
           parentId,
           classId,
+          yearId,
           search,
           name,
           firstName,
@@ -104,6 +106,7 @@ export const studentsApi = baseApi.injectEndpoints({
 
 export const {
   useGetStudentsQuery,
+  useLazyGetStudentsQuery,
   useGetStudentQuery,
   useCreateStudentMutation,
   useUpdateStudentMutation,

@@ -6,7 +6,6 @@ import { Check } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { selectAuthReady } from "@/features/auth/authSlice";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
-import { useGetYearsQuery } from "@/features/school/api/sectionsApi";
 import { useGetTeachersQuery } from "@/features/school/api/teachersApi";
 import {
   useCreateTeacherSupervisorMutation,
@@ -14,6 +13,7 @@ import {
   useGetTeacherSupervisorQuery,
   useGetTeacherSupervisorsQuery,
 } from "@/features/school/api/teacherSupervisorsApi";
+import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { useAppSelector } from "@/store/hooks";
 
 const inputClass =
@@ -89,9 +89,8 @@ export function TeacherSupervisorForm({
     { page: 1, limit: 100 },
     { skip: !authReady },
   );
-  const { data: years = [] } = useGetYearsQuery(undefined, {
-    skip: !authReady,
-  });
+  const { years, yearId: globalYearId, setYearId } =
+    useSchoolYearFilter(authReady);
   const { data: teachersData } = useGetTeachersQuery(
     { page: 1, limit: 100, sortBy: "name", sortOrder: "asc" },
     { skip: !authReady },
@@ -125,19 +124,15 @@ export function TeacherSupervisorForm({
   }, [currentGroup?.classes]);
 
   useEffect(() => {
-    if (supervisorId || form.yearId) {
-      return;
-    }
-    const current = years.find((year) => year.isCurrent) ?? years[0];
-    if (!current) {
+    if (supervisorId || form.yearId || !globalYearId) {
       return;
     }
     setForm((currentForm) =>
       currentForm.yearId
         ? currentForm
-        : { ...currentForm, yearId: String(current.id) },
+        : { ...currentForm, yearId: String(globalYearId) },
     );
-  }, [form.yearId, supervisorId, years]);
+  }, [form.yearId, globalYearId, supervisorId]);
 
   useEffect(() => {
     if (!item || !currentGroup || hydrated) {
@@ -241,13 +236,18 @@ export function TeacherSupervisorForm({
               required
               disabled={Boolean(supervisorId)}
               value={form.yearId}
-              onChange={(event) =>
+              onChange={(event) => {
+                const nextYearId = event.target.value;
                 setForm((current) => ({
                   ...current,
-                  yearId: event.target.value,
+                  yearId: nextYearId,
                   classIds: [],
-                }))
-              }
+                }));
+                const parsed = Number(nextYearId);
+                if (parsed > 0) {
+                  setYearId(parsed);
+                }
+              }}
               className={`${inputClass} cursor-pointer disabled:bg-stone-50`}
             >
               <option value="">Choose year</option>

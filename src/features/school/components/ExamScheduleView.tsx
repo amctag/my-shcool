@@ -1,8 +1,10 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
+import { useState } from "react";
+import { CalendarDays, FileDown, LoaderCircle } from "lucide-react";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { exportExamScheduleGridToPdf } from "@/lib/exportTable";
 import { useGetDashboardExamScheduleQuery } from "@/features/school/api/examSchedulesApi";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
@@ -24,11 +26,42 @@ export function ExamScheduleView({ scheduleId }: ExamScheduleViewProps) {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const { data, error, isLoading } = useGetDashboardExamScheduleQuery(
     scheduleId,
     { skip: !canFetch },
   );
+
+  function exportPdf() {
+    if (!data) {
+      return;
+    }
+    setExporting(true);
+    setExportError(null);
+    try {
+      exportExamScheduleGridToPdf(
+        `exam-schedule-${data.title}`,
+        data.title,
+        `${data.yearTitle} · ${data.className} · ${data.gradeTypeTitle}`,
+        data.dates.map((examDate) => ({
+          dateLabel: formatDisplayDate(examDate.date),
+          rows: examDate.exams.map((exam, index) => ({
+            index: index + 1,
+            course: exam.courseTitle,
+            start: exam.startTime,
+            duration: `${exam.duration} min`,
+            note: exam.note ?? "",
+          })),
+        })),
+      );
+    } catch (caught) {
+      setExportError(getApiErrorMessage(caught, "Could not export PDF"));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -58,14 +91,36 @@ export function ExamScheduleView({ scheduleId }: ExamScheduleViewProps) {
 
   return (
     <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-      <div className="border-b border-stone-100 px-5 py-4">
-        <h2 className="text-lg font-semibold text-foreground">{data.title}</h2>
-        <p className="mt-1 text-sm text-muted">
-          {data.yearTitle} · {data.className} · {data.gradeTypeTitle}
-        </p>
-        {data.note ? (
-          <p className="mt-3 text-sm text-foreground">{data.note}</p>
-        ) : null}
+      <div className="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">{data.title}</h2>
+          <p className="mt-1 text-sm text-muted">
+            {data.yearTitle} · {data.className} · {data.gradeTypeTitle}
+          </p>
+          {data.note ? (
+            <p className="mt-3 text-sm text-foreground">{data.note}</p>
+          ) : null}
+        </div>
+        <div className="flex flex-col items-stretch gap-2 sm:items-end">
+          <button
+            type="button"
+            disabled={exporting || data.dates.length === 0}
+            onClick={exportPdf}
+            className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border bg-white px-3 text-sm font-medium text-foreground transition-colors hover:bg-primary-soft hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {exporting ? (
+              <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileDown aria-hidden className="h-4 w-4" />
+            )}
+            PDF
+          </button>
+          {exportError ? (
+            <p className="text-xs text-red-600" role="alert">
+              {exportError}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="space-y-4 p-5">
@@ -81,39 +136,47 @@ export function ExamScheduleView({ scheduleId }: ExamScheduleViewProps) {
               </h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-stone-100 bg-stone-50/80">
-                  <tr>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
+              <table className="min-w-full border-collapse text-center text-sm">
+                <thead>
+                  <tr className="bg-primary text-on-primary">
+                    <th className="w-16 border border-primary-hover/30 px-3 py-3.5 text-xs font-semibold uppercase tracking-wide">
+                      #
+                    </th>
+                    <th className="min-w-[10rem] border border-primary-hover/30 px-3 py-3.5 text-xs font-semibold uppercase tracking-wide">
                       Course
                     </th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                    <th className="min-w-[7rem] border border-primary-hover/30 px-3 py-3.5 text-xs font-semibold uppercase tracking-wide">
                       Start
                     </th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                    <th className="min-w-[7rem] border border-primary-hover/30 px-3 py-3.5 text-xs font-semibold uppercase tracking-wide">
                       Duration
                     </th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                    <th className="min-w-[10rem] border border-primary-hover/30 px-3 py-3.5 text-xs font-semibold uppercase tracking-wide">
                       Note
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {examDate.exams.map((exam) => (
+                  {examDate.exams.map((exam, examIndex) => (
                     <tr
                       key={exam.id}
-                      className="border-b border-stone-100 last:border-b-0"
+                      className={
+                        examIndex % 2 === 0 ? "bg-white" : "bg-primary-soft/40"
+                      }
                     >
-                      <td className="px-4 py-3 font-medium text-foreground">
+                      <td className="border border-stone-200 px-3 py-3 font-semibold text-foreground">
+                        {examIndex + 1}
+                      </td>
+                      <td className="border border-stone-200 px-3 py-3 font-medium text-foreground">
                         {exam.courseTitle}
                       </td>
-                      <td className="px-4 py-3 text-foreground">
+                      <td className="border border-stone-200 px-3 py-3 text-foreground">
                         {exam.startTime}
                       </td>
-                      <td className="px-4 py-3 text-foreground">
+                      <td className="border border-stone-200 px-3 py-3 text-foreground">
                         {exam.duration} min
                       </td>
-                      <td className="px-4 py-3 text-foreground">
+                      <td className="border border-stone-200 px-3 py-3 text-foreground">
                         {exam.note ?? "—"}
                       </td>
                     </tr>

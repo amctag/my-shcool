@@ -49,11 +49,8 @@ export function GradeByCourseForm({
 }: GradeByCourseFormProps) {
   const router = useRouter();
   const authReady = useAppSelector(selectAuthReady);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(authReady);
+  const { years, yearId, setYearId } = useSchoolYearFilter(authReady);
 
-  const [yearId, setYearId] = useState<number | null>(
-    initialYearId > 0 ? initialYearId : null,
-  );
   const [classId, setClassId] = useState(initialClassId);
   const [sectionId, setSectionId] = useState(initialSectionId);
   const [courseId, setCourseId] = useState(initialCourseId);
@@ -65,7 +62,11 @@ export function GradeByCourseForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [autoLoaded, setAutoLoaded] = useState(false);
 
-  const resolvedYearId = yearId ?? defaultYearId;
+  useEffect(() => {
+    if (initialYearId > 0) {
+      setYearId(initialYearId);
+    }
+  }, [initialYearId]);
 
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 20, sortOrder: "asc" },
@@ -78,11 +79,11 @@ export function GradeByCourseForm({
       page: 1,
       limit: 20,
       classId: classId > 0 ? classId : undefined,
-      yearId: resolvedYearId ?? undefined,
+      yearId: yearId ?? undefined,
       sortBy: "section",
       sortOrder: "asc",
     },
-    { skip: !authReady || !resolvedYearId || classId <= 0 },
+    { skip: !authReady || !yearId || classId <= 0 },
   );
   const sections = sectionsData?.items ?? [];
 
@@ -92,12 +93,12 @@ export function GradeByCourseForm({
       page: 1,
       limit: 20,
       classId: classId > 0 ? classId : undefined,
-      yearId: resolvedYearId ?? undefined,
+      yearId: yearId ?? undefined,
       status: "active",
       sortBy: "course",
       sortOrder: "asc",
     },
-    { skip: !authReady || !resolvedYearId || classId <= 0 },
+    { skip: !authReady || !yearId || classId <= 0 },
   );
   const courses = classCoursesData?.items ?? [];
 
@@ -298,7 +299,7 @@ export function GradeByCourseForm({
       <div className="flex flex-wrap items-center gap-2">
         <YearFilterSelect
           years={years}
-          value={resolvedYearId}
+          value={yearId}
           onChange={(nextYearId) => {
             setYearId(nextYearId);
             setSectionId(0);

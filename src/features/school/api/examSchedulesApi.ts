@@ -89,6 +89,7 @@ export const dashboardExamSchedulesApi = baseApi.injectEndpoints({
 export const {
   useGetDashboardGradeTypesQuery,
   useGetDashboardExamSchedulesQuery,
+  useLazyGetDashboardExamSchedulesQuery,
   useGetDashboardExamScheduleQuery,
   useCreateDashboardExamScheduleMutation,
   useUpdateDashboardExamScheduleMutation,

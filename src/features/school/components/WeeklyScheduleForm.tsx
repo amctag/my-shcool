@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, Pencil } from "lucide-react";
+import { CalendarDays, FileDown, LoaderCircle, Pencil } from "lucide-react";
 import { ConfirmWarningDialog } from "@/components/dashboard/ConfirmWarningDialog";
 import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { ScheduleCourseDrawer } from "@/features/school/components/ScheduleCourseDrawer";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { exportMatrixToPdf } from "@/lib/exportTable";
 import { useGetClassCoursesQuery } from "@/features/school/api/coursesApi";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import { useGetSectionsQuery } from "@/features/school/api/sectionsApi";
@@ -55,7 +56,6 @@ export function WeeklyScheduleForm() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
-  const [yearId, setYearId] = useState<number | null>(null);
   const [classId, setClassId] = useState(0);
   const [sectionId, setSectionId] = useState(0);
   const [cellCourses, setCellCourses] = useState<Record<string, number>>({});
@@ -63,7 +63,8 @@ export function WeeklyScheduleForm() {
   const [showHoursWarning, setShowHoursWarning] = useState(false);
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [drawerCourseId, setDrawerCourseId] = useState(0);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const { years, yearId, setYearId } = useSchoolYearFilter(canFetch);
 
   const canLoadGrid =
     canFetch && Boolean(yearId) && classId > 0 && sectionId > 0;
@@ -114,13 +115,6 @@ export function WeeklyScheduleForm() {
 
   const [saveSchedule, { isLoading: saving }] =
     useSaveDashboardWeeklyScheduleMutation();
-
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
 
   useEffect(() => {
     const queryYearId = Number(searchParams.get("yearId"));
@@ -206,6 +200,34 @@ export function WeeklyScheduleForm() {
       const [dayId, sessionId] = key.split(":").map(Number);
       return { dayId, sessionId, courseId };
     });
+  }
+
+  function exportSchedulePdf() {
+    if (!gridData || days.length === 0 || sessions.length === 0) {
+      return;
+    }
+    setExportingPdf(true);
+    try {
+      const head = ["", ...days.map((day) => day.dayName.toUpperCase())];
+      const body = sessions.map((session) => [
+        String(session.position),
+        ...days.map((day) => {
+          const courseId = cellCourses[cellKey(day.id, session.id)] ?? 0;
+          return courseId ? (courseTitleById.get(courseId) ?? "") : "";
+        }),
+      ]);
+      exportMatrixToPdf(
+        `weekly-schedule-${gridData.className}-${gridData.sectionTitle}`,
+        "Weekly schedule",
+        `${gridData.yearTitle} · ${gridData.className} · Section ${gridData.sectionTitle}`,
+        head,
+        body,
+      );
+    } catch (caught) {
+      setFormError(getApiErrorMessage(caught, "Could not export PDF"));
+    } finally {
+      setExportingPdf(false);
+    }
   }
 
   async function saveScheduleNow() {
@@ -405,12 +427,25 @@ export function WeeklyScheduleForm() {
         ) : (
           <>
             {gridData ? (
-              <div className="border-b border-stone-100 px-5 py-4">
+              <div className="flex flex-col gap-3 border-b border-stone-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted">
                   {gridData.yearTitle} · {gridData.className} · Section{" "}
                   {gridData.sectionTitle}
                   {isEditing ? " · editing existing schedule" : ""}
                 </p>
+                <button
+                  type="button"
+                  disabled={exportingPdf || sessions.length === 0}
+                  onClick={exportSchedulePdf}
+                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg border border-border bg-white px-3 text-sm font-medium text-foreground transition-colors hover:bg-primary-soft hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {exportingPdf ? (
+                    <LoaderCircle aria-hidden className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileDown aria-hidden className="h-4 w-4" />
+                  )}
+                  PDF
+                </button>
               </div>
             ) : null}
 

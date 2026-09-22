@@ -16,7 +16,6 @@ import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useDeleteAttendanceMutation,
@@ -46,7 +45,7 @@ function formatDate(value: string): string {
 function buildQuery(
   page: number,
   appliedSearch: string,
-  appliedYearId: number | null,
+  yearId: number | null,
   appliedClassId: number,
   appliedSectionId: number,
   appliedStatus: string,
@@ -60,7 +59,7 @@ function buildQuery(
     sortOrder,
   };
   if (appliedSearch) query.search = appliedSearch;
-  if (appliedYearId) query.yearId = appliedYearId;
+  if (yearId) query.yearId = yearId;
   if (appliedClassId) query.classId = appliedClassId;
   if (appliedSectionId) query.sectionId = appliedSectionId;
   if (appliedStatus === "1") query.status = true;
@@ -108,7 +107,7 @@ export function AttendancesTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
 
   const savedMessage = searchParams.get("saved") === "1";
 
@@ -120,24 +119,15 @@ export function AttendancesTable() {
   const [appliedClassId, setAppliedClassId] = useState(0);
   const [appliedSectionId, setAppliedSectionId] = useState(0);
   const [appliedStatus, setAppliedStatus] = useState("");
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const [sortBy, setSortBy] = useState<AttendancesSortBy>("date");
   const [sortOrder, setSortOrder] = useState<AttendancesSortOrder>("desc");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
-
-  const resolvedYearId = appliedYearId ?? defaultYearId;
-  const draftResolvedYearId = draftYearId ?? defaultYearId;
 
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 20, sortOrder: "asc" },
@@ -147,16 +137,16 @@ export function AttendancesTable() {
     {
       page: 1,
       limit: 20,
-      yearId: draftResolvedYearId ?? undefined,
+      yearId: yearId ?? undefined,
       classId: draftClassId || undefined,
     },
-    { skip: !canFetch || !draftResolvedYearId || !draftClassId },
+    { skip: !canFetch || !yearId || !draftClassId },
   );
 
   const query = buildQuery(
     page,
     appliedSearch,
-    resolvedYearId,
+    yearId,
     appliedClassId,
     appliedSectionId,
     appliedStatus,
@@ -165,7 +155,7 @@ export function AttendancesTable() {
   );
 
   const { data, error, isFetching, isLoading } = useGetAttendancesQuery(query, {
-    skip: !canFetch || !resolvedYearId,
+    skip: !canFetch || !yearId,
   });
   const [deleteAttendance, deleteState] = useDeleteAttendanceMutation();
 
@@ -189,7 +179,6 @@ export function AttendancesTable() {
     const next = searchInput.trim();
     if (
       next === appliedSearch &&
-      draftYearId === appliedYearId &&
       draftClassId === appliedClassId &&
       draftSectionId === appliedSectionId &&
       draftStatus === appliedStatus
@@ -198,7 +187,6 @@ export function AttendancesTable() {
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(draftYearId);
     setAppliedClassId(draftClassId);
     setAppliedSectionId(draftSectionId);
     setAppliedStatus(draftStatus);
@@ -244,14 +232,6 @@ export function AttendancesTable() {
           onSearch={applySearch}
           compact
         >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId ?? defaultYearId}
-            onChange={(yearId) => {
-              setDraftYearId(yearId);
-              setDraftSectionId(0);
-            }}
-          />
           <FilterSelect
             label="Class"
             value={draftClassId}
@@ -347,7 +327,7 @@ export function AttendancesTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !resolvedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={7} label="Loading attendance" />
               ) : error ? (
                 <tr>

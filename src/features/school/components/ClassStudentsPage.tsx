@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   GraduationCap,
@@ -14,6 +14,7 @@ import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useGetClassQuery } from "@/features/school/api/classesApi";
 import { useGetStudentsQuery } from "@/features/school/api/studentsApi";
+import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { useAppSelector } from "@/store/hooks";
 
 function formatBirthday(value?: string | null): string {
@@ -35,8 +36,13 @@ export function ClassStudentsPage({ classId }: { classId: number }) {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
+  const { yearId } = useSchoolYearFilter(canFetch);
   const [page, setPage] = useState(1);
   const limit = 20;
+
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
 
   const {
     data: classItem,
@@ -50,8 +56,15 @@ export function ClassStudentsPage({ classId }: { classId: number }) {
     isLoading: studentsLoading,
     isFetching,
   } = useGetStudentsQuery(
-    { page, limit, classId, sortBy: "name", sortOrder: "asc" },
-    { skip: !canFetch },
+    {
+      page,
+      limit,
+      classId,
+      yearId: yearId ?? undefined,
+      sortBy: "name",
+      sortOrder: "asc",
+    },
+    { skip: !canFetch || !yearId },
   );
 
   const students = studentsData?.items ?? [];
@@ -142,7 +155,7 @@ export function ClassStudentsPage({ classId }: { classId: number }) {
               </tr>
             </thead>
             <tbody>
-              {studentsLoading ? (
+              {studentsLoading || !yearId ? (
                 <TableLoadingRow colSpan={7} label="Loading students" />
               ) : studentsError ? (
                 <tr>
@@ -163,7 +176,8 @@ export function ClassStudentsPage({ classId }: { classId: number }) {
                     colSpan={7}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
-                    No students are registered in this class yet.
+                    No students are registered in this class for the selected
+                    year.
                   </td>
                 </tr>
               ) : (

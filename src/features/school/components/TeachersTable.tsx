@@ -7,21 +7,27 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  KeyRound,
   Pause,
   Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
+import { ResetPasswordDrawer } from "@/components/dashboard/ResetPasswordDrawer";
 import { StatusFilterSelect } from "@/components/dashboard/StatusFilterSelect";
+import { TableExportButtons } from "@/components/dashboard/TableExportButtons";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
 import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
+import { fetchAllPaginatedItems } from "@/lib/exportTable";
 import {
   useDeleteTeacherMutation,
   useGetTeachersQuery,
+  useLazyGetTeachersQuery,
+  useResetTeacherPasswordMutation,
   useUpdateTeacherStatusMutation,
 } from "@/features/school/api/teachersApi";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
@@ -193,9 +199,15 @@ export function TeachersTable() {
   const limit = 10;
   const [deleteTeacher, deleteState] = useDeleteTeacherMutation();
   const [updateTeacherStatus, statusState] = useUpdateTeacherStatusMutation();
+  const [resetTeacherPassword, resetPasswordState] =
+    useResetTeacherPasswordMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [pendingResetPassword, setPendingResetPassword] = useState<{
     id: number;
     name: string;
   } | null>(null);
@@ -214,6 +226,33 @@ export function TeachersTable() {
   const { data, error, isLoading, isFetching } = useGetTeachersQuery(query, {
     skip: !canFetch,
   });
+  const [fetchTeachers] = useLazyGetTeachersQuery();
+
+  async function fetchExportRows() {
+    const items = await fetchAllPaginatedItems(async (exportPage, exportLimit) =>
+      fetchTeachers(
+        buildTeachersQuery(
+          exportPage,
+          exportLimit,
+          appliedFirstName,
+          appliedMiddleName,
+          appliedLastName,
+          sortBy,
+          sortOrder,
+          statusFilter,
+        ),
+      ).unwrap(),
+    );
+
+    return items.map((teacher) => ({
+      id: teacher.id,
+      name: teacherName(teacher.firstName, teacher.lastName, teacher.fullName),
+      phone: teacher.phoneNumber ?? "",
+      address: teacher.address ?? "",
+      birthday: formatBirthday(teacher.birthday),
+      status: isTeacherActive(teacher.status) ? "Active" : "Closed",
+    }));
+  }
 
   function applySearch() {
     const nextFirstName = firstNameInput.trim();
@@ -329,13 +368,29 @@ export function TeachersTable() {
             />
           </TableSearchBar>
         </div>
-        <Link
-          href="/teachers/add"
-          className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        >
-          <Plus aria-hidden className="h-4 w-4" />
-          Add
-        </Link>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <TableExportButtons
+            title="Teachers"
+            filename="teachers"
+            columns={[
+              { key: "id", header: "ID" },
+              { key: "name", header: "Name" },
+              { key: "phone", header: "Phone" },
+              { key: "address", header: "Address" },
+              { key: "birthday", header: "Birthday" },
+              { key: "status", header: "Status" },
+            ]}
+            fetchRows={fetchExportRows}
+            disabled={!canFetch}
+          />
+          <Link
+            href="/teachers/add"
+            className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <Plus aria-hidden className="h-4 w-4" />
+            Add
+          </Link>
+        </div>
       </div>
       {statusError ? (
         <p className="mb-4 text-sm text-red-600" role="alert">
@@ -498,6 +553,24 @@ export function TeachersTable() {
                         </Link>
                         <button
                           type="button"
+                          aria-label="Reset password"
+                          title="Reset password"
+                          onClick={() =>
+                            setPendingResetPassword({
+                              id: teacher.id,
+                              name: teacherName(
+                                teacher.firstName,
+                                teacher.lastName,
+                                teacher.fullName,
+                              ),
+                            })
+                          }
+                          className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white text-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                        >
+                          <KeyRound aria-hidden className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
                           aria-label="Delete"
                           title="Delete"
                           disabled={deleteState.isLoading}
@@ -538,6 +611,25 @@ export function TeachersTable() {
             }
           }}
           onConfirm={() => void confirmDeleteTeacher()}
+        />
+      ) : null}
+      {pendingResetPassword ? (
+        <ResetPasswordDrawer
+          personName={pendingResetPassword.name}
+          roleLabel="teacher"
+          busy={resetPasswordState.isLoading}
+          onClose={() => {
+            if (!resetPasswordState.isLoading) {
+              setPendingResetPassword(null);
+            }
+          }}
+          onSubmit={async (body) => {
+            await resetTeacherPassword({
+              id: pendingResetPassword.id,
+              body,
+            }).unwrap();
+            setPendingResetPassword(null);
+          }}
         />
       ) : null}
     </>

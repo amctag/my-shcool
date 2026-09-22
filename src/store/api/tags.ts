@@ -36,6 +36,7 @@ export const apiTagTypes = [
   "DashboardAgendaSections",
   "DashboardSessions",
   "DashboardSettings",
+  "DashboardOverview",
 ] as const;
 
 export type ApiTagType = (typeof apiTagTypes)[number];

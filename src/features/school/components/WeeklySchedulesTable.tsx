@@ -16,7 +16,6 @@ import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import { useGetSectionsQuery } from "@/features/school/api/sectionsApi";
@@ -50,7 +49,7 @@ function formatDateTime(value: string): string {
 function buildQuery(
   page: number,
   appliedSearch: string,
-  appliedYearId: number | null,
+  yearId: number | null,
   appliedClassId: number,
   appliedSectionId: number,
   sortBy: WeeklySchedulesSortBy,
@@ -65,8 +64,8 @@ function buildQuery(
   if (appliedSearch) {
     query.search = appliedSearch;
   }
-  if (appliedYearId) {
-    query.yearId = appliedYearId;
+  if (yearId) {
+    query.yearId = yearId;
   }
   if (appliedClassId) {
     query.classId = appliedClassId;
@@ -119,13 +118,12 @@ export function WeeklySchedulesTable() {
   const canFetch = ready && Boolean(accessToken);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [draftClassId, setDraftClassId] = useState(0);
   const [appliedClassId, setAppliedClassId] = useState(0);
   const [draftSectionId, setDraftSectionId] = useState(0);
   const [appliedSectionId, setAppliedSectionId] = useState(0);
   const [page, setPage] = useState(1);
+
   const [sortBy, setSortBy] = useState<WeeklySchedulesSortBy>("id");
   const [sortOrder, setSortOrder] = useState<WeeklySchedulesSortOrder>("asc");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -133,12 +131,16 @@ export function WeeklySchedulesTable() {
     id: number;
     label: string;
   } | null>(null);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
 
   const query = buildQuery(
     page,
     appliedSearch,
-    appliedYearId,
+    yearId,
     appliedClassId,
     appliedSectionId,
     sortBy,
@@ -147,7 +149,7 @@ export function WeeklySchedulesTable() {
 
   const { data, error, isLoading, isFetching } =
     useGetDashboardWeeklySchedulesQuery(query, {
-      skip: !canFetch || !appliedYearId,
+      skip: !canFetch || !yearId,
     });
 
   const [deleteSchedule, deleteState] =
@@ -164,22 +166,14 @@ export function WeeklySchedulesTable() {
     {
       page: 1,
       limit: 20,
-      yearId: draftYearId ?? undefined,
+      yearId: yearId ?? undefined,
       classId: draftClassId,
       sortBy: "section",
       sortOrder: "asc",
     },
-    { skip: !canFetch || !draftYearId || !classSelected },
+    { skip: !canFetch || !yearId || !classSelected },
   );
   const sections = sectionsData?.items ?? [];
-
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
 
   const items = data?.items ?? [];
   const pagination = data?.pagination;
@@ -189,7 +183,6 @@ export function WeeklySchedulesTable() {
     const next = searchInput.trim();
     if (
       next === appliedSearch &&
-      draftYearId === appliedYearId &&
       draftClassId === appliedClassId &&
       draftSectionId === appliedSectionId
     ) {
@@ -197,7 +190,6 @@ export function WeeklySchedulesTable() {
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(draftYearId);
     setAppliedClassId(draftClassId);
     setAppliedSectionId(draftSectionId);
   }
@@ -258,15 +250,6 @@ export function WeeklySchedulesTable() {
           onSearch={applySearch}
           compact
         >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId}
-            onChange={(yearId) => {
-              setDraftYearId(yearId);
-              setDraftClassId(0);
-              setDraftSectionId(0);
-            }}
-          />
           <FilterSelect
             label="Filter by class"
             value={draftClassId}
@@ -357,7 +340,7 @@ export function WeeklySchedulesTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !appliedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={6} label="Loading weekly schedules" />
               ) : error ? (
                 <tr>

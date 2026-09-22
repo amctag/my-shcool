@@ -73,15 +73,12 @@ function emptyForm(): GradeFormFormState {
 export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
   const router = useRouter();
   const authReady = useAppSelector(selectAuthReady);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(authReady);
+  const { years, yearId, setYearId } = useSchoolYearFilter(authReady);
   const isEdit = Boolean(gradeFormId);
 
-  const [yearId, setYearId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [classIds, setClassIds] = useState<number[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
-
-  const resolvedYearId = yearId ?? defaultYearId;
 
   const { data: gradeForm, isLoading: gradeFormLoading } = useGetGradeFormQuery(
     gradeFormId ?? 0,
@@ -132,7 +129,7 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
       setFormError("Title is required.");
       return;
     }
-    if (!resolvedYearId) {
+    if (!yearId) {
       setFormError("Year is required.");
       return;
     }
@@ -158,7 +155,7 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
           id: gradeFormId,
           body: {
             title,
-            yearId: resolvedYearId,
+            yearId,
             gradeBackground: form.gradeBackground.trim() || undefined,
             average,
             minimum,
@@ -172,7 +169,7 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
       } else {
         await createGradeForm({
           title,
-          yearId: resolvedYearId,
+          yearId,
           gradeBackground: form.gradeBackground.trim() || undefined,
           average,
           minimum,
@@ -220,7 +217,7 @@ export function GradeFormForm({ gradeFormId }: { gradeFormId?: number }) {
         <Field id="grade-form-year" label="Year" required>
           <YearFilterSelect
             years={years}
-            value={resolvedYearId}
+            value={yearId}
             onChange={setYearId}
           />
         </Field>

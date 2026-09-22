@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -12,7 +12,6 @@ import {
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { GradeFormClassesDrawer } from "@/features/school/components/GradeFormClassesDrawer";
@@ -35,7 +34,7 @@ const PAGE_SIZE = 10;
 function buildQuery(
   page: number,
   appliedSearch: string,
-  appliedYearId: number | null,
+  yearId: number | null,
   sortBy: GradeFormsSortBy,
   sortOrder: GradeFormsSortOrder,
 ): DashboardGradeFormsQuery {
@@ -46,7 +45,7 @@ function buildQuery(
     sortOrder,
   };
   if (appliedSearch) query.search = appliedSearch;
-  if (appliedYearId) query.yearId = appliedYearId;
+  if (yearId) query.yearId = yearId;
   return query;
 }
 
@@ -89,13 +88,15 @@ export function GradeFormsTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
 
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const [sortBy, setSortBy] = useState<GradeFormsSortBy>("id");
   const [sortOrder, setSortOrder] = useState<GradeFormsSortOrder>("desc");
   const [drawerForm, setDrawerForm] = useState<DashboardGradeForm | null>(null);
@@ -105,11 +106,9 @@ export function GradeFormsTable() {
   } | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const resolvedYearId = appliedYearId ?? defaultYearId;
-
   const { data, error, isLoading, isFetching } = useGetGradeFormsQuery(
-    buildQuery(page, appliedSearch, resolvedYearId, sortBy, sortOrder),
-    { skip: !canFetch || !resolvedYearId },
+    buildQuery(page, appliedSearch, yearId, sortBy, sortOrder),
+    { skip: !canFetch || !yearId },
   );
   const [deleteGradeForm, deleteState] = useDeleteGradeFormMutation();
 
@@ -119,13 +118,11 @@ export function GradeFormsTable() {
 
   function applySearch() {
     const next = searchInput.trim();
-    const nextYearId = draftYearId ?? defaultYearId;
-    if (next === appliedSearch && nextYearId === appliedYearId) {
+    if (next === appliedSearch) {
       return;
     }
     setPage(1);
     setAppliedSearch(next);
-    setAppliedYearId(nextYearId);
   }
 
   function handleSort(column: GradeFormsSortBy) {
@@ -161,13 +158,7 @@ export function GradeFormsTable() {
           onChange={setSearchInput}
           onSearch={applySearch}
           compact
-        >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId ?? defaultYearId}
-            onChange={setDraftYearId}
-          />
-        </TableSearchBar>
+        />
         <Link
           href="/grade-forms/add"
           className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-on-primary hover:bg-primary-hover"
@@ -222,7 +213,7 @@ export function GradeFormsTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !resolvedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={7} label="Loading grade forms" />
               ) : error ? (
                 <tr>

@@ -15,7 +15,6 @@ import { FilterSelect } from "@/components/dashboard/FilterSelect";
 import { TableLoadingRow } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { TableSearchBar } from "@/components/dashboard/TableSearchBar";
-import { YearFilterSelect } from "@/components/dashboard/YearFilterSelect";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useDeleteAgendaSectionMutation,
@@ -45,7 +44,7 @@ function formatDate(value: string): string {
 function buildQuery(
   page: number,
   appliedSearch: string,
-  appliedYearId: number | null,
+  yearId: number | null,
   appliedClassId: number,
   appliedSectionId: number,
   sortBy: AgendaSectionsSortBy,
@@ -58,7 +57,7 @@ function buildQuery(
     sortOrder,
   };
   if (appliedSearch) query.search = appliedSearch;
-  if (appliedYearId) query.yearId = appliedYearId;
+  if (yearId) query.yearId = yearId;
   if (appliedClassId) query.classId = appliedClassId;
   if (appliedSectionId) query.sectionId = appliedSectionId;
   return query;
@@ -103,7 +102,7 @@ export function AgendaSectionsTable() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(accessToken);
-  const { years, yearId: defaultYearId } = useSchoolYearFilter(canFetch);
+  const { yearId } = useSchoolYearFilter(canFetch);
 
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
@@ -111,24 +110,15 @@ export function AgendaSectionsTable() {
   const [draftSectionId, setDraftSectionId] = useState(0);
   const [appliedClassId, setAppliedClassId] = useState(0);
   const [appliedSectionId, setAppliedSectionId] = useState(0);
-  const [draftYearId, setDraftYearId] = useState<number | null>(null);
-  const [appliedYearId, setAppliedYearId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [yearId]);
+
   const [sortBy, setSortBy] = useState<AgendaSectionsSortBy>("id");
   const [sortOrder, setSortOrder] = useState<AgendaSectionsSortOrder>("desc");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!defaultYearId) {
-      return;
-    }
-    setDraftYearId((current) => current ?? defaultYearId);
-    setAppliedYearId((current) => current ?? defaultYearId);
-  }, [defaultYearId]);
-
-  const resolvedYearId = appliedYearId ?? defaultYearId;
-  const draftResolvedYearId = draftYearId ?? defaultYearId;
 
   const { data: classesData } = useGetClassesQuery(
     { page: 1, limit: 20, sortOrder: "asc" },
@@ -138,12 +128,12 @@ export function AgendaSectionsTable() {
     {
       page: 1,
       limit: 20,
-      yearId: draftResolvedYearId ?? undefined,
+      yearId: yearId ?? undefined,
       classId: draftClassId || undefined,
       sortBy: "section",
       sortOrder: "asc",
     },
-    { skip: !canFetch || !draftResolvedYearId },
+    { skip: !canFetch || !yearId },
   );
 
   const classes = classesData?.items ?? [];
@@ -152,7 +142,7 @@ export function AgendaSectionsTable() {
   const query = buildQuery(
     page,
     appliedSearch,
-    resolvedYearId,
+    yearId,
     appliedClassId,
     appliedSectionId,
     sortBy,
@@ -161,7 +151,7 @@ export function AgendaSectionsTable() {
 
   const { data, error, isLoading, isFetching } = useGetAgendaSectionsQuery(
     query,
-    { skip: !canFetch || !resolvedYearId },
+    { skip: !canFetch || !yearId },
   );
   const [deleteAgendaSection, deleteState] = useDeleteAgendaSectionMutation();
 
@@ -173,7 +163,6 @@ export function AgendaSectionsTable() {
     setAppliedSearch(searchInput.trim());
     setAppliedClassId(draftClassId);
     setAppliedSectionId(draftSectionId);
-    setAppliedYearId(draftYearId);
     setPage(1);
   }
 
@@ -212,14 +201,6 @@ export function AgendaSectionsTable() {
           onChange={setSearchInput}
           onSearch={applyFilters}
         >
-          <YearFilterSelect
-            years={years}
-            value={draftYearId ?? defaultYearId}
-            onChange={(yearId) => {
-              setDraftYearId(yearId);
-              setDraftSectionId(0);
-            }}
-          />
           <FilterSelect
             label="Class"
             value={draftClassId}
@@ -294,7 +275,7 @@ export function AgendaSectionsTable() {
               </tr>
             </thead>
             <tbody>
-              {isLoading || !resolvedYearId ? (
+              {isLoading || !yearId ? (
                 <TableLoadingRow colSpan={6} label="Loading agenda sections" />
               ) : error ? (
                 <tr>
