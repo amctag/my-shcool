@@ -123,6 +123,7 @@ export const navGroups: NavGroup[] = [
     title: "School",
     items: [
       { href: "/announcements", label: "Announcements", icon: Megaphone },
+      { href: "/teacher-tasks", label: "Teacher tasks", icon: ClipboardList },
       { href: "/activities", label: "Activities", icon: Sparkles },
       { href: "/albums", label: "Albums", icon: Images },
       { href: "/school", label: "School details", icon: School },

@@ -618,6 +618,31 @@ export type SaveActivityBody = {
   yearId?: number;
 };
 
+export type DashboardTeacherTask = {
+  id: number;
+  title: string;
+  description: string;
+  createdAt: string;
+  completedCount: number;
+  teacherCount: number;
+};
+
+export type DashboardTeacherTasksResponse = {
+  items: DashboardTeacherTask[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardTeacherTasksQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+};
+
+export type SaveTeacherTaskBody = {
+  title: string;
+  description: string;
+};
+
 export type DashboardAlbumImage = {
   id: number;
   imageLink: string;

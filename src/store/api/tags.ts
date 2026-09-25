@@ -24,6 +24,7 @@ export const apiTagTypes = [
   "DashboardNotices",
   "DashboardNoticeTypes",
   "DashboardActivities",
+  "DashboardTeacherTasks",
   "DashboardAlbums",
   "DashboardWeeklySchedules",
   "DashboardExamSchedules",
