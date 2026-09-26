@@ -312,8 +312,9 @@ export function AgendasTable() {
             value={draftStatus}
             options={[
               { value: "", label: "All statuses" },
-              { value: "1", label: "Active" },
-              { value: "0", label: "Inactive" },
+              { value: "1", label: "Published" },
+              { value: "2", label: "Saved" },
+              { value: "0", label: "Draft" },
             ]}
             onChange={setDraftStatus}
           />
@@ -413,7 +414,11 @@ export function AgendasTable() {
                       {item.description}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-foreground">
-                      {item.status === 1 ? "Active" : "Inactive"}
+                      {item.status === 1
+                        ? "Published"
+                        : item.status === 2
+                          ? "Saved"
+                          : "Draft"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4">
                       <div className="flex items-center gap-2">

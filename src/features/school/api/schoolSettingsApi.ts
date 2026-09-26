@@ -1,9 +1,11 @@
 import { baseApi } from "@/store/api/baseApi";
 
+export type AttendanceMode = "school" | "teacher" | "teacher_course";
+
 export type DashboardSchoolSettings = {
   schoolId: number;
   teachersSeeAllClassCourses: boolean;
-  attendancePerCourse: boolean;
+  attendanceMode: AttendanceMode;
   teachersCanPublishAgenda: boolean;
   teachersCanPublishGrades: boolean;
 };
@@ -20,7 +22,7 @@ export const schoolSettingsApi = baseApi.injectEndpoints({
         Pick<
           DashboardSchoolSettings,
           | "teachersSeeAllClassCourses"
-          | "attendancePerCourse"
+          | "attendanceMode"
           | "teachersCanPublishAgenda"
           | "teachersCanPublishGrades"
         >

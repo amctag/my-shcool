@@ -283,7 +283,7 @@ export function AgendaForm({
       sectionIds: form.sectionIds,
       imageLink: form.imageLink.trim(),
       fileLink: form.fileLink.trim(),
-      status: form.status === "0" ? 0 : 1,
+      status: form.status === "0" ? 0 : form.status === "2" ? 2 : 1,
     };
 
     try {
@@ -406,8 +406,9 @@ export function AgendaForm({
               }
               className={`${inputClass} cursor-pointer`}
             >
-              <option value="1">Active</option>
-              <option value="0">Inactive</option>
+              <option value="1">Published</option>
+              <option value="2">Saved</option>
+              <option value="0">Draft</option>
             </select>
           </Field>
           <div className="sm:col-span-2">
