@@ -6,7 +6,10 @@ import { Plus, Wallet } from "lucide-react";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
-import { useGetDashboardPaymentsQuery } from "@/features/school/api/accountingApi";
+import {
+  useGetDashboardCurrenciesQuery,
+  useGetDashboardPaymentsQuery,
+} from "@/features/school/api/accountingApi";
 import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 
@@ -34,6 +37,9 @@ export function PaymentsList() {
     { page, limit: PAGE_SIZE },
     { skip: !canFetch },
   );
+  const { data: currencies = [] } = useGetDashboardCurrenciesQuery(undefined, {
+    skip: !canFetch,
+  });
 
   if (isLoading || !canFetch) {
     return <LoadingDots label="Loading payments" />;
@@ -42,6 +48,8 @@ export function PaymentsList() {
   const items = data?.items ?? [];
   const totalPages = data?.totalPages ?? 0;
   const total = data?.total ?? 0;
+  const symbolFor = (currencyId: number | null): string =>
+    currencies.find((currency) => currency.id === currencyId)?.symbol ?? "";
 
   return (
     <>
@@ -90,7 +98,8 @@ export function PaymentsList() {
                       {item.accountName}
                     </p>
                     <p className="mt-1 text-sm text-muted">
-                      Account {item.accountCode} · ${formatAmount(item.amount)}
+                      Account {item.accountCode} ·{" "}
+                      {`${symbolFor(item.currencyId)}${formatAmount(item.amount)}`}
                     </p>
                     {item.description ? (
                       <p className="mt-2 text-[15px] leading-relaxed text-foreground">

@@ -7,6 +7,7 @@ import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useGetDashboardAccountsQuery,
+  useGetDashboardCurrenciesQuery,
   useSetupDashboardSystemAccountsMutation,
   useCreateDashboardPaymentMutation,
 } from "@/features/school/api/accountingApi";
@@ -87,6 +88,12 @@ export function PaymentForm() {
 
   const destinations = accounts.filter((account) => account.type !== "CASH");
   const cashAccount = accounts.find((account) => account.type === "CASH");
+  const { data: currencies = [] } = useGetDashboardCurrenciesQuery(undefined, {
+    skip: !canFetch,
+  });
+  const currencySymbol = created
+    ? (currencies.find((currency) => currency.id === created.currencyId)?.symbol ?? "")
+    : "";
 
   function resetForm() {
     setAccountId("");
@@ -274,8 +281,8 @@ export function PaymentForm() {
             Payment #{created.nb} created
           </p>
           <p className="mt-1">
-            {created.accountName} · Account {created.accountCode} · $
-            {Number(created.amount).toFixed(2)}
+            {created.accountName} · Account {created.accountCode} ·{" "}
+            {`${currencySymbol}${Number(created.amount).toFixed(2)}`}
           </p>
           <button
             type="button"

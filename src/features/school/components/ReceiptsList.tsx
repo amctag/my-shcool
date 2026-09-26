@@ -47,8 +47,8 @@ export function ReceiptsList() {
     <>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <p className="text-sm text-muted">
-          Money received by the school from parents. Each receipt posts Cash
-          debit against the parent account credit.
+          Money received by the school from parents. Each receipt posts
+          destination debits against a single parent account credit.
         </p>
         <Link
           href="/accounting/receipts/add"
@@ -90,8 +90,30 @@ export function ReceiptsList() {
                       {item.parentName}
                     </p>
                     <p className="mt-1 text-sm text-muted">
-                      Account {item.accountCode} · ${formatAmount(item.amount)}
+                      Account {item.accountCode} ·{" "}
+                      {item.currency
+                        ? `${item.currency.symbol}${formatAmount(item.total)} ${item.currency.shortCode}`
+                        : formatAmount(item.total)}
                     </p>
+                    {item.allocations.length > 0 ? (
+                      <ul className="mt-2 space-y-1 text-sm text-foreground">
+                        {item.allocations.map((allocation) => (
+                          <li
+                            key={allocation.accountId}
+                            className="flex items-center justify-between gap-3"
+                          >
+                            <span className="min-w-0 truncate">
+                              {allocation.accountCode} — {allocation.accountName}
+                            </span>
+                            <span className="shrink-0 font-medium">
+                              {item.currency
+                                ? `${item.currency.symbol}${formatAmount(allocation.amount)}`
+                                : formatAmount(allocation.amount)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                     {item.description ? (
                       <p className="mt-2 text-[15px] leading-relaxed text-foreground">
                         {item.description}

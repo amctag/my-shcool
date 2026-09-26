@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Library,
   Megaphone,
+  PiggyBank,
   School,
   ScrollText,
   Sparkles,
@@ -61,6 +62,7 @@ export const navGroups: NavGroup[] = [
         label: "Accounting",
         icon: Landmark,
         children: [
+          { href: "/accounting/accounts", label: "Account", icon: PiggyBank },
           { href: "/accounting/receipts", label: "Receipt", icon: Receipt },
           { href: "/accounting/payments", label: "Payment", icon: Wallet },
         ],

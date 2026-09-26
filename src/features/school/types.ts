@@ -1662,13 +1662,57 @@ export type SaveSessionBody = {
   status?: boolean;
 };
 
-export type DashboardAccountType = "PERSON" | "CASH" | "SALES" | "PURCHASES";
+export type DashboardAccountType =
+  | "PERSON"
+  | "CASH"
+  | "SALES"
+  | "PURCHASES"
+  | "GENERAL";
+
+export type DashboardAccountRelatedPerson = {
+  parentId: number | null;
+  fullName: string;
+};
 
 export type DashboardAccount = {
   id: number;
   code: string;
   name: string;
   type: DashboardAccountType;
+  protected: boolean;
+  relatedPerson: DashboardAccountRelatedPerson | null;
+};
+
+export type DashboardAccountsQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  type?: DashboardAccountType | "ALL";
+};
+
+export type DashboardAccountsResponse = {
+  items: DashboardAccount[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type SaveAccountBody = {
+  name: string;
+  type: "GENERAL";
+};
+
+export type UpdateAccountBody = {
+  name: string;
+};
+
+export type DashboardCurrency = {
+  id: number;
+  title: string;
+  shortCode: string;
+  symbol: string;
+  rate: string;
 };
 
 export type DashboardAccountingDocumentQuery = {
@@ -1676,11 +1720,16 @@ export type DashboardAccountingDocumentQuery = {
   limit: number;
 };
 
+export type ReceiptAllocationInput = {
+  accountId: number;
+  amount: number;
+  description?: string;
+};
+
 export type SaveReceiptBody = {
   parentId: number;
-  amount: number;
-  currencyId?: number;
-  currencyRate?: number;
+  currencyId: number;
+  allocations: ReceiptAllocationInput[];
   description?: string;
   notes?: string;
   comments?: string;
@@ -1698,6 +1747,22 @@ export type SavePaymentBody = {
   idempotencyKey?: string;
 };
 
+export type DashboardReceiptAllocation = {
+  accountId: number;
+  accountCode: string;
+  accountName: string;
+  amount: string;
+  description: string | null;
+};
+
+export type DashboardReceiptCurrency = {
+  id: number;
+  title: string;
+  shortCode: string;
+  symbol: string;
+  rate: string;
+};
+
 export type DashboardReceipt = {
   id: number;
   nb: number;
@@ -1706,6 +1771,9 @@ export type DashboardReceipt = {
   accountId: number;
   accountCode: string;
   amount: string;
+  total: string;
+  allocations: DashboardReceiptAllocation[];
+  currency: DashboardReceiptCurrency | null;
   currencyId: number | null;
   currencyRate: string | null;
   description: string | null;
