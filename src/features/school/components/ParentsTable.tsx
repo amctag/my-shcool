@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { ConfirmDeleteDialog } from "@/components/dashboard/ConfirmDeleteDialog";
 import { ChildrenCountFilterSelect } from "@/components/dashboard/ChildrenCountFilterSelect";
-import { PaidFilterSelect } from "@/components/dashboard/PaidFilterSelect";
+import { AccountingAccountFilterSelect } from "@/components/dashboard/AccountingAccountFilterSelect";
 import { ResetPasswordDrawer } from "@/components/dashboard/ResetPasswordDrawer";
 import { StatusFilterSelect } from "@/components/dashboard/StatusFilterSelect";
 import { TableExportButtons } from "@/components/dashboard/TableExportButtons";
@@ -28,7 +28,7 @@ import { NameWithInitials } from "@/components/dashboard/NameWithInitials";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { fetchAllPaginatedItems } from "@/lib/exportTable";
 import { useGetChildrenQuery } from "@/features/school/api/childrenApi";
-import { useDeleteParentMutation, useGetParentsQuery, useLazyGetParentsQuery, useResetParentPasswordMutation, useUpdateParentPaidMutation, useUpdateParentStatusMutation } from "@/features/school/api/parentsApi";
+import { useCreateParentAccountingAccountMutation, useDeleteParentMutation, useGetParentsQuery, useLazyGetParentsQuery, useResetParentPasswordMutation, useUpdateParentStatusMutation } from "@/features/school/api/parentsApi";
 import {
   applyParentsSearch,
   clearSelectedParent,
@@ -40,8 +40,8 @@ import {
   selectParentsChildrenCountFilterInput,
   selectParentsLimit,
   selectParentsPage,
-  selectParentsPaidFilter,
-  selectParentsPaidFilterInput,
+  selectParentsAccountFilter,
+  selectParentsAccountFilterInput,
   selectParentsFirstNameInput,
   selectParentsLastNameInput,
   selectParentsMiddleNameInput,
@@ -55,7 +55,7 @@ import {
   setParentsLastNameInput,
   setParentsMiddleNameInput,
   setParentsPage,
-  setParentsPaidFilterInput,
+  setParentsAccountFilterInput,
   setParentsSort,
   setParentsStatusFilterInput,
 } from "@/features/school/parentsSlice";
@@ -66,7 +66,7 @@ import type {
   DashboardParentsQuery,
   ParentsSortBy,
   ParentsSortOrder,
-  PersonPaidFilter,
+  AccountingAccountFilter,
   PersonStatusFilter,
 } from "@/features/school/types";
 
@@ -93,7 +93,7 @@ function buildParentsQuery(
   sortBy: ParentsSortBy,
   sortOrder: ParentsSortOrder,
   statusFilter: PersonStatusFilter,
-  paidFilter: PersonPaidFilter,
+  accountFilter: AccountingAccountFilter,
   childrenCountFilter: ChildrenCountFilter,
 ): DashboardParentsQuery {
   const query: DashboardParentsQuery = { page, limit, sortBy, sortOrder };
@@ -110,8 +110,8 @@ function buildParentsQuery(
   if (statusFilter !== "all") {
     query.status = statusFilter;
   }
-  if (paidFilter !== "all") {
-    query.paid = paidFilter;
+  if (accountFilter !== "all") {
+    query.accountStatus = accountFilter;
   }
   applyChildrenCountFilter(query, childrenCountFilter);
 
@@ -120,10 +120,6 @@ function buildParentsQuery(
 
 function isParentActive(status?: boolean) {
   return status !== false;
-}
-
-function isParentPaid(paid?: boolean) {
-  return paid !== false;
 }
 
 const MONTHS = [
@@ -421,6 +417,150 @@ function ChildrenDrawer({
   );
 }
 
+function AccountingAccountDialog({
+  accountCode,
+  parentName,
+  onClose,
+}: {
+  accountCode: string;
+  parentName: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+      <button
+        type="button"
+        aria-label="Close account information"
+        className="absolute inset-0 cursor-pointer bg-black/40"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="account-information-title"
+        className="relative z-10 w-full max-w-md rounded-3xl bg-surface p-6 shadow-xl sm:p-8"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Accounting account
+            </p>
+            <h2
+              id="account-information-title"
+              className="mt-1 text-2xl font-semibold text-foreground"
+            >
+              {parentName}
+            </h2>
+          </div>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            <X aria-hidden className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="mt-6 rounded-2xl border border-border bg-white p-5">
+          <p className="text-sm text-muted">Account code</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-foreground">
+            {accountCode}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreateAccountingAccountDialog({
+  busy,
+  error,
+  onCancel,
+  onConfirm,
+}: {
+  busy: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !busy) {
+        onCancel();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [busy, onCancel]);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+      <button
+        type="button"
+        aria-label="Close"
+        disabled={busy}
+        className="absolute inset-0 cursor-pointer bg-black/40 disabled:cursor-not-allowed"
+        onClick={onCancel}
+      />
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="create-account-title"
+        aria-describedby="create-account-description"
+        className="relative z-10 w-full max-w-lg rounded-3xl bg-surface p-6 shadow-xl sm:p-8"
+      >
+        <h2
+          id="create-account-title"
+          className="text-2xl font-semibold text-foreground"
+        >
+          Create Accounting Account
+        </h2>
+        <p
+          id="create-account-description"
+          className="mt-4 text-sm leading-6 text-muted"
+        >
+          This parent does not have an accounting account. Create one?
+        </p>
+        {error ? (
+          <p className="mt-4 text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onCancel}
+            className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-white px-5 text-sm font-medium text-foreground transition-colors duration-200 hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onConfirm}
+            className="inline-flex h-11 cursor-pointer items-center justify-center rounded-xl bg-primary px-5 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? "Creating…" : "Create Account"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ParentsTable() {
   const dispatch = useAppDispatch();
   const ready = useAppSelector(selectAuthReady);
@@ -437,8 +577,8 @@ export function ParentsTable() {
   const sortOrder = useAppSelector(selectParentsSortOrder);
   const statusFilterInput = useAppSelector(selectParentsStatusFilterInput);
   const statusFilter = useAppSelector(selectParentsStatusFilter);
-  const paidFilterInput = useAppSelector(selectParentsPaidFilterInput);
-  const paidFilter = useAppSelector(selectParentsPaidFilter);
+  const accountFilterInput = useAppSelector(selectParentsAccountFilterInput);
+  const accountFilter = useAppSelector(selectParentsAccountFilter);
   const childrenCountFilterInput = useAppSelector(
     selectParentsChildrenCountFilterInput,
   );
@@ -446,12 +586,21 @@ export function ParentsTable() {
   const selectedParentId = useAppSelector(selectSelectedParentId);
   const [deleteParent, deleteState] = useDeleteParentMutation();
   const [updateParentStatus, statusState] = useUpdateParentStatusMutation();
-  const [updateParentPaid, paidState] = useUpdateParentPaidMutation();
+  const [createAccountingAccount, accountState] =
+    useCreateParentAccountingAccountMutation();
   const [resetParentPassword, resetPasswordState] =
     useResetParentPasswordMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
-  const [paidError, setPaidError] = useState<string | null>(null);
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [pendingAccount, setPendingAccount] = useState<{
+    id: number;
+    fullName: string;
+  } | null>(null);
+  const [accountInformation, setAccountInformation] = useState<{
+    fullName: string;
+    accountCode: string;
+  } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
     id: number;
     fullName: string;
@@ -471,7 +620,7 @@ export function ParentsTable() {
     sortBy,
     sortOrder,
     statusFilter,
-    paidFilter,
+    accountFilter,
     childrenCountFilter,
   );
   const canFetch = ready && Boolean(accessToken);
@@ -493,7 +642,7 @@ export function ParentsTable() {
           sortBy,
           sortOrder,
           statusFilter,
-          paidFilter,
+          accountFilter,
           childrenCountFilter,
         ),
       ).unwrap(),
@@ -506,7 +655,9 @@ export function ParentsTable() {
       address: parent.address ?? "",
       children: parent.childrenCount,
       status: isParentActive(parent.status) ? "Active" : "Closed",
-      paid: isParentPaid(parent.paid) ? "Paid" : "Unpaid",
+      account: parent.hasAccountingAccount
+        ? parent.accountCode ?? "Active"
+        : "No Account",
       birthday: formatBirthday(parent.birthday),
     }));
   }
@@ -554,15 +705,23 @@ export function ParentsTable() {
     }
   }
 
-  async function toggleParentPaid(parent: { id: number; paid?: boolean }) {
-    setPaidError(null);
+  async function confirmCreateAccountingAccount() {
+    if (!pendingAccount || accountState.isLoading) {
+      return;
+    }
+
+    setAccountError(null);
     try {
-      await updateParentPaid({
-        id: parent.id,
-        paid: !isParentPaid(parent.paid),
-      }).unwrap();
+      const account = await createAccountingAccount(pendingAccount.id).unwrap();
+      setAccountInformation({
+        fullName: pendingAccount.fullName,
+        accountCode: account.accountCode,
+      });
+      setPendingAccount(null);
     } catch (caught) {
-      setPaidError(getApiErrorMessage(caught, "Could not update parent paid flag"));
+      setAccountError(
+        getApiErrorMessage(caught, "Could not create accounting account"),
+      );
     }
   }
 
@@ -611,9 +770,9 @@ export function ParentsTable() {
               value={statusFilterInput}
               onChange={(next) => dispatch(setParentsStatusFilterInput(next))}
             />
-            <PaidFilterSelect
-              value={paidFilterInput}
-              onChange={(next) => dispatch(setParentsPaidFilterInput(next))}
+            <AccountingAccountFilterSelect
+              value={accountFilterInput}
+              onChange={(next) => dispatch(setParentsAccountFilterInput(next))}
             />
             <ChildrenCountFilterSelect
               value={childrenCountFilterInput ?? "all"}
@@ -634,7 +793,7 @@ export function ParentsTable() {
               { key: "address", header: "Address" },
               { key: "children", header: "Children" },
               { key: "status", header: "Status" },
-              { key: "paid", header: "Paid" },
+              { key: "account", header: "Accounting Account" },
               { key: "birthday", header: "Birthday" },
             ]}
             fetchRows={fetchExportRows}
@@ -654,9 +813,9 @@ export function ParentsTable() {
           {statusError}
         </p>
       ) : null}
-      {paidError ? (
+      {accountError && !pendingAccount ? (
         <p className="mb-4 text-sm text-red-600" role="alert">
-          {paidError}
+          {accountError}
         </p>
       ) : null}
       <article className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
@@ -705,7 +864,7 @@ export function ParentsTable() {
                 <IconColumnHeader label="Status">
                   <Pause aria-hidden className="h-4 w-4" />
                 </IconColumnHeader>
-                <IconColumnHeader label="Paid">
+                <IconColumnHeader label="Accounting Account">
                   <span aria-hidden className="text-base font-semibold">
                     $
                   </span>
@@ -812,25 +971,49 @@ export function ParentsTable() {
                     <td className="px-2 py-4 text-center">
                       <button
                         type="button"
-                        aria-pressed={isParentPaid(parent.paid)}
+                        aria-pressed={parent.hasAccountingAccount}
                         aria-label={
-                          isParentPaid(parent.paid)
-                            ? "Paid — click to mark unpaid"
-                            : "Unpaid — click to mark paid"
+                          parent.hasAccountingAccount
+                            ? `Accounting account ${parent.accountCode ?? "active"}`
+                            : parent.canCreateAccountingAccount === false
+                              ? "Accounting account is managed by the parent's school"
+                            : "Create accounting account"
                         }
                         title={
-                          isParentPaid(parent.paid)
-                            ? "Paid — click to mark unpaid"
-                            : "Unpaid — click to mark paid"
+                          parent.hasAccountingAccount
+                            ? `Account ${parent.accountCode ?? ""}`.trim()
+                            : parent.canCreateAccountingAccount === false
+                              ? "Accounting account is managed by the parent's school"
+                            : "Create accounting account"
                         }
-                        disabled={paidState.isLoading}
-                        onClick={() => void toggleParentPaid(parent)}
+                        disabled={
+                          accountState.isLoading ||
+                          (!parent.hasAccountingAccount &&
+                            parent.canCreateAccountingAccount === false)
+                        }
+                        onClick={() => {
+                          setAccountError(null);
+                          if (
+                            parent.hasAccountingAccount &&
+                            parent.accountCode
+                          ) {
+                            setAccountInformation({
+                              fullName: parent.fullName,
+                              accountCode: parent.accountCode,
+                            });
+                            return;
+                          }
+                          setPendingAccount({
+                            id: parent.id,
+                            fullName: parent.fullName,
+                          });
+                        }}
                         className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <span
                           aria-hidden
                           className={`text-lg font-semibold leading-none ${
-                            isParentPaid(parent.paid)
+                            parent.hasAccountingAccount
                               ? "text-emerald-600"
                               : "text-muted/40"
                           }`}
@@ -939,6 +1122,26 @@ export function ParentsTable() {
             }).unwrap();
             setPendingResetPassword(null);
           }}
+        />
+      ) : null}
+      {pendingAccount ? (
+        <CreateAccountingAccountDialog
+          busy={accountState.isLoading}
+          error={accountError}
+          onCancel={() => {
+            if (!accountState.isLoading) {
+              setPendingAccount(null);
+              setAccountError(null);
+            }
+          }}
+          onConfirm={() => void confirmCreateAccountingAccount()}
+        />
+      ) : null}
+      {accountInformation ? (
+        <AccountingAccountDialog
+          parentName={accountInformation.fullName}
+          accountCode={accountInformation.accountCode}
+          onClose={() => setAccountInformation(null)}
         />
       ) : null}
     </>

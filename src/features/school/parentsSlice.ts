@@ -1,9 +1,9 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type {
   ChildrenCountFilter,
+  AccountingAccountFilter,
   ParentsSortBy,
   ParentsSortOrder,
-  PersonPaidFilter,
   PersonStatusFilter,
 } from "@/features/school/types";
 
@@ -20,8 +20,8 @@ export type ParentsUiState = {
   sortOrder: ParentsSortOrder;
   statusFilterInput: PersonStatusFilter;
   statusFilter: PersonStatusFilter;
-  paidFilterInput: PersonPaidFilter;
-  paidFilter: PersonPaidFilter;
+  accountFilterInput: AccountingAccountFilter;
+  accountFilter: AccountingAccountFilter;
   childrenCountFilterInput: ChildrenCountFilter;
   childrenCountFilter: ChildrenCountFilter;
   selectedParentId: number | null;
@@ -40,8 +40,8 @@ const initialState: ParentsUiState = {
   sortOrder: "asc",
   statusFilterInput: "all",
   statusFilter: "all",
-  paidFilterInput: "all",
-  paidFilter: "all",
+  accountFilterInput: "all",
+  accountFilter: "all",
   childrenCountFilterInput: "all",
   childrenCountFilter: "all",
   selectedParentId: null,
@@ -65,14 +65,14 @@ const parentsSlice = createSlice({
       const nextMiddleName = state.middleNameInput.trim();
       const nextLastName = state.lastNameInput.trim();
       const nextStatus = state.statusFilterInput;
-      const nextPaid = state.paidFilterInput;
+      const nextAccount = state.accountFilterInput;
       const nextChildrenCount = state.childrenCountFilterInput;
       if (
         nextFirstName === state.appliedFirstName &&
         nextMiddleName === state.appliedMiddleName &&
         nextLastName === state.appliedLastName &&
         nextStatus === state.statusFilter &&
-        nextPaid === state.paidFilter &&
+        nextAccount === state.accountFilter &&
         nextChildrenCount === state.childrenCountFilter
       ) {
         return;
@@ -81,7 +81,7 @@ const parentsSlice = createSlice({
       state.appliedMiddleName = nextMiddleName;
       state.appliedLastName = nextLastName;
       state.statusFilter = nextStatus;
-      state.paidFilter = nextPaid;
+      state.accountFilter = nextAccount;
       state.childrenCountFilter = nextChildrenCount;
       state.page = 1;
     },
@@ -107,8 +107,11 @@ const parentsSlice = createSlice({
     ) {
       state.statusFilterInput = action.payload;
     },
-    setParentsPaidFilterInput(state, action: PayloadAction<PersonPaidFilter>) {
-      state.paidFilterInput = action.payload;
+    setParentsAccountFilterInput(
+      state,
+      action: PayloadAction<AccountingAccountFilter>,
+    ) {
+      state.accountFilterInput = action.payload;
     },
     setParentsChildrenCountFilterInput(
       state,
@@ -134,7 +137,7 @@ export const {
   setParentsLimit,
   setParentsSort,
   setParentsStatusFilterInput,
-  setParentsPaidFilterInput,
+  setParentsAccountFilterInput,
   setParentsChildrenCountFilterInput,
   selectParent,
   clearSelectedParent,
@@ -172,11 +175,12 @@ export const selectParentsStatusFilterInput = (state: {
 export const selectParentsStatusFilter = (state: {
   parents: ParentsUiState;
 }) => state.parents.statusFilter;
-export const selectParentsPaidFilterInput = (state: {
+export const selectParentsAccountFilterInput = (state: {
   parents: ParentsUiState;
-}) => state.parents.paidFilterInput;
-export const selectParentsPaidFilter = (state: { parents: ParentsUiState }) =>
-  state.parents.paidFilter;
+}) => state.parents.accountFilterInput;
+export const selectParentsAccountFilter = (state: {
+  parents: ParentsUiState;
+}) => state.parents.accountFilter;
 export const selectParentsChildrenCountFilterInput = (state: {
   parents: ParentsUiState;
 }) => state.parents.childrenCountFilterInput ?? "all";

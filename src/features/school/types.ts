@@ -9,6 +9,10 @@ export type DashboardParent = {
   childrenCount: number;
   status?: boolean;
   paid?: boolean;
+  accountId: number | null;
+  hasAccountingAccount: boolean;
+  accountCode: string | null;
+  canCreateAccountingAccount: boolean;
 };
 
 export type PaginationMeta = {
@@ -83,6 +87,7 @@ export type DashboardChildrenResponse = {
 
 export type PersonStatusFilter = "all" | "active" | "closed";
 export type PersonPaidFilter = "all" | "paid" | "unpaid";
+export type AccountingAccountFilter = "all" | "hasAccount" | "noAccount";
 export type ChildrenCountFilter =
   | "all"
   | "0"
@@ -104,10 +109,17 @@ export type DashboardParentsQuery = {
   id?: number;
   status?: "active" | "closed";
   paid?: "paid" | "unpaid";
+  accountStatus?: "hasAccount" | "noAccount";
   childrenCount?: number;
   childrenCountMin?: number;
   sortBy?: ParentsSortBy;
   sortOrder?: ParentsSortOrder;
+};
+
+export type DashboardParentAccount = {
+  accountId: number;
+  accountCode: string;
+  hasAccountingAccount: true;
 };
 
 export type LookupItem = {
@@ -1646,4 +1658,3 @@ export type SaveSessionBody = {
   position?: number;
   status?: boolean;
 };
-
