@@ -138,6 +138,9 @@ export type DashboardParentOption = {
   firstName?: string;
   middleName?: string;
   lastName: string;
+  accountId: number | null;
+  hasAccountingAccount: boolean;
+  accountCode: string | null;
 };
 
 export type DashboardParentDetail = {
@@ -1657,4 +1660,87 @@ export type SaveSessionBody = {
   sessionName: string;
   position?: number;
   status?: boolean;
+};
+
+export type DashboardAccountType = "PERSON" | "CASH" | "SALES" | "PURCHASES";
+
+export type DashboardAccount = {
+  id: number;
+  code: string;
+  name: string;
+  type: DashboardAccountType;
+};
+
+export type DashboardAccountingDocumentQuery = {
+  page: number;
+  limit: number;
+};
+
+export type SaveReceiptBody = {
+  parentId: number;
+  amount: number;
+  currencyId?: number;
+  currencyRate?: number;
+  description?: string;
+  notes?: string;
+  comments?: string;
+  idempotencyKey?: string;
+};
+
+export type SavePaymentBody = {
+  accountId: number;
+  amount: number;
+  currencyId?: number;
+  currencyRate?: number;
+  description?: string;
+  notes?: string;
+  comments?: string;
+  idempotencyKey?: string;
+};
+
+export type DashboardReceipt = {
+  id: number;
+  nb: number;
+  parentId: number;
+  parentName: string;
+  accountId: number;
+  accountCode: string;
+  amount: string;
+  currencyId: number | null;
+  currencyRate: string | null;
+  description: string | null;
+  notes: string | null;
+  comments: string | null;
+  dateCreated: string;
+};
+
+export type DashboardReceiptsResponse = {
+  items: DashboardReceipt[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type DashboardPayment = {
+  id: number;
+  nb: number;
+  accountId: number;
+  accountCode: string;
+  accountName: string;
+  amount: string;
+  currencyId: number | null;
+  currencyRate: string | null;
+  description: string | null;
+  notes: string | null;
+  comments: string | null;
+  dateCreated: string;
+};
+
+export type DashboardPaymentsResponse = {
+  items: DashboardPayment[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 };
