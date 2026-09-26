@@ -2,6 +2,7 @@ import { baseApi } from "@/store/api/baseApi";
 import { toQueryString } from "@/lib/toQueryString";
 import type {
   DashboardParentDetail,
+  DashboardParentAccount,
   DashboardParentOption,
   DashboardParentsQuery,
   DashboardParentsResponse,
@@ -21,7 +22,7 @@ export const parentsApi = baseApi.injectEndpoints({
         lastName,
         id,
         status,
-        paid,
+        accountStatus,
         childrenCount,
         childrenCountMin,
         sortBy,
@@ -37,7 +38,7 @@ export const parentsApi = baseApi.injectEndpoints({
           lastName,
           id,
           status,
-          paid,
+          accountStatus,
           childrenCount,
           childrenCountMin,
           sortBy,
@@ -71,6 +72,19 @@ export const parentsApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: [{ type: "Parents", id: "LIST" }, { type: "Parents", id: "OPTIONS" }],
+    }),
+    createParentAccountingAccount: builder.mutation<
+      DashboardParentAccount,
+      number
+    >({
+      query: (id) => ({
+        url: `/dashboard/parents/${id}/account`,
+        method: "POST",
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "Parents", id },
+        { type: "Parents", id: "LIST" },
+      ],
     }),
     updateParent: builder.mutation<
       DashboardParentDetail,
@@ -150,6 +164,7 @@ export const {
   useGetParentOptionsQuery,
   useGetParentQuery,
   useCreateParentMutation,
+  useCreateParentAccountingAccountMutation,
   useUpdateParentMutation,
   useUpdateParentStatusMutation,
   useUpdateParentPaidMutation,
