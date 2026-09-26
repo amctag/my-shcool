@@ -6,6 +6,8 @@ import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useGetSchoolSettingsQuery,
   useUpdateSchoolSettingsMutation,
+  type AttendanceMode,
+  type DashboardSchoolSettings,
 } from "@/features/school/api/schoolSettingsApi";
 import { selectAccessToken, selectAuthReady } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
@@ -43,6 +45,38 @@ function SettingSwitch({
   );
 }
 
+function AttendanceModeButton({
+  selected,
+  disabled,
+  title,
+  description,
+  onSelect,
+}: {
+  selected: boolean;
+  disabled: boolean;
+  title: string;
+  description: string;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      disabled={disabled}
+      onClick={onSelect}
+      className={`rounded-2xl border px-4 py-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+        selected
+          ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+          : "border-border bg-white hover:bg-zinc-50"
+      }`}
+    >
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-sm text-muted">{description}</p>
+    </button>
+  );
+}
+
 export function SchoolSettingsForm() {
   const ready = useAppSelector(selectAuthReady);
   const accessToken = useAppSelector(selectAccessToken);
@@ -54,14 +88,7 @@ export function SchoolSettingsForm() {
   const [updateSettings, updateState] = useUpdateSchoolSettingsMutation();
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  async function patch(
-    body: Partial<{
-      teachersSeeAllClassCourses: boolean;
-      attendancePerCourse: boolean;
-      teachersCanPublishAgenda: boolean;
-      teachersCanPublishGrades: boolean;
-    }>,
-  ) {
+  async function patch(body: Partial<DashboardSchoolSettings>) {
     setSaveError(null);
     try {
       await updateSettings(body).unwrap();
@@ -70,6 +97,13 @@ export function SchoolSettingsForm() {
         getApiErrorMessage(caught, "Could not update school settings"),
       );
     }
+  }
+
+  function selectAttendanceMode(mode: AttendanceMode) {
+    if (!data || data.attendanceMode === mode) {
+      return;
+    }
+    void patch({ attendanceMode: mode });
   }
 
   if (!canFetch || isLoading) {
@@ -130,32 +164,48 @@ export function SchoolSettingsForm() {
         </p>
       </article>
       <article className="rounded-2xl border border-border bg-white p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="max-w-xl">
-            <h2 className="text-lg font-semibold text-foreground">
-              Attendance by course
-            </h2>
-            <p className="mt-1 text-sm text-muted">
-              Off: one attendance for the class, taken by the teacher of the
-              first session that day. On: each course teacher takes attendance
-              for their own course.
-            </p>
-          </div>
-          <SettingSwitch
-            enabled={data.attendancePerCourse}
+        <div className="max-w-xl">
+          <h2 className="text-lg font-semibold text-foreground">
+            Attendance mode
+          </h2>
+          <p className="mt-1 text-sm text-muted">
+            Choose who takes attendance. Until a teacher mode is selected, only
+            the school can take attendance.
+          </p>
+        </div>
+        <div
+          className="mt-4 grid gap-3 sm:grid-cols-3"
+          role="radiogroup"
+          aria-label="Attendance mode"
+        >
+          <AttendanceModeButton
+            selected={data.attendanceMode === "school"}
             disabled={updateState.isLoading}
-            label="Take attendance per course"
-            onToggle={() =>
-              void patch({
-                attendancePerCourse: !data.attendancePerCourse,
-              })
-            }
+            title="School takes attendance"
+            description="Teachers cannot take attendance. Use the dashboard only."
+            onSelect={() => selectAttendanceMode("school")}
+          />
+          <AttendanceModeButton
+            selected={data.attendanceMode === "teacher"}
+            disabled={updateState.isLoading}
+            title="Attendance by teacher"
+            description="One attendance for the class, by the first-session teacher that day."
+            onSelect={() => selectAttendanceMode("teacher")}
+          />
+          <AttendanceModeButton
+            selected={data.attendanceMode === "teacher_course"}
+            disabled={updateState.isLoading}
+            title="Attendance by teacher course"
+            description="Each course teacher takes attendance for their own course."
+            onSelect={() => selectAttendanceMode("teacher_course")}
           />
         </div>
         <p className="mt-4 text-sm font-medium text-foreground">
-          {data.attendancePerCourse
-            ? "Each course teacher takes attendance"
-            : "First-session teacher takes class attendance"}
+          {data.attendanceMode === "school"
+            ? "Selected: School takes attendance"
+            : data.attendanceMode === "teacher"
+              ? "Selected: Attendance by teacher"
+              : "Selected: Attendance by teacher course"}
         </p>
       </article>
       <article className="rounded-2xl border border-border bg-white p-6">
