@@ -28,11 +28,7 @@ export type DashboardParentsResponse = {
 };
 
 export type ParentsSortBy =
-  | "id"
-  | "name"
-  | "address"
-  | "phone"
-  | "childrenCount";
+  "id" | "name" | "address" | "phone" | "childrenCount";
 export type ParentsSortOrder = "asc" | "desc";
 
 export type StudentsSortBy =
@@ -89,14 +85,7 @@ export type PersonStatusFilter = "all" | "active" | "closed";
 export type PersonPaidFilter = "all" | "paid" | "unpaid";
 export type AccountingAccountFilter = "all" | "hasAccount" | "noAccount";
 export type ChildrenCountFilter =
-  | "all"
-  | "0"
-  | "1"
-  | "2"
-  | "3"
-  | "4"
-  | "5"
-  | "6+";
+  "all" | "0" | "1" | "2" | "3" | "4" | "5" | "6+";
 
 export type DashboardParentsQuery = {
   page: number;
@@ -461,12 +450,7 @@ export type SaveClassCourseBody = {
 };
 
 export type TeachesSortBy =
-  | "id"
-  | "teacher"
-  | "class"
-  | "section"
-  | "course"
-  | "year";
+  "id" | "teacher" | "class" | "section" | "course" | "year";
 export type TeachesSortOrder = "asc" | "desc";
 
 export type TeacherSupervisorsSortBy = "id" | "teacher" | "class" | "year";
@@ -760,12 +744,7 @@ export type DashboardWeeklySchedule = {
 };
 
 export type WeeklySchedulesSortBy =
-  | "id"
-  | "year"
-  | "class"
-  | "section"
-  | "person"
-  | "date";
+  "id" | "year" | "class" | "section" | "person" | "date";
 
 export type WeeklySchedulesSortOrder = "asc" | "desc";
 
@@ -866,12 +845,7 @@ export type DashboardExamSchedule = {
 };
 
 export type ExamSchedulesSortBy =
-  | "id"
-  | "title"
-  | "class"
-  | "gradeType"
-  | "year"
-  | "date";
+  "id" | "title" | "class" | "gradeType" | "year" | "date";
 
 export type ExamSchedulesSortOrder = "asc" | "desc";
 
@@ -990,12 +964,7 @@ export type BulkProgressRegistrationsResponse = {
 };
 
 export type RegistrationsSortBy =
-  | "id"
-  | "student"
-  | "class"
-  | "section"
-  | "year"
-  | "date";
+  "id" | "student" | "class" | "section" | "year" | "date";
 
 export type RegistrationsSortOrder = "asc" | "desc";
 
@@ -1137,13 +1106,7 @@ export type DashboardGradeByCourse = {
 };
 
 export type GradesByCourseSortBy =
-  | "id"
-  | "year"
-  | "course"
-  | "section"
-  | "date"
-  | "maxGrade"
-  | "gradeType";
+  "id" | "year" | "course" | "section" | "date" | "maxGrade" | "gradeType";
 
 export type GradesByCourseSortOrder = "asc" | "desc";
 
@@ -1214,13 +1177,7 @@ export type SaveGradeByCourseBody = {
 };
 
 export type GradeFormsSortBy =
-  | "id"
-  | "title"
-  | "year"
-  | "direction"
-  | "tableFormat"
-  | "status"
-  | "date";
+  "id" | "title" | "year" | "direction" | "tableFormat" | "status" | "date";
 
 export type GradeFormsSortOrder = "asc" | "desc";
 
@@ -1424,19 +1381,10 @@ export type SaveGradeFormExpressionsBody = {
   items: SaveGradeFormExpressionBody[];
 };
 
-export type AttendanceStudentStatus =
-  | "present"
-  | "absent"
-  | "late"
-  | "excused";
+export type AttendanceStudentStatus = "present" | "absent" | "late" | "excused";
 
 export type AttendancesSortBy =
-  | "id"
-  | "date"
-  | "class"
-  | "section"
-  | "year"
-  | "status";
+  "id" | "date" | "class" | "section" | "year" | "status";
 
 export type AttendancesSortOrder = "asc" | "desc";
 
@@ -1531,11 +1479,7 @@ export type SaveAttendanceReasonBody = {
 };
 
 export type AgendasSortBy =
-  | "id"
-  | "agendaDate"
-  | "course"
-  | "status"
-  | "publishedDate";
+  "id" | "agendaDate" | "course" | "status" | "publishedDate";
 
 export type AgendasSortOrder = "asc" | "desc";
 
@@ -1663,11 +1607,7 @@ export type SaveSessionBody = {
 };
 
 export type DashboardAccountType =
-  | "PERSON"
-  | "CASH"
-  | "SALES"
-  | "PURCHASES"
-  | "GENERAL";
+  "PERSON" | "CASH" | "SALES" | "PURCHASES" | "GENERAL";
 
 export type DashboardAccountRelatedPerson = {
   parentId: number | null;
@@ -1718,6 +1658,10 @@ export type DashboardCurrency = {
 export type DashboardAccountingDocumentQuery = {
   page: number;
   limit: number;
+  search?: string;
+  currencyId?: number;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export type ReceiptAllocationInput = {
@@ -1730,6 +1674,7 @@ export type SaveReceiptBody = {
   parentId: number;
   currencyId: number;
   allocations: ReceiptAllocationInput[];
+  date?: string;
   description?: string;
   notes?: string;
   comments?: string;
@@ -1738,9 +1683,9 @@ export type SaveReceiptBody = {
 
 export type SavePaymentBody = {
   accountId: number;
-  amount: number;
-  currencyId?: number;
-  currencyRate?: number;
+  currencyId: number;
+  allocations: ReceiptAllocationInput[];
+  date?: string;
   description?: string;
   notes?: string;
   comments?: string;
@@ -1797,12 +1742,74 @@ export type DashboardPayment = {
   accountCode: string;
   accountName: string;
   amount: string;
+  total: string;
+  allocations: DashboardReceiptAllocation[];
+  currency: DashboardReceiptCurrency | null;
   currencyId: number | null;
   currencyRate: string | null;
   description: string | null;
   notes: string | null;
   comments: string | null;
   dateCreated: string;
+};
+
+export type DashboardItemType = { id: number; name: string };
+export type DashboardItem = {
+  id: number;
+  name: string;
+  itemTypeId: number;
+  itemType: DashboardItemType;
+  createdAt: string;
+};
+export type DashboardItemsResponse = {
+  items: DashboardItem[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+export type SaveDashboardItemBody = { name: string; itemTypeId: number };
+
+export type DashboardRegistrationPackageItem = {
+  id: number;
+  itemId: number;
+  price: string;
+  mandatory: boolean;
+  currencyId: number | null;
+  item: DashboardItem;
+  currency: DashboardCurrency | null;
+};
+export type DashboardRegistrationPackageClass = {
+  id: number;
+  classId: number;
+  class: {
+    id: number;
+    className: string;
+    classLevel: number;
+    stageId: number;
+    stage: { id: number; title: string };
+  };
+};
+export type DashboardRegistrationPackage = {
+  id: number;
+  name: string;
+  yearId: number;
+  dateCreated: string;
+  year: DashboardYear;
+  items?: DashboardRegistrationPackageItem[];
+  classes?: DashboardRegistrationPackageClass[];
+  _count: { items: number; classes: number };
+};
+export type DashboardRegistrationPackagesResponse = {
+  items: DashboardRegistrationPackage[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+export type SaveDashboardRegistrationPackageBody = {
+  name: string;
+  yearId: number;
 };
 
 export type DashboardPaymentsResponse = {

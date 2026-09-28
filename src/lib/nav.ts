@@ -65,6 +65,12 @@ export const navGroups: NavGroup[] = [
           { href: "/accounting/accounts", label: "Account", icon: PiggyBank },
           { href: "/accounting/receipts", label: "Receipt", icon: Receipt },
           { href: "/accounting/payments", label: "Payment", icon: Wallet },
+          { href: "/accounting/items", label: "Items", icon: Tags },
+          {
+            href: "/accounting/registration-packages",
+            label: "Registration Packages",
+            icon: ClipboardList,
+          },
         ],
       },
       { href: "/registrations", label: "Registration", icon: UserPlus },

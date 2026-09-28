@@ -6,13 +6,20 @@ import type {
   DashboardAccountsQuery,
   DashboardAccountsResponse,
   DashboardCurrency,
+  DashboardItem,
+  DashboardItemsResponse,
+  DashboardItemType,
   DashboardPayment,
   DashboardPaymentsResponse,
   DashboardReceipt,
   DashboardReceiptsResponse,
+  DashboardRegistrationPackage,
+  DashboardRegistrationPackagesResponse,
   SaveAccountBody,
   SavePaymentBody,
   SaveReceiptBody,
+  SaveDashboardItemBody,
+  SaveDashboardRegistrationPackageBody,
   UpdateAccountBody,
 } from "@/features/school/types";
 
@@ -56,14 +63,16 @@ export const accountingApi = baseApi.injectEndpoints({
         { type: "DashboardAccounting", id: `account-${id}` },
       ],
     }),
-    createDashboardAccount: builder.mutation<DashboardAccount, SaveAccountBody>({
-      query: (body) => ({
-        url: "/dashboard/accounting/accounts",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: [{ type: "DashboardAccounting", id: "ACCOUNTS" }],
-    }),
+    createDashboardAccount: builder.mutation<DashboardAccount, SaveAccountBody>(
+      {
+        query: (body) => ({
+          url: "/dashboard/accounting/accounts",
+          method: "POST",
+          body,
+        }),
+        invalidatesTags: [{ type: "DashboardAccounting", id: "ACCOUNTS" }],
+      },
+    ),
     updateDashboardAccount: builder.mutation<
       DashboardAccount,
       { id: number; body: UpdateAccountBody }
@@ -89,8 +98,8 @@ export const accountingApi = baseApi.injectEndpoints({
       DashboardReceiptsResponse,
       DashboardAccountingDocumentQuery
     >({
-      query: ({ page, limit }) =>
-        `/dashboard/accounting/receipts${toQueryString({ page, limit })}`,
+      query: ({ page, limit, search, currencyId, dateFrom, dateTo }) =>
+        `/dashboard/accounting/receipts${toQueryString({ page, limit, search, currencyId, dateFrom, dateTo })}`,
       keepUnusedDataFor: 60,
       providesTags: (result) =>
         result
@@ -103,20 +112,25 @@ export const accountingApi = baseApi.injectEndpoints({
             ]
           : [{ type: "DashboardAccounting", id: "RECEIPTS" }],
     }),
-    createDashboardReceipt: builder.mutation<DashboardReceipt, SaveReceiptBody>({
-      query: (body) => ({
-        url: "/dashboard/accounting/receipts",
-        method: "POST",
-        body,
-      }),
-      invalidatesTags: [{ type: "DashboardAccounting", id: "RECEIPTS" }],
+    createDashboardReceipt: builder.mutation<DashboardReceipt, SaveReceiptBody>(
+      {
+        query: (body) => ({
+          url: "/dashboard/accounting/receipts",
+          method: "POST",
+          body,
+        }),
+        invalidatesTags: [{ type: "DashboardAccounting", id: "RECEIPTS" }],
+      },
+    ),
+    getDashboardReceipt: builder.query<DashboardReceipt, number>({
+      query: (id) => `/dashboard/accounting/receipts/${id}`,
     }),
     getDashboardPayments: builder.query<
       DashboardPaymentsResponse,
       DashboardAccountingDocumentQuery
     >({
-      query: ({ page, limit }) =>
-        `/dashboard/accounting/payments${toQueryString({ page, limit })}`,
+      query: ({ page, limit, search, currencyId, dateFrom, dateTo }) =>
+        `/dashboard/accounting/payments${toQueryString({ page, limit, search, currencyId, dateFrom, dateTo })}`,
       keepUnusedDataFor: 60,
       providesTags: (result) =>
         result
@@ -129,15 +143,171 @@ export const accountingApi = baseApi.injectEndpoints({
             ]
           : [{ type: "DashboardAccounting", id: "PAYMENTS" }],
     }),
-    createDashboardPayment: builder.mutation<DashboardPayment, SavePaymentBody>({
+    createDashboardPayment: builder.mutation<DashboardPayment, SavePaymentBody>(
+      {
+        query: (body) => ({
+          url: "/dashboard/accounting/payments",
+          method: "POST",
+          body,
+        }),
+        invalidatesTags: [
+          { type: "DashboardAccounting", id: "PAYMENTS" },
+          { type: "DashboardAccounting", id: "RECEIPTS" },
+        ],
+      },
+    ),
+    getDashboardPayment: builder.query<DashboardPayment, number>({
+      query: (id) => `/dashboard/accounting/payments/${id}`,
+    }),
+    getDashboardItemTypes: builder.query<DashboardItemType[], void>({
+      query: () => "/dashboard/accounting/item-types",
+    }),
+    getDashboardItems: builder.query<
+      DashboardItemsResponse,
+      { page: number; limit: number; search?: string; itemTypeId?: number }
+    >({
+      query: (query) => `/dashboard/accounting/items${toQueryString(query)}`,
+      providesTags: [{ type: "DashboardAccounting", id: "ITEMS" }],
+    }),
+    getDashboardItem: builder.query<DashboardItem, number>({
+      query: (id) => `/dashboard/accounting/items/${id}`,
+    }),
+    createDashboardItem: builder.mutation<DashboardItem, SaveDashboardItemBody>(
+      {
+        query: (body) => ({
+          url: "/dashboard/accounting/items",
+          method: "POST",
+          body,
+        }),
+        invalidatesTags: [{ type: "DashboardAccounting", id: "ITEMS" }],
+      },
+    ),
+    updateDashboardItem: builder.mutation<
+      DashboardItem,
+      { id: number; body: SaveDashboardItemBody }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dashboard/accounting/items/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "ITEMS" }],
+    }),
+    deleteDashboardItem: builder.mutation<{ deleted: boolean }, number>({
+      query: (id) => ({
+        url: `/dashboard/accounting/items/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "ITEMS" }],
+    }),
+    getDashboardRegistrationPackages: builder.query<
+      DashboardRegistrationPackagesResponse,
+      { page: number; limit: number; search?: string; yearId?: number }
+    >({
+      query: (query) =>
+        `/dashboard/accounting/registration-packages${toQueryString(query)}`,
+      providesTags: [{ type: "DashboardAccounting", id: "PACKAGES" }],
+    }),
+    getDashboardRegistrationPackage: builder.query<
+      DashboardRegistrationPackage,
+      number
+    >({
+      query: (id) => `/dashboard/accounting/registration-packages/${id}`,
+      providesTags: (_r, _e, id) => [
+        { type: "DashboardAccounting", id: `package-${id}` },
+      ],
+    }),
+    createDashboardRegistrationPackage: builder.mutation<
+      DashboardRegistrationPackage,
+      SaveDashboardRegistrationPackageBody
+    >({
       query: (body) => ({
-        url: "/dashboard/accounting/payments",
+        url: "/dashboard/accounting/registration-packages",
         method: "POST",
         body,
       }),
-      invalidatesTags: [
-        { type: "DashboardAccounting", id: "PAYMENTS" },
-        { type: "DashboardAccounting", id: "RECEIPTS" },
+      invalidatesTags: [{ type: "DashboardAccounting", id: "PACKAGES" }],
+    }),
+    updateDashboardRegistrationPackage: builder.mutation<
+      DashboardRegistrationPackage,
+      { id: number; body: SaveDashboardRegistrationPackageBody }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dashboard/accounting/registration-packages/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (_r, _e, { id }) => [
+        { type: "DashboardAccounting", id: "PACKAGES" },
+        { type: "DashboardAccounting", id: `package-${id}` },
+      ],
+    }),
+    deleteDashboardRegistrationPackage: builder.mutation<
+      { deleted: boolean },
+      number
+    >({
+      query: (id) => ({
+        url: `/dashboard/accounting/registration-packages/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "PACKAGES" }],
+    }),
+    addDashboardPackageItem: builder.mutation<
+      unknown,
+      {
+        packageId: number;
+        body: {
+          itemId: number;
+          price: number;
+          mandatory: boolean;
+          currencyId: number;
+        };
+      }
+    >({
+      query: ({ packageId, body }) => ({
+        url: `/dashboard/accounting/registration-packages/${packageId}/items`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: (_r, _e, { packageId }) => [
+        { type: "DashboardAccounting", id: `package-${packageId}` },
+      ],
+    }),
+    removeDashboardPackageItem: builder.mutation<
+      unknown,
+      { packageId: number; relationId: number }
+    >({
+      query: ({ packageId, relationId }) => ({
+        url: `/dashboard/accounting/registration-packages/${packageId}/items/${relationId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_r, _e, { packageId }) => [
+        { type: "DashboardAccounting", id: `package-${packageId}` },
+      ],
+    }),
+    assignDashboardPackageClasses: builder.mutation<
+      unknown,
+      { packageId: number; classIds: number[] }
+    >({
+      query: ({ packageId, classIds }) => ({
+        url: `/dashboard/accounting/registration-packages/${packageId}/classes`,
+        method: "POST",
+        body: { classIds },
+      }),
+      invalidatesTags: (_r, _e, { packageId }) => [
+        { type: "DashboardAccounting", id: `package-${packageId}` },
+      ],
+    }),
+    removeDashboardPackageClass: builder.mutation<
+      unknown,
+      { packageId: number; relationId: number }
+    >({
+      query: ({ packageId, relationId }) => ({
+        url: `/dashboard/accounting/registration-packages/${packageId}/classes/${relationId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_r, _e, { packageId }) => [
+        { type: "DashboardAccounting", id: `package-${packageId}` },
       ],
     }),
   }),
@@ -153,6 +323,23 @@ export const {
   useSetupDashboardSystemAccountsMutation,
   useGetDashboardReceiptsQuery,
   useCreateDashboardReceiptMutation,
+  useGetDashboardReceiptQuery,
   useGetDashboardPaymentsQuery,
   useCreateDashboardPaymentMutation,
+  useGetDashboardPaymentQuery,
+  useGetDashboardItemTypesQuery,
+  useGetDashboardItemsQuery,
+  useGetDashboardItemQuery,
+  useCreateDashboardItemMutation,
+  useUpdateDashboardItemMutation,
+  useDeleteDashboardItemMutation,
+  useGetDashboardRegistrationPackagesQuery,
+  useGetDashboardRegistrationPackageQuery,
+  useCreateDashboardRegistrationPackageMutation,
+  useUpdateDashboardRegistrationPackageMutation,
+  useDeleteDashboardRegistrationPackageMutation,
+  useAddDashboardPackageItemMutation,
+  useRemoveDashboardPackageItemMutation,
+  useAssignDashboardPackageClassesMutation,
+  useRemoveDashboardPackageClassMutation,
 } = accountingApi;

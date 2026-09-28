@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, MinusCircle, PlusCircle } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
@@ -82,8 +89,10 @@ export function ReceiptForm() {
   const [parentQuery, setParentQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [selectedParent, setSelectedParent] = useState<DashboardParentOption | null>(null);
+  const [selectedParent, setSelectedParent] =
+    useState<DashboardParentOption | null>(null);
   const [currencyId, setCurrencyId] = useState("");
+  const [date, setDate] = useState("");
   const [rows, setRows] = useState<AllocationRow[]>([emptyRow()]);
   const [description, setDescription] = useState("");
   const [notes, setNotes] = useState("");
@@ -113,7 +122,9 @@ export function ReceiptForm() {
     return currencies[0];
   }, [currencies, currencyId]);
 
-  const effectiveCurrencyId = selectedCurrency ? String(selectedCurrency.id) : "";
+  const effectiveCurrencyId = selectedCurrency
+    ? String(selectedCurrency.id)
+    : "";
 
   const total = useMemo(() => {
     let sum = 0;
@@ -127,10 +138,8 @@ export function ReceiptForm() {
   }, [rows]);
 
   const canSearch = ready && pickerOpen && debounced.trim().length >= 1;
-  const { data: options = [], isFetching: isSearching } = useGetParentOptionsQuery(
-    debounced.trim(),
-    { skip: !canSearch },
-  );
+  const { data: options = [], isFetching: isSearching } =
+    useGetParentOptionsQuery(debounced.trim(), { skip: !canSearch });
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebounced(parentQuery), 250);
@@ -162,17 +171,22 @@ export function ReceiptForm() {
   }
 
   function updateRow(key: string, patch: Partial<AllocationRow>) {
-    setRows((prev) => prev.map((row) => (row.key === key ? { ...row, ...patch } : row)));
+    setRows((prev) =>
+      prev.map((row) => (row.key === key ? { ...row, ...patch } : row)),
+    );
   }
 
   function removeRow(key: string) {
-    setRows((prev) => (prev.length > 1 ? prev.filter((row) => row.key !== key) : prev));
+    setRows((prev) =>
+      prev.length > 1 ? prev.filter((row) => row.key !== key) : prev,
+    );
   }
 
   function resetForm() {
     setSelectedParent(null);
     setParentQuery("");
     setCurrencyId("");
+    setDate("");
     setRows([emptyRow()]);
     setDescription("");
     setNotes("");
@@ -199,20 +213,30 @@ export function ReceiptForm() {
       return;
     }
     const seen = new Set<string>();
-    const allocations: Array<{ accountId: number; amount: number; description?: string }> = [];
+    const allocations: Array<{
+      accountId: number;
+      amount: number;
+      description?: string;
+    }> = [];
     for (const [index, row] of rows.entries()) {
       if (!row.accountId) {
-        setFormError(`Allocation row ${index + 1}: choose a destination account.`);
+        setFormError(
+          `Allocation row ${index + 1}: choose a destination account.`,
+        );
         return;
       }
       if (seen.has(row.accountId)) {
-        setFormError("Each destination account may appear only once per receipt.");
+        setFormError(
+          "Each destination account may appear only once per receipt.",
+        );
         return;
       }
       seen.add(row.accountId);
       const parsed = Number(row.amount);
       if (!Number.isFinite(parsed) || parsed <= 0) {
-        setFormError(`Allocation row ${index + 1}: amount must be greater than zero.`);
+        setFormError(
+          `Allocation row ${index + 1}: amount must be greater than zero.`,
+        );
         return;
       }
       allocations.push({
@@ -230,6 +254,7 @@ export function ReceiptForm() {
       const receipt = await createReceipt({
         parentId: selectedParent.id,
         currencyId: selectedCurrency.id,
+        date: date || undefined,
         allocations,
         description: description.trim() || undefined,
         notes: notes.trim() || undefined,
@@ -291,10 +316,16 @@ export function ReceiptForm() {
               ) : isSearching ? (
                 <li className="px-3 py-3 text-sm text-muted">Searching…</li>
               ) : matches.length === 0 ? (
-                <li className="px-3 py-3 text-sm text-muted">No parents match</li>
+                <li className="px-3 py-3 text-sm text-muted">
+                  No parents match
+                </li>
               ) : (
                 matches.map((parent) => (
-                  <li key={parent.id} role="option" aria-selected={selectedParent?.id === parent.id}>
+                  <li
+                    key={parent.id}
+                    role="option"
+                    aria-selected={selectedParent?.id === parent.id}
+                  >
                     <button
                       type="button"
                       onClick={() => pick(parent)}
@@ -327,7 +358,10 @@ export function ReceiptForm() {
             {selectedParent.fullName} · Account {selectedParent.accountCode}
           </p>
         ) : (
-          <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          <p
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
             This parent has no accounting account. Create one from the Parents
             page first — receipts cannot create accounts.
           </p>
@@ -359,6 +393,15 @@ export function ReceiptForm() {
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="e.g. Tuition installment"
+            className={inputClass}
+          />
+        </Field>
+        <Field id="receipt-date" label="Date">
+          <input
+            id="receipt-date"
+            type="date"
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
             className={inputClass}
           />
         </Field>
