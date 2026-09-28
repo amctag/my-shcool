@@ -11,8 +11,8 @@ import { selectAuthReady } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 
 export type RegistrationInvoiceSelection = {
-  enabled: boolean;
   currencyId: number | null;
+  description: string;
   items: Array<{ itemId: number; unitPrice?: number; quantity?: number }>;
 };
 
@@ -28,10 +28,6 @@ export function RegistrationInvoiceSection({
   onChange: (selection: RegistrationInvoiceSelection | null) => void;
 }) {
   const ready = useAppSelector(selectAuthReady);
-  const [enabledOverride, setEnabledOverride] = useState<{
-    key: string;
-    value: boolean;
-  } | null>(null);
   const [selectedOverride, setSelectedOverride] = useState<{
     key: string;
     value: Record<number, boolean>;
@@ -41,6 +37,10 @@ export function RegistrationInvoiceSection({
     value: Record<number, string>;
   } | null>(null);
   const [currencyOverride, setCurrencyOverride] = useState<{
+    key: string;
+    value: string;
+  } | null>(null);
+  const [descriptionOverride, setDescriptionOverride] = useState<{
     key: string;
     value: string;
   } | null>(null);
@@ -108,10 +108,6 @@ export function RegistrationInvoiceSection({
     pricesOverride && pricesOverride.key === packageKey
       ? pricesOverride.value
       : defaultPrices;
-  const enabled =
-    enabledOverride && enabledOverride.key === packageKey
-      ? enabledOverride.value
-      : true;
   const effectiveCurrencyId =
     currencyOverride && currencyOverride.key === packageKey
       ? currencyOverride.value
@@ -119,11 +115,16 @@ export function RegistrationInvoiceSection({
   const effectiveCurrency = currencies.find(
     (c) => String(c.id) === effectiveCurrencyId,
   );
+  const description =
+    descriptionOverride && descriptionOverride.key === packageKey
+      ? descriptionOverride.value
+      : "";
 
   const total = useMemo(() => {
     let sum = 0;
     for (const item of packageItems) {
-      if (selected[item.itemId] ?? true) {
+      const checked = item.mandatory || (selected[item.itemId] ?? true);
+      if (checked) {
         const price = Number(prices[item.itemId] ?? item.price);
         if (Number.isFinite(price) && price > 0) {
           sum += Math.round(price * 100) / 100;
@@ -145,7 +146,7 @@ export function RegistrationInvoiceSection({
       return;
     }
     const items = packageItems
-      .filter((item) => selected[item.itemId] ?? true)
+      .filter((item) => item.mandatory || (selected[item.itemId] ?? true))
       .map((item) => {
         const override = Number(prices[item.itemId] ?? item.price);
         const packagePrice = Number(item.price);
@@ -160,8 +161,8 @@ export function RegistrationInvoiceSection({
         };
       });
     onChange({
-      enabled,
       currencyId: effectiveCurrencyId ? Number(effectiveCurrencyId) : null,
+      description: description.trim(),
       items,
     });
   }, [
@@ -171,9 +172,9 @@ export function RegistrationInvoiceSection({
     packageItems,
     selected,
     prices,
-    enabled,
     effectiveCurrencyId,
     mixedCurrencies,
+    description,
     onChange,
   ]);
 
@@ -189,7 +190,10 @@ export function RegistrationInvoiceSection({
       selectedOverride && selectedOverride.key === packageKey
         ? selectedOverride.value
         : defaultSelected;
-    setSelectedOverride({ key: packageKey, value: { ...current, [itemId]: value } });
+    setSelectedOverride({
+      key: packageKey,
+      value: { ...current, [itemId]: value },
+    });
   }
 
   function changePrice(itemId: number, value: string) {
@@ -200,7 +204,10 @@ export function RegistrationInvoiceSection({
       pricesOverride && pricesOverride.key === packageKey
         ? pricesOverride.value
         : defaultPrices;
-    setPricesOverride({ key: packageKey, value: { ...current, [itemId]: value } });
+    setPricesOverride({
+      key: packageKey,
+      value: { ...current, [itemId]: value },
+    });
   }
 
   return (
@@ -210,22 +217,9 @@ export function RegistrationInvoiceSection({
           Registration invoice
         </h2>
         {preview?.package ? (
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={enabled}
-              onChange={(event) => {
-                if (packageKey) {
-                  setEnabledOverride({
-                    key: packageKey,
-                    value: event.target.checked,
-                  });
-                }
-              }}
-              className="h-4 w-4 accent-primary"
-            />
-            Create invoice with registration
-          </label>
+          <p className="text-xs text-muted">
+            The invoice is created automatically with this registration.
+          </p>
         ) : null}
       </div>
 
@@ -280,7 +274,7 @@ export function RegistrationInvoiceSection({
           ) : null}
           <ul className="space-y-2">
             {packageItems.map((item) => {
-              const checked = selected[item.itemId] ?? true;
+              const checked = item.mandatory || (selected[item.itemId] ?? true);
               return (
                 <li
                   key={item.itemId}
@@ -290,13 +284,19 @@ export function RegistrationInvoiceSection({
                     type="checkbox"
                     aria-label={`Include ${item.itemName}`}
                     checked={checked}
+                    disabled={item.mandatory}
                     onChange={(event) =>
                       toggleItem(item.itemId, event.target.checked)
                     }
-                    className="h-4 w-4 accent-primary"
+                    className="h-4 w-4 accent-primary disabled:cursor-not-allowed disabled:opacity-70"
                   />
                   <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
                     {item.itemName}
+                    {item.mandatory ? (
+                      <span className="ml-2 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary">
+                        Mandatory
+                      </span>
+                    ) : null}
                   </span>
                   <input
                     aria-label={`${item.itemName} price`}
@@ -344,6 +344,25 @@ export function RegistrationInvoiceSection({
               Total: {total.toFixed(2)} {effectiveCurrency?.shortCode ?? ""}
             </p>
           </div>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium text-foreground">
+              Description
+            </span>
+            <textarea
+              value={description}
+              onChange={(event) => {
+                if (packageKey) {
+                  setDescriptionOverride({
+                    key: packageKey,
+                    value: event.target.value,
+                  });
+                }
+              }}
+              placeholder="e.g. Registration fees for school year 2026-2027"
+              rows={3}
+              className="min-h-[5rem] w-full resize-y rounded-xl border border-border bg-white px-3 py-3 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted/80 focus:border-primary"
+            />
+          </label>
         </div>
       )}
     </div>

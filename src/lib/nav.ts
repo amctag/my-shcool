@@ -72,6 +72,12 @@ export const navGroups: NavGroup[] = [
             icon: ClipboardList,
           },
           { href: "/accounting/invoices", label: "Invoice", icon: FileSpreadsheet },
+          {
+            href: "/accounting/statement",
+            label: "Statement of Account",
+            icon: ScrollText,
+          },
+          { href: "/accounting/records", label: "Record", icon: BookMarked },
         ],
       },
       { href: "/registrations", label: "Registration", icon: UserPlus },

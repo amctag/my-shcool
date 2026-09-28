@@ -18,14 +18,19 @@ import type {
   DashboardPaymentsResponse,
   DashboardReceipt,
   DashboardReceiptsResponse,
+  DashboardRecord,
+  DashboardRecordsResponse,
   DashboardRegistrationPackage,
   DashboardRegistrationPackagesResponse,
   DashboardRegistrationWithInvoice,
+  DashboardStatement,
+  DashboardStatementQuery,
   DashboardPackageClassOption,
   SaveAccountBody,
   SaveInvoiceBody,
   SavePaymentBody,
   SaveReceiptBody,
+  SaveRecordBody,
   SaveDashboardItemBody,
   SaveDashboardRegistrationPackageBody,
   SaveRegistrationWithInvoiceBody,
@@ -265,6 +270,46 @@ export const accountingApi = baseApi.injectEndpoints({
         { type: "Child", id: "LIST" },
       ],
     }),
+    getDashboardRecords: builder.query<
+      DashboardRecordsResponse,
+      DashboardAccountingDocumentQuery
+    >({
+      query: ({ page, limit, search, currencyId, dateFrom, dateTo }) =>
+        `/dashboard/accounting/records${toQueryString({ page, limit, search, currencyId, dateFrom, dateTo })}`,
+      keepUnusedDataFor: 60,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.items.map((item) => ({
+                type: "DashboardAccounting" as const,
+                id: `record-${item.id}`,
+              })),
+              { type: "DashboardAccounting", id: "RECORDS" },
+            ]
+          : [{ type: "DashboardAccounting", id: "RECORDS" }],
+    }),
+    createDashboardRecord: builder.mutation<DashboardRecord, SaveRecordBody>({
+      query: (body) => ({
+        url: "/dashboard/accounting/records",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "RECORDS" }],
+    }),
+    getDashboardRecord: builder.query<DashboardRecord, number>({
+      query: (id) => `/dashboard/accounting/records/${id}`,
+      providesTags: (_result, _error, id) => [
+        { type: "DashboardAccounting", id: `record-${id}` },
+      ],
+    }),
+    getDashboardStatement: builder.query<
+      DashboardStatement,
+      DashboardStatementQuery
+    >({
+      query: ({ accountId, dateFrom, dateTo, documentType, search, page, limit }) =>
+        `/dashboard/accounting/accounts/${accountId}/statement${toQueryString({ dateFrom, dateTo, documentType, search, page, limit })}`,
+      keepUnusedDataFor: 60,
+    }),
     getDashboardItemTypes: builder.query<DashboardItemType[], void>({
       query: () => "/dashboard/accounting/item-types",
     }),
@@ -448,6 +493,10 @@ export const {
   useGetDashboardParentRegistrationsQuery,
   useGetDashboardPackagePreviewQuery,
   useCreateRegistrationWithInvoiceMutation,
+  useGetDashboardRecordsQuery,
+  useCreateDashboardRecordMutation,
+  useGetDashboardRecordQuery,
+  useGetDashboardStatementQuery,
   useGetDashboardItemTypesQuery,
   useGetDashboardItemsQuery,
   useGetDashboardItemQuery,

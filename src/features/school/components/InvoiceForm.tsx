@@ -71,6 +71,7 @@ type InvoiceRow = {
   price: string;
   quantity: string;
   forRegistrationId: string;
+  description: string;
 };
 
 function emptyRow(): InvoiceRow {
@@ -80,6 +81,7 @@ function emptyRow(): InvoiceRow {
     price: "",
     quantity: "1",
     forRegistrationId: "",
+    description: "",
   };
 }
 
@@ -240,23 +242,18 @@ export function InvoiceForm() {
       setFormError("Select a currency first.");
       return;
     }
-    const seen = new Set<string>();
     const details: Array<{
       itemId: number;
       unitPrice: number;
       quantity: number;
       forRegistrationId?: number;
+      description?: string;
     }> = [];
     for (const [index, row] of rows.entries()) {
       if (!row.itemId) {
         setFormError(`Row ${index + 1}: choose an item.`);
         return;
       }
-      if (seen.has(row.itemId)) {
-        setFormError("Each item may appear only once per invoice.");
-        return;
-      }
-      seen.add(row.itemId);
       const price = Number(row.price);
       if (!Number.isFinite(price) || price <= 0) {
         setFormError(`Row ${index + 1}: price must be greater than zero.`);
@@ -274,6 +271,7 @@ export function InvoiceForm() {
         forRegistrationId: row.forRegistrationId
           ? Number(row.forRegistrationId)
           : undefined,
+        description: row.description.trim() || undefined,
       });
     }
     if (details.length === 0) {
@@ -537,6 +535,21 @@ export function InvoiceForm() {
                   <MinusCircle aria-hidden className="h-5 w-5" />
                 </button>
               </div>
+              <label className="block min-w-0">
+                <span className="mb-1 block text-xs font-medium text-muted">
+                  Line description (optional)
+                </span>
+                <textarea
+                  aria-label={`Row ${index + 1} description`}
+                  value={row.description}
+                  onChange={(event) =>
+                    updateRow(row.key, { description: event.target.value })
+                  }
+                  placeholder="e.g. School uniform pants - size 10"
+                  rows={2}
+                  className={`${inputClass} min-h-[3.5rem] resize-y py-2`}
+                />
+              </label>
             </div>
           ))}
         </div>

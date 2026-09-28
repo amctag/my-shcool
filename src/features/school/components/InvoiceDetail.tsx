@@ -77,7 +77,14 @@ export function InvoiceDetail({ id }: { id: number }) {
             <tbody>
               {document.details.map((line) => (
                 <tr key={line.id} className="border-t border-border">
-                  <td className="px-5 py-4 font-medium">{line.itemName}</td>
+                  <td className="px-5 py-4">
+                    <p className="font-medium">{line.itemName}</p>
+                    {line.description ? (
+                      <p className="mt-1 text-xs text-muted">
+                        {line.description}
+                      </p>
+                    ) : null}
+                  </td>
                   <td className="px-5 py-4 text-right">
                     {Number(line.unitPrice).toFixed(2)}
                   </td>

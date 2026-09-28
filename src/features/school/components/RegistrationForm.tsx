@@ -380,7 +380,7 @@ export function RegistrationForm({
 
       const withInvoice =
         !isEdit &&
-        invoiceSelection?.enabled &&
+        invoiceSelection &&
         invoiceSelection.items.length > 0 &&
         invoiceSelection.currencyId !== null;
 
@@ -391,6 +391,7 @@ export function RegistrationForm({
           sectionId,
           currencyId: invoiceSelection.currencyId ?? undefined,
           items: invoiceSelection.items,
+          description: invoiceSelection.description || undefined,
           idempotencyKey: newIdempotencyKey(),
         }).unwrap();
       } else {

@@ -155,6 +155,9 @@ export type DashboardParentDetail = {
   birthday: string | null;
   status: boolean;
   paid: boolean;
+  accountId: number | null;
+  accountCode: string | null;
+  hasAccountingAccount: boolean;
 };
 
 export type SaveParentBody = {
@@ -1900,6 +1903,102 @@ export type DashboardInvoicesQuery = DashboardAccountingDocumentQuery & {
   parentId?: number;
 };
 
+export type DashboardRecordRowInput = {
+  accountId: number;
+  debit?: number;
+  credit?: number;
+  description?: string;
+};
+
+export type SaveRecordBody = {
+  currencyId: number;
+  rows: DashboardRecordRowInput[];
+  date?: string;
+  description?: string;
+  notes?: string;
+  comments?: string;
+  idempotencyKey?: string;
+};
+
+export type DashboardRecordRow = {
+  accountId: number;
+  accountCode: string;
+  accountName: string;
+  debit: string;
+  credit: string;
+  description: string | null;
+};
+
+export type DashboardRecord = {
+  id: number;
+  nb: number;
+  totalDebit: string;
+  totalCredit: string;
+  rows: DashboardRecordRow[];
+  currency: DashboardReceiptCurrency | null;
+  currencyId: number | null;
+  currencyRate: string | null;
+  description: string | null;
+  notes: string | null;
+  comments: string | null;
+  dateCreated: string;
+};
+
+export type DashboardRecordsResponse = {
+  items: DashboardRecord[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type DashboardStatementQuery = {
+  accountId: number;
+  dateFrom?: string;
+  dateTo?: string;
+  documentType?: string;
+  search?: string;
+  page: number;
+  limit: number;
+};
+
+export type DashboardStatementRow = {
+  date: string;
+  documentType: string;
+  documentNb: number | null;
+  documentId: number | null;
+  documentKind: string | null;
+  description: string | null;
+  debit: string;
+  credit: string;
+  balance: string;
+  currencyShortCode: string;
+  currencySymbol: string;
+};
+
+export type DashboardStatementSummary = {
+  currencyId: number;
+  shortCode: string;
+  symbol: string;
+  openingBalance: string;
+  totalDebit: string;
+  totalCredit: string;
+  closingBalance: string;
+};
+
+export type DashboardStatement = {
+  accountId: number;
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  summaries: DashboardStatementSummary[];
+  rows: DashboardStatementRow[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export type DashboardPackagePreviewItem = {
   itemId: number;
   itemName: string;
@@ -1944,6 +2043,7 @@ export type SaveRegistrationInvoiceItemBody = {
   itemId: number;
   unitPrice?: number;
   quantity?: number;
+  description?: string;
 };
 
 export type SaveRegistrationWithInvoiceBody = {

@@ -24,6 +24,7 @@ import {
   useGetRegionsQuery,
 } from "@/features/school/api/lookupsApi";
 import { useGetParentQuery } from "@/features/school/api/parentsApi";
+import { ParentAccountAction } from "@/features/school/components/ParentAccountAction";
 import { useAppSelector } from "@/store/hooks";
 import type { DashboardParentDetail } from "@/features/school/types";
 
@@ -202,6 +203,33 @@ export function ParentProfile({ parentId }: { parentId: number }) {
             Edit parent
           </Link>
         </div>
+      </section>
+
+      <section className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-8">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <User aria-hidden className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold text-foreground">
+              Accounting account
+            </h2>
+          </div>
+          <ParentAccountAction
+            parentId={parent.id}
+            fullName={name}
+            hasAccountingAccount={parent.hasAccountingAccount}
+            accountCode={parent.accountCode}
+          />
+        </div>
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <InfoItem
+            label="Account code"
+            value={parent.accountCode ?? "No account yet"}
+          />
+          <InfoItem
+            label="Status"
+            value={parent.hasAccountingAccount ? "Active" : "Not created"}
+          />
+        </dl>
       </section>
 
       <section className="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-8">
