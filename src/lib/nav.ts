@@ -71,6 +71,7 @@ export const navGroups: NavGroup[] = [
             label: "Registration Packages",
             icon: ClipboardList,
           },
+          { href: "/accounting/invoices", label: "Invoice", icon: FileSpreadsheet },
         ],
       },
       { href: "/registrations", label: "Registration", icon: UserPlus },

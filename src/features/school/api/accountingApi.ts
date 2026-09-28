@@ -6,21 +6,29 @@ import type {
   DashboardAccountsQuery,
   DashboardAccountsResponse,
   DashboardCurrency,
+  DashboardInvoice,
+  DashboardInvoicesQuery,
+  DashboardInvoicesResponse,
   DashboardItem,
   DashboardItemsResponse,
   DashboardItemType,
+  DashboardPackagePreview,
+  DashboardParentRegistration,
   DashboardPayment,
   DashboardPaymentsResponse,
   DashboardReceipt,
   DashboardReceiptsResponse,
   DashboardRegistrationPackage,
   DashboardRegistrationPackagesResponse,
+  DashboardRegistrationWithInvoice,
   DashboardPackageClassOption,
   SaveAccountBody,
+  SaveInvoiceBody,
   SavePaymentBody,
   SaveReceiptBody,
   SaveDashboardItemBody,
   SaveDashboardRegistrationPackageBody,
+  SaveRegistrationWithInvoiceBody,
   UpdateAccountBody,
 } from "@/features/school/types";
 
@@ -192,6 +200,69 @@ export const accountingApi = baseApi.injectEndpoints({
       query: (id) => `/dashboard/accounting/payments/${id}`,
       providesTags: (_result, _error, id) => [
         { type: "DashboardAccounting", id: `payment-${id}` },
+      ],
+    }),
+    getDashboardInvoices: builder.query<
+      DashboardInvoicesResponse,
+      DashboardInvoicesQuery
+    >({
+      query: ({ page, limit, search, currencyId, dateFrom, dateTo, parentId }) =>
+        `/dashboard/accounting/invoices${toQueryString({ page, limit, search, currencyId, dateFrom, dateTo, parentId })}`,
+      keepUnusedDataFor: 60,
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.items.map((item) => ({
+                type: "DashboardAccounting" as const,
+                id: `invoice-${item.id}`,
+              })),
+              { type: "DashboardAccounting", id: "INVOICES" },
+            ]
+          : [{ type: "DashboardAccounting", id: "INVOICES" }],
+    }),
+    createDashboardInvoice: builder.mutation<DashboardInvoice, SaveInvoiceBody>(
+      {
+        query: (body) => ({
+          url: "/dashboard/accounting/invoices",
+          method: "POST",
+          body,
+        }),
+        invalidatesTags: [{ type: "DashboardAccounting", id: "INVOICES" }],
+      },
+    ),
+    getDashboardInvoice: builder.query<DashboardInvoice, number>({
+      query: (id) => `/dashboard/accounting/invoices/${id}`,
+      providesTags: (_result, _error, id) => [
+        { type: "DashboardAccounting", id: `invoice-${id}` },
+      ],
+    }),
+    getDashboardParentRegistrations: builder.query<
+      DashboardParentRegistration[],
+      number
+    >({
+      query: (parentId) =>
+        `/dashboard/accounting/invoices/parent-registrations${toQueryString({ parentId })}`,
+    }),
+    getDashboardPackagePreview: builder.query<
+      DashboardPackagePreview,
+      { classId: number; yearId: number; studentId?: number }
+    >({
+      query: ({ classId, yearId, studentId }) =>
+        `/dashboard/accounting/registration-packages/by-class/preview${toQueryString({ classId, yearId, studentId })}`,
+    }),
+    createRegistrationWithInvoice: builder.mutation<
+      DashboardRegistrationWithInvoice,
+      SaveRegistrationWithInvoiceBody
+    >({
+      query: (body) => ({
+        url: "/dashboard/accounting/registrations/with-invoice",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: [
+        { type: "DashboardAccounting", id: "INVOICES" },
+        { type: "Registrations", id: "LIST" },
+        { type: "Child", id: "LIST" },
       ],
     }),
     getDashboardItemTypes: builder.query<DashboardItemType[], void>({
@@ -371,6 +442,12 @@ export const {
   useCreateDashboardPaymentMutation,
   useUpdateDashboardPaymentMutation,
   useGetDashboardPaymentQuery,
+  useGetDashboardInvoicesQuery,
+  useCreateDashboardInvoiceMutation,
+  useGetDashboardInvoiceQuery,
+  useGetDashboardParentRegistrationsQuery,
+  useGetDashboardPackagePreviewQuery,
+  useCreateRegistrationWithInvoiceMutation,
   useGetDashboardItemTypesQuery,
   useGetDashboardItemsQuery,
   useGetDashboardItemQuery,

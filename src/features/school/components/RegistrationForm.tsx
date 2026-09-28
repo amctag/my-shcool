@@ -14,6 +14,11 @@ import {
   useGetRegistrationQuery,
   useUpdateRegistrationMutation,
 } from "@/features/school/api/registrationsApi";
+import { useCreateRegistrationWithInvoiceMutation } from "@/features/school/api/accountingApi";
+import {
+  RegistrationInvoiceSection,
+  type RegistrationInvoiceSelection,
+} from "@/features/school/components/RegistrationInvoiceSection";
 import { useGetSectionsQuery } from "@/features/school/api/sectionsApi";
 import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { useAppSelector } from "@/store/hooks";
@@ -250,6 +255,9 @@ export function RegistrationForm({
   const [studentPickerKey, setStudentPickerKey] = useState(0);
   const [formError, setFormError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [invoiceSelection, setInvoiceSelection] =
+    useState<RegistrationInvoiceSelection | null>(null);
+  const [invoiceSectionKey, setInvoiceSectionKey] = useState(0);
 
   const {
     data: registration,
@@ -283,7 +291,12 @@ export function RegistrationForm({
 
   const [createRegistration, createState] = useCreateRegistrationMutation();
   const [updateRegistration, updateState] = useUpdateRegistrationMutation();
-  const saving = createState.isLoading || updateState.isLoading;
+  const [createRegistrationWithInvoice, createWithInvoiceState] =
+    useCreateRegistrationWithInvoiceMutation();
+  const saving =
+    createState.isLoading ||
+    updateState.isLoading ||
+    createWithInvoiceState.isLoading;
 
   const sectionOptions = sections.map((section) => ({
     value: String(section.id),
@@ -326,6 +339,13 @@ export function RegistrationForm({
     setStudentPickerKey((current) => current + 1);
   }
 
+  function newIdempotencyKey(): string {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
   async function onSave(saveAndNew: boolean) {
     setFormError(null);
 
@@ -358,15 +378,34 @@ export function RegistrationForm({
         return;
       }
 
-      await createRegistration({
-        studentId,
-        classId,
-        sectionId,
-      }).unwrap();
+      const withInvoice =
+        !isEdit &&
+        invoiceSelection?.enabled &&
+        invoiceSelection.items.length > 0 &&
+        invoiceSelection.currencyId !== null;
+
+      if (withInvoice && invoiceSelection) {
+        await createRegistrationWithInvoice({
+          studentId,
+          classId,
+          sectionId,
+          currencyId: invoiceSelection.currencyId ?? undefined,
+          items: invoiceSelection.items,
+          idempotencyKey: newIdempotencyKey(),
+        }).unwrap();
+      } else {
+        await createRegistration({
+          studentId,
+          classId,
+          sectionId,
+        }).unwrap();
+      }
 
       if (saveAndNew) {
         setForm(emptyForm());
         resetStudentPicker();
+        setInvoiceSelection(null);
+        setInvoiceSectionKey((current) => current + 1);
         return;
       }
 
@@ -492,6 +531,18 @@ export function RegistrationForm({
           </select>
         </Field>
       </div>
+
+      {!isEdit ? (
+        <div className="mt-5">
+          <RegistrationInvoiceSection
+            key={invoiceSectionKey}
+            studentId={studentId}
+            classId={classId}
+            yearId={sectionsYearId}
+            onChange={setInvoiceSelection}
+          />
+        </div>
+      ) : null}
 
       {formError ? (
         <p className="mt-5 text-sm text-red-600" role="alert">

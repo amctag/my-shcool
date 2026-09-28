@@ -1840,3 +1840,124 @@ export type DashboardPaymentsResponse = {
   total: number;
   totalPages: number;
 };
+
+export type DashboardInvoiceDetailInput = {
+  itemId: number;
+  unitPrice?: number;
+  quantity?: number;
+  description?: string;
+  forRegistrationId?: number;
+};
+
+export type SaveInvoiceBody = {
+  parentId: number;
+  currencyId: number;
+  details: DashboardInvoiceDetailInput[];
+  date?: string;
+  description?: string;
+  notes?: string;
+  comments?: string;
+  idempotencyKey?: string;
+};
+
+export type DashboardInvoiceDetail = {
+  id: number;
+  itemId: number;
+  itemName: string;
+  unitPrice: string;
+  quantity: string;
+  lineTotal: string;
+  description: string | null;
+  forRegistrationId: number | null;
+  forRegistrationLabel: string | null;
+};
+
+export type DashboardInvoice = {
+  id: number;
+  nb: number;
+  parentId: number;
+  parentName: string;
+  accountId: number;
+  accountCode: string;
+  total: string;
+  details: DashboardInvoiceDetail[];
+  currency: DashboardReceiptCurrency | null;
+  currencyId: number | null;
+  currencyRate: string | null;
+  description: string | null;
+  dateCreated: string;
+};
+
+export type DashboardInvoicesResponse = {
+  items: DashboardInvoice[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type DashboardInvoicesQuery = DashboardAccountingDocumentQuery & {
+  parentId?: number;
+};
+
+export type DashboardPackagePreviewItem = {
+  itemId: number;
+  itemName: string;
+  itemType: string;
+  price: string;
+  basePrice: string;
+  mandatory: boolean;
+  currencyId: number | null;
+  currency: DashboardCurrency | null;
+};
+
+export type DashboardPackagePreviewParent = {
+  parentId: number;
+  parentName: string;
+  accountId: number | null;
+  accountCode: string | null;
+  hasAccountingAccount: boolean;
+};
+
+export type DashboardPackagePreview = {
+  package: {
+    id: number;
+    name: string;
+    items: DashboardPackagePreviewItem[];
+  } | null;
+  parent: DashboardPackagePreviewParent | null;
+  className: string;
+  yearTitle: string;
+};
+
+export type DashboardParentRegistration = {
+  id: number;
+  studentId: number;
+  studentName: string;
+  className: string;
+  sectionTitle: string;
+  yearTitle: string;
+  label: string;
+};
+
+export type SaveRegistrationInvoiceItemBody = {
+  itemId: number;
+  unitPrice?: number;
+  quantity?: number;
+};
+
+export type SaveRegistrationWithInvoiceBody = {
+  studentId: number;
+  classId: number;
+  sectionId: number;
+  currencyId?: number;
+  items: SaveRegistrationInvoiceItemBody[];
+  date?: string;
+  description?: string;
+  idempotencyKey?: string;
+};
+
+export type DashboardRegistrationWithInvoice = {
+  registrationId: number;
+  invoice: DashboardInvoice;
+};
