@@ -84,19 +84,20 @@ export function ItemsTable() {
               <th className="px-5 py-4">ID</th>
               <th className="px-5 py-4">Item Name</th>
               <th className="px-5 py-4">Item Type</th>
+              <th className="px-5 py-4">Base Price</th>
               <th className="px-5 py-4">Actions</th>
             </tr>
           </thead>
           <tbody>
             {query.isLoading ? (
               <tr>
-                <td colSpan={4} className="p-10 text-center">
+                <td colSpan={5} className="p-10 text-center">
                   Loading items…
                 </td>
               </tr>
             ) : query.error ? (
               <tr>
-                <td colSpan={4} className="p-10 text-center text-red-700">
+                <td colSpan={5} className="p-10 text-center text-red-700">
                   {getApiErrorMessage(query.error, "Could not load items")}
                 </td>
               </tr>
@@ -106,6 +107,7 @@ export function ItemsTable() {
                   <td className="px-5 py-4">{item.id}</td>
                   <td className="px-5 py-4 font-medium">{item.name}</td>
                   <td className="px-5 py-4">{item.itemType.name}</td>
+                  <td className="px-5 py-4">{Number(item.price).toFixed(2)}</td>
                   <td className="flex gap-2 px-5 py-4">
                     <Link
                       href={`/accounting/items/${item.id}/edit`}
@@ -126,7 +128,7 @@ export function ItemsTable() {
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="p-10 text-center text-muted">
+                <td colSpan={5} className="p-10 text-center text-muted">
                   No items found.
                 </td>
               </tr>

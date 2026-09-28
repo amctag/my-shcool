@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, Plus, Search } from "lucide-react";
+import { Eye, Pencil, Plus, Search } from "lucide-react";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
@@ -149,7 +149,7 @@ export function AccountingDocumentsList({
                 rows.map((row) => (
                   <tr key={row.id} className="border-t border-border">
                     <td className="px-5 py-4 font-medium">#{row.nb}</td>
-                    <td className="px-5 py-4">
+                    <td className="flex gap-2 px-5 py-4">
                       {new Date(row.dateCreated).toLocaleDateString()}
                     </td>
                     <td className="px-5 py-4">
@@ -175,6 +175,13 @@ export function AccountingDocumentsList({
                         className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium"
                       >
                         <Eye className="h-3.5 w-3.5" /> View
+                      </Link>
+                      <Link
+                        aria-label={`Edit ${kind.slice(0, -1)} ${row.nb}`}
+                        href={`/accounting/${kind}/${row.id}/edit`}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Edit
                       </Link>
                     </td>
                   </tr>

@@ -16,6 +16,7 @@ import {
   useCreateDashboardReceiptMutation,
   useGetDashboardAccountsQuery,
   useGetDashboardCurrenciesQuery,
+  useUpdateDashboardReceiptMutation,
 } from "@/features/school/api/accountingApi";
 import { selectAuthReady } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
@@ -83,24 +84,47 @@ function formatTotal(value: number, shortCode: string): string {
   return shortCode ? `Total: ${formatted} ${shortCode}` : `Total: ${formatted}`;
 }
 
-export function ReceiptForm() {
+export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
   const router = useRouter();
   const ready = useAppSelector(selectAuthReady);
-  const [parentQuery, setParentQuery] = useState("");
+  const [parentQuery, setParentQuery] = useState(
+    initial ? `${initial.parentName} — Account ${initial.accountCode}` : "",
+  );
   const [debounced, setDebounced] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedParent, setSelectedParent] =
-    useState<DashboardParentOption | null>(null);
-  const [currencyId, setCurrencyId] = useState("");
-  const [date, setDate] = useState("");
-  const [rows, setRows] = useState<AllocationRow[]>([emptyRow()]);
-  const [description, setDescription] = useState("");
-  const [notes, setNotes] = useState("");
-  const [comments, setComments] = useState("");
+    useState<DashboardParentOption | null>(
+      initial
+        ? {
+            id: initial.parentId,
+            fullName: initial.parentName,
+            lastName: initial.parentName,
+            accountId: initial.accountId,
+            hasAccountingAccount: true,
+            accountCode: initial.accountCode,
+          }
+        : null,
+    );
+  const [currencyId, setCurrencyId] = useState(
+    initial?.currencyId ? String(initial.currencyId) : "",
+  );
+  const [date, setDate] = useState(initial?.dateCreated.slice(0, 10) ?? "");
+  const [rows, setRows] = useState<AllocationRow[]>(
+    initial?.allocations.map((row) => ({
+      key: newRowKey(),
+      accountId: String(row.accountId),
+      amount: row.amount,
+      description: row.description ?? "",
+    })) ?? [emptyRow()],
+  );
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [comments, setComments] = useState(initial?.comments ?? "");
   const [formError, setFormError] = useState<string | null>(null);
   const [created, setCreated] = useState<DashboardReceipt | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
   const [createReceipt, { isLoading }] = useCreateDashboardReceiptMutation();
+  const [updateReceipt, updateState] = useUpdateDashboardReceiptMutation();
   const boxRef = useRef<HTMLDivElement>(null);
 
   const { data: currencies = [] } = useGetDashboardCurrenciesQuery(undefined, {
@@ -251,7 +275,7 @@ export function ReceiptForm() {
     }
     setFormError(null);
     try {
-      const receipt = await createReceipt({
+      const body = {
         parentId: selectedParent.id,
         currencyId: selectedCurrency.id,
         date: date || undefined,
@@ -259,9 +283,13 @@ export function ReceiptForm() {
         description: description.trim() || undefined,
         notes: notes.trim() || undefined,
         comments: comments.trim() || undefined,
-        idempotencyKey,
-      }).unwrap();
+        idempotencyKey: initial ? undefined : idempotencyKey,
+      };
+      const receipt = initial
+        ? await updateReceipt({ id: initial.id, body }).unwrap()
+        : await createReceipt(body).unwrap();
       setCreated(receipt);
+      if (initial) router.push(`/accounting/receipts/${initial.id}`);
     } catch (error) {
       setFormError(getApiErrorMessage(error, "Could not create receipt"));
     }
@@ -276,7 +304,9 @@ export function ReceiptForm() {
       className="mx-auto max-w-2xl space-y-5 rounded-2xl border border-border bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
     >
       <div>
-        <h1 className="text-xl font-semibold text-foreground">New receipt</h1>
+        <h1 className="text-xl font-semibold text-foreground">
+          {initial ? `Edit receipt #${initial.nb}` : "New receipt"}
+        </h1>
         <p className="mt-1 text-sm text-muted">
           Receive money from a parent and split it across cash and bank
           accounts. One parent credit is posted for the total.
@@ -525,7 +555,7 @@ export function ReceiptForm() {
         </p>
       ) : null}
 
-      {created ? (
+      {created && !initial ? (
         <div
           className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
           role="status"
@@ -553,10 +583,19 @@ export function ReceiptForm() {
       <div className="flex flex-wrap gap-3 pt-1">
         <button
           type="submit"
-          disabled={isLoading || !selectedParent || !selectedHasAccount}
+          disabled={
+            isLoading ||
+            updateState.isLoading ||
+            !selectedParent ||
+            !selectedHasAccount
+          }
           className="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-primary px-5 text-sm font-medium text-on-primary hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isLoading ? "Posting…" : "Post receipt"}
+          {isLoading || updateState.isLoading
+            ? "Saving…"
+            : initial
+              ? "Save receipt"
+              : "Post receipt"}
         </button>
         <button
           type="button"

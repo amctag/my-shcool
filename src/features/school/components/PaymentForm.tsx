@@ -9,6 +9,7 @@ import {
   useCreateDashboardPaymentMutation,
   useGetDashboardAccountsQuery,
   useGetDashboardCurrenciesQuery,
+  useUpdateDashboardPaymentMutation,
 } from "@/features/school/api/accountingApi";
 import { selectAccessToken, selectAuthReady } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
@@ -30,16 +31,29 @@ const emptyRow = (): SourceRow => ({
   description: "",
 });
 
-export function PaymentForm() {
+export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
   const router = useRouter();
   const ready = useAppSelector(selectAuthReady);
   const token = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(token);
-  const [destinationId, setDestinationId] = useState("");
-  const [currencyId, setCurrencyId] = useState("");
-  const [date, setDate] = useState("");
-  const [description, setDescription] = useState("");
-  const [rows, setRows] = useState<SourceRow[]>([emptyRow()]);
+  const [destinationId, setDestinationId] = useState(
+    initial ? String(initial.accountId) : "",
+  );
+  const [currencyId, setCurrencyId] = useState(
+    initial?.currencyId ? String(initial.currencyId) : "",
+  );
+  const [date, setDate] = useState(initial?.dateCreated.slice(0, 10) ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [comments, setComments] = useState(initial?.comments ?? "");
+  const [rows, setRows] = useState<SourceRow[]>(
+    initial?.allocations.map((row) => ({
+      key: rowKey(),
+      accountId: String(row.accountId),
+      amount: row.amount,
+      description: row.description ?? "",
+    })) ?? [emptyRow()],
+  );
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<DashboardPayment | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(rowKey);
@@ -51,6 +65,7 @@ export function PaymentForm() {
     skip: !canFetch,
   });
   const [createPayment, mutation] = useCreateDashboardPaymentMutation();
+  const [updatePayment, updateState] = useUpdateDashboardPaymentMutation();
   const sources = accounts.filter(
     (account) => account.type === "CASH" || account.type === "GENERAL",
   );
@@ -91,15 +106,21 @@ export function PaymentForm() {
     )
       return setError("Every amount must be greater than zero.");
     try {
-      const payment = await createPayment({
+      const body = {
         accountId: Number(destinationId),
         currencyId: Number(selectedCurrencyId),
         date: date || undefined,
         description: description.trim() || undefined,
+        notes: notes.trim() || undefined,
+        comments: comments.trim() || undefined,
         allocations,
-        idempotencyKey,
-      }).unwrap();
+        idempotencyKey: initial ? undefined : idempotencyKey,
+      };
+      const payment = initial
+        ? await updatePayment({ id: initial.id, body }).unwrap()
+        : await createPayment(body).unwrap();
       setCreated(payment);
+      if (initial) router.push(`/accounting/payments/${initial.id}`);
       setError(null);
     } catch (cause) {
       setError(getApiErrorMessage(cause, "Could not create payment"));
@@ -114,7 +135,9 @@ export function PaymentForm() {
       className="mx-auto max-w-4xl space-y-6 rounded-2xl border border-border bg-white p-6 shadow-sm"
     >
       <div>
-        <h1 className="text-xl font-semibold">New payment</h1>
+        <h1 className="text-xl font-semibold">
+          {initial ? `Edit payment #${initial.nb}` : "New payment"}
+        </h1>
         <p className="mt-1 text-sm text-muted">
           Debit one destination and fund it from one or more Cash or General
           accounts.
@@ -168,6 +191,24 @@ export function PaymentForm() {
           onChange={(event) => setDescription(event.target.value)}
         />
       </label>
+      <div className="grid gap-4 md:grid-cols-2">
+        <label className="block text-sm font-medium">
+          Notes
+          <input
+            className={`${inputClass} mt-1.5`}
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
+        </label>
+        <label className="block text-sm font-medium">
+          Comments
+          <input
+            className={`${inputClass} mt-1.5`}
+            value={comments}
+            onChange={(event) => setComments(event.target.value)}
+          />
+        </label>
+      </div>
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -268,10 +309,14 @@ export function PaymentForm() {
       ) : null}
       <div className="flex flex-wrap gap-3">
         <button
-          disabled={mutation.isLoading}
+          disabled={mutation.isLoading || updateState.isLoading}
           className="rounded-lg bg-primary px-5 py-3 text-sm font-medium text-on-primary"
         >
-          {mutation.isLoading ? "Posting…" : "Post payment"}
+          {mutation.isLoading || updateState.isLoading
+            ? "Saving…"
+            : initial
+              ? "Save payment"
+              : "Post payment"}
         </button>
         <button
           type="button"
@@ -280,7 +325,7 @@ export function PaymentForm() {
         >
           Cancel
         </button>
-        {created ? (
+        {created && !initial ? (
           <button
             type="button"
             onClick={() => {

@@ -1,25 +1,37 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
-import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import { useGetYearsQuery } from "@/features/school/api/sectionsApi";
 import {
-  useAddDashboardPackageItemMutation,
-  useAssignDashboardPackageClassesMutation,
   useCreateDashboardRegistrationPackageMutation,
   useGetDashboardCurrenciesQuery,
   useGetDashboardItemsQuery,
+  useGetDashboardPackageClassesQuery,
   useGetDashboardRegistrationPackageQuery,
-  useRemoveDashboardPackageClassMutation,
-  useRemoveDashboardPackageItemMutation,
   useUpdateDashboardRegistrationPackageMutation,
 } from "@/features/school/api/accountingApi";
 import type { DashboardRegistrationPackage } from "@/features/school/types";
 
 const input =
   "h-11 w-full rounded-lg border border-border bg-white px-3 text-sm";
+type ItemRow = {
+  key: string;
+  itemId: string;
+  price: string;
+  currencyId: string;
+  mandatory: boolean;
+};
+const newKey = () => crypto.randomUUID();
+const emptyItem = (): ItemRow => ({
+  key: newKey(),
+  itemId: "",
+  price: "",
+  currencyId: "",
+  mandatory: true,
+});
+
 export function RegistrationPackageForm({ id }: { id?: number }) {
   const detail = useGetDashboardRegistrationPackageQuery(id ?? 0, {
     skip: !id,
@@ -27,115 +39,133 @@ export function RegistrationPackageForm({ id }: { id?: number }) {
   if (id && !detail.data)
     return <p className="p-6 text-sm text-muted">Loading package…</p>;
   return (
-    <RegistrationPackageEditor
-      key={detail.data?.id ?? "new"}
-      id={id}
-      registrationPackage={detail.data}
-    />
+    <Editor key={detail.data?.id ?? "new"} id={id} initial={detail.data} />
   );
 }
 
-function RegistrationPackageEditor({
+function Editor({
   id,
-  registrationPackage,
+  initial,
 }: {
   id?: number;
-  registrationPackage?: DashboardRegistrationPackage;
+  initial?: DashboardRegistrationPackage;
 }) {
   const router = useRouter();
   const years = useGetYearsQuery();
   const items = useGetDashboardItemsQuery({ page: 1, limit: 500 });
-  const classes = useGetClassesQuery({ page: 1, limit: 500 });
   const currencies = useGetDashboardCurrenciesQuery();
-  const [createPackage, creating] =
-    useCreateDashboardRegistrationPackageMutation();
-  const [updatePackage, updating] =
-    useUpdateDashboardRegistrationPackageMutation();
-  const [addItem] = useAddDashboardPackageItemMutation();
-  const [removeItem] = useRemoveDashboardPackageItemMutation();
-  const [assignClasses] = useAssignDashboardPackageClassesMutation();
-  const [removeClass] = useRemoveDashboardPackageClassMutation();
-  const [name, setName] = useState(registrationPackage?.name ?? "");
-  const [yearId, setYearId] = useState(
-    registrationPackage ? String(registrationPackage.yearId) : "",
+  const [name, setName] = useState(initial?.name ?? "");
+  const [yearId, setYearId] = useState(initial ? String(initial.yearId) : "");
+  const [rows, setRows] = useState<ItemRow[]>(
+    initial?.items?.map((row) => ({
+      key: newKey(),
+      itemId: String(row.itemId),
+      price: row.price,
+      currencyId: String(row.currencyId ?? ""),
+      mandatory: row.mandatory,
+    })) ?? [emptyItem()],
   );
-  const [itemId, setItemId] = useState("");
-  const [price, setPrice] = useState("");
-  const [currencyId, setCurrencyId] = useState("");
-  const [mandatory, setMandatory] = useState(true);
-  const [classIds, setClassIds] = useState<string[]>([]);
+  const [classIds, setClassIds] = useState<number[]>(
+    initial?.classes?.map((row) => row.classId) ?? [],
+  );
+  const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
-  async function saveGeneral(event: FormEvent) {
+  const classes = useGetDashboardPackageClassesQuery(Number(yearId), {
+    skip: !yearId,
+  });
+  const classOptions = classes.data;
+  const [createPackage, createState] =
+    useCreateDashboardRegistrationPackageMutation();
+  const [updatePackage, updateState] =
+    useUpdateDashboardRegistrationPackageMutation();
+  const grouped = useMemo(() => {
+    const result = new Map<string, NonNullable<typeof classOptions>>();
+    for (const row of classOptions ?? []) {
+      const query = search.toLowerCase();
+      if (
+        !row.className.toLowerCase().includes(query) &&
+        !row.stage.title.toLowerCase().includes(query)
+      )
+        continue;
+      const group = result.get(row.stage.title) ?? [];
+      group.push(row);
+      result.set(row.stage.title, group);
+    }
+    return result;
+  }, [classOptions, search]);
+  const updateRow = (rowKey: string, patch: Partial<ItemRow>) =>
+    setRows((current) =>
+      current.map((row) => (row.key === rowKey ? { ...row, ...patch } : row)),
+    );
+  const selectItem = (row: ItemRow, value: string) =>
+    updateRow(row.key, {
+      itemId: value,
+      price:
+        items.data?.items.find((item) => String(item.id) === value)?.price ??
+        "",
+    });
+  const toggleClass = (classId: number) =>
+    setClassIds((current) =>
+      current.includes(classId)
+        ? current.filter((value) => value !== classId)
+        : [...current, classId],
+    );
+  const toggleStage = (ids: number[]) =>
+    setClassIds((current) =>
+      ids.every((value) => current.includes(value))
+        ? current.filter((value) => !ids.includes(value))
+        : [...new Set([...current, ...ids])],
+    );
+  async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!name.trim() || !yearId)
-      return setError("Package name and school year are required.");
+    if (!name.trim() || !yearId || !classIds.length)
+      return setError(
+        "Name, school year, and at least one class are required.",
+      );
+    const packageItems = rows.map((row) => ({
+      itemId: Number(row.itemId),
+      price: Number(row.price),
+      currencyId: Number(row.currencyId),
+      mandatory: row.mandatory,
+    }));
+    if (
+      packageItems.some(
+        (row) =>
+          !row.itemId ||
+          !row.currencyId ||
+          !Number.isFinite(row.price) ||
+          row.price < 0,
+      )
+    )
+      return setError("Complete every package item row.");
+    if (
+      new Set(packageItems.map((row) => row.itemId)).size !==
+      packageItems.length
+    )
+      return setError("Each item can appear only once.");
     try {
-      const body = { name: name.trim(), yearId: Number(yearId) };
+      const body = {
+        name: name.trim(),
+        yearId: Number(yearId),
+        items: packageItems,
+        classIds,
+      };
       if (id) await updatePackage({ id, body }).unwrap();
-      else {
-        const created = await createPackage(body).unwrap();
-        router.push(`/accounting/registration-packages/${created.id}/edit`);
-      }
-      setError(null);
+      else await createPackage(body).unwrap();
+      router.push("/accounting/registration-packages");
     } catch (cause) {
-      setError(getApiErrorMessage(cause, "Could not save package"));
-    }
-  }
-  async function submitItem(event: FormEvent) {
-    event.preventDefault();
-    if (!id || !itemId || !currencyId || Number(price) < 0)
-      return setError("Complete the package item fields.");
-    try {
-      await addItem({
-        packageId: id,
-        body: {
-          itemId: Number(itemId),
-          price: Number(price),
-          mandatory,
-          currencyId: Number(currencyId),
-        },
-      }).unwrap();
-      setItemId("");
-      setPrice("");
-      setError(null);
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, "Could not add package item"));
-    }
-  }
-  async function submitClasses() {
-    if (!id || !classIds.length) return setError("Select at least one class.");
-    try {
-      await assignClasses({
-        packageId: id,
-        classIds: classIds.map(Number),
-      }).unwrap();
-      setClassIds([]);
-      setError(null);
-    } catch (cause) {
-      setError(getApiErrorMessage(cause, "Could not assign classes"));
+      setError(
+        getApiErrorMessage(cause, "Could not save registration package"),
+      );
     }
   }
   return (
-    <div className="space-y-6">
-      <form
-        onSubmit={saveGeneral}
-        className="rounded-2xl border border-border bg-white p-6"
-      >
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold">
-              {id ? "Edit registration package" : "New registration package"}
-            </h1>
-            <p className="text-sm text-muted">General</p>
-          </div>
-          {id ? (
-            <div className="flex gap-3 text-sm">
-              <span>Items: {registrationPackage?._count.items ?? 0}</span>
-              <span>Classes: {registrationPackage?._count.classes ?? 0}</span>
-            </div>
-          ) : null}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+    <form onSubmit={submit} className="space-y-6">
+      <section className="rounded-2xl border border-border bg-white p-6">
+        <h1 className="text-xl font-semibold">
+          {id ? "Edit registration package" : "New registration package"}
+        </h1>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <label className="text-sm font-medium">
             Package Name *
             <input
@@ -149,7 +179,10 @@ function RegistrationPackageEditor({
             <select
               className={`${input} mt-1.5`}
               value={yearId}
-              onChange={(event) => setYearId(event.target.value)}
+              onChange={(event) => {
+                setYearId(event.target.value);
+                setClassIds([]);
+              }}
             >
               <option value="">Select year</option>
               {years.data?.map((year) => (
@@ -160,147 +193,184 @@ function RegistrationPackageEditor({
             </select>
           </label>
         </div>
-        {error ? (
-          <p role="alert" className="mt-4 text-sm text-red-700">
-            {error}
-          </p>
-        ) : null}
-        <button
-          disabled={creating.isLoading || updating.isLoading}
-          className="mt-5 rounded-lg bg-primary px-5 py-3 text-sm font-medium text-on-primary"
-        >
-          Save general details
-        </button>
-      </form>
-      {id ? (
-        <>
-          <section className="rounded-2xl border border-border bg-white p-6">
-            <h2 className="text-lg font-semibold">Items</h2>
-            <form
-              onSubmit={submitItem}
-              className="mt-4 grid gap-3 md:grid-cols-[1.4fr_0.7fr_0.7fr_auto_auto]"
+      </section>
+      <section className="rounded-2xl border border-border bg-white p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Package items</h2>
+            <p className="text-sm text-muted">
+              Base prices are prefilled and can be overridden.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRows((current) => [...current, emptyItem()])}
+            className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm"
+          >
+            <Plus className="h-4 w-4" /> Add item
+          </button>
+        </div>
+        <div className="mt-4 space-y-3">
+          {rows.map((row, index) => (
+            <div
+              key={row.key}
+              className="grid gap-3 rounded-xl border border-border p-3 md:grid-cols-[1.4fr_.7fr_.7fr_auto_auto]"
             >
               <select
+                aria-label={`Item ${index + 1}`}
                 className={input}
-                value={itemId}
-                onChange={(event) => setItemId(event.target.value)}
+                value={row.itemId}
+                onChange={(event) => selectItem(row, event.target.value)}
               >
                 <option value="">Select item</option>
-                {items.data?.items.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.name}
+                {items.data?.items.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} — base {Number(item.price).toFixed(2)}
                   </option>
                 ))}
               </select>
               <input
+                aria-label={`Price ${index + 1}`}
                 className={input}
                 type="number"
                 min="0"
                 step="0.01"
+                value={row.price}
+                onChange={(event) =>
+                  updateRow(row.key, { price: event.target.value })
+                }
                 placeholder="Price"
-                value={price}
-                onChange={(event) => setPrice(event.target.value)}
               />
               <select
+                aria-label={`Currency ${index + 1}`}
                 className={input}
-                value={currencyId}
-                onChange={(event) => setCurrencyId(event.target.value)}
+                value={row.currencyId}
+                onChange={(event) =>
+                  updateRow(row.key, { currencyId: event.target.value })
+                }
               >
                 <option value="">Currency</option>
-                {currencies.data?.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.symbol} / {row.shortCode}
+                {currencies.data?.map((currency) => (
+                  <option key={currency.id} value={currency.id}>
+                    {currency.symbol} / {currency.shortCode}
                   </option>
                 ))}
               </select>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
-                  checked={mandatory}
-                  onChange={(event) => setMandatory(event.target.checked)}
+                  checked={row.mandatory}
+                  onChange={(event) =>
+                    updateRow(row.key, { mandatory: event.target.checked })
+                  }
                 />{" "}
                 Mandatory
               </label>
-              <button className="rounded-lg border border-border px-3">
-                <Plus className="h-4 w-4" />
-              </button>
-            </form>
-            <div className="mt-4 divide-y divide-border rounded-xl border border-border">
-              {registrationPackage?.items?.map((row) => (
-                <div
-                  key={row.id}
-                  className="flex items-center justify-between gap-3 p-3 text-sm"
-                >
-                  <span>
-                    {row.item.name} · {row.currency?.symbol}
-                    {Number(row.price).toFixed(2)} ·{" "}
-                    {row.mandatory ? "Mandatory" : "Optional"}
-                  </span>
-                  <button
-                    onClick={() =>
-                      void removeItem({ packageId: id, relationId: row.id })
-                    }
-                    className="text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="rounded-2xl border border-border bg-white p-6">
-            <h2 className="text-lg font-semibold">Classes</h2>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <select
-                multiple
-                className="min-h-32 min-w-64 flex-1 rounded-lg border border-border p-3"
-                value={classIds}
-                onChange={(event) =>
-                  setClassIds(
-                    Array.from(
-                      event.target.selectedOptions,
-                      (option) => option.value,
-                    ),
-                  )
-                }
-              >
-                {classes.data?.items.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.className} · Level {row.classLevel}
-                  </option>
-                ))}
-              </select>
               <button
                 type="button"
-                onClick={() => void submitClasses()}
-                className="self-end rounded-lg bg-primary px-4 py-3 text-sm text-on-primary"
+                disabled={rows.length === 1}
+                onClick={() =>
+                  setRows((current) =>
+                    current.filter((item) => item.key !== row.key),
+                  )
+                }
+                className="rounded-lg border border-border p-3 text-red-700 disabled:opacity-40"
               >
-                Assign selected
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
-            <div className="mt-4 divide-y divide-border rounded-xl border border-border">
-              {registrationPackage?.classes?.map((row) => (
-                <div
-                  key={row.id}
-                  className="flex items-center justify-between p-3 text-sm"
+          ))}
+        </div>
+      </section>
+      <section className="rounded-2xl border border-border bg-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Classes</h2>
+            <p className="text-sm text-muted">
+              Available in the selected year, grouped by stage.
+            </p>
+          </div>
+          <input
+            className={`${input} max-w-xs`}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search classes or stages"
+          />
+        </div>
+        {!yearId ? (
+          <p className="mt-4 text-sm text-muted">
+            Select a school year to load classes.
+          </p>
+        ) : classes.isLoading ? (
+          <p className="mt-4 text-sm text-muted">Loading classes…</p>
+        ) : grouped.size === 0 ? (
+          <p className="mt-4 text-sm text-muted">
+            No classes are available for this school year.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-4">
+            {Array.from(grouped.entries()).map(([stage, stageClasses]) => {
+              const ids = stageClasses.map((row) => row.id);
+              return (
+                <fieldset
+                  key={stage}
+                  className="rounded-xl border border-border p-4"
                 >
-                  <span>
-                    {row.class.className} · Level {row.class.classLevel}
-                  </span>
-                  <button
-                    onClick={() =>
-                      void removeClass({ packageId: id, relationId: row.id })
-                    }
-                    className="text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        </>
+                  <legend className="px-2 font-semibold">{stage}</legend>
+                  <label className="mb-3 flex items-center gap-2 text-sm font-medium">
+                    <input
+                      type="checkbox"
+                      checked={ids.every((value) => classIds.includes(value))}
+                      onChange={() => toggleStage(ids)}
+                    />{" "}
+                    Select all in {stage}
+                  </label>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {stageClasses.map((row) => (
+                      <label
+                        key={row.id}
+                        className="flex items-center gap-2 rounded-lg bg-stone-50 p-3 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={classIds.includes(row.id)}
+                          onChange={() => toggleClass(row.id)}
+                        />{" "}
+                        {row.className} · Level {row.classLevel}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              );
+            })}
+          </div>
+        )}
+      </section>
+      {error ? (
+        <p
+          role="alert"
+          className="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+        >
+          {error}
+        </p>
       ) : null}
-    </div>
+      <div className="flex gap-3">
+        <button
+          disabled={createState.isLoading || updateState.isLoading}
+          className="rounded-lg bg-primary px-5 py-3 text-sm font-medium text-on-primary"
+        >
+          {createState.isLoading || updateState.isLoading
+            ? "Saving…"
+            : "Save complete package"}
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push("/accounting/registration-packages")}
+          className="rounded-lg border border-border px-5 py-3 text-sm"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }

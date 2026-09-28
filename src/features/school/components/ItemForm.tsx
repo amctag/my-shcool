@@ -21,6 +21,7 @@ export function ItemForm({ id }: { id?: number }) {
       id={id}
       initialName={item.data?.name ?? ""}
       initialItemTypeId={item.data ? String(item.data.itemTypeId) : ""}
+      initialPrice={item.data?.price ?? "0"}
     />
   );
 }
@@ -29,10 +30,12 @@ function ItemEditor({
   id,
   initialName,
   initialItemTypeId,
+  initialPrice,
 }: {
   id?: number;
   initialName: string;
   initialItemTypeId: string;
+  initialPrice: string;
 }) {
   const router = useRouter();
   const types = useGetDashboardItemTypesQuery();
@@ -40,13 +43,23 @@ function ItemEditor({
   const [updateItem, updateState] = useUpdateDashboardItemMutation();
   const [name, setName] = useState(initialName);
   const [itemTypeId, setItemTypeId] = useState(initialItemTypeId);
+  const [price, setPrice] = useState(initialPrice);
   const [error, setError] = useState<string | null>(null);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!name.trim() || !itemTypeId)
-      return setError("Name and item type are required.");
+    if (
+      !name.trim() ||
+      !itemTypeId ||
+      !Number.isFinite(Number(price)) ||
+      Number(price) < 0
+    )
+      return setError("Name, item type, and a valid base price are required.");
     try {
-      const body = { name: name.trim(), itemTypeId: Number(itemTypeId) };
+      const body = {
+        name: name.trim(),
+        itemTypeId: Number(itemTypeId),
+        price: Number(price),
+      };
       if (id) await updateItem({ id, body }).unwrap();
       else await createItem(body).unwrap();
       router.push("/accounting/items");
@@ -65,6 +78,17 @@ function ItemEditor({
         <input
           value={name}
           onChange={(event) => setName(event.target.value)}
+          className="mt-1.5 h-11 w-full rounded-lg border border-border px-3"
+        />
+      </label>
+      <label className="block text-sm font-medium">
+        Base Price *
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={price}
+          onChange={(event) => setPrice(event.target.value)}
           className="mt-1.5 h-11 w-full rounded-lg border border-border px-3"
         />
       </label>

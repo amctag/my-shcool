@@ -15,6 +15,7 @@ import type {
   DashboardReceiptsResponse,
   DashboardRegistrationPackage,
   DashboardRegistrationPackagesResponse,
+  DashboardPackageClassOption,
   SaveAccountBody,
   SavePaymentBody,
   SaveReceiptBody,
@@ -122,8 +123,25 @@ export const accountingApi = baseApi.injectEndpoints({
         invalidatesTags: [{ type: "DashboardAccounting", id: "RECEIPTS" }],
       },
     ),
+    updateDashboardReceipt: builder.mutation<
+      DashboardReceipt,
+      { id: number; body: SaveReceiptBody }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dashboard/accounting/receipts/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (_r, _e, { id }) => [
+        { type: "DashboardAccounting", id: "RECEIPTS" },
+        { type: "DashboardAccounting", id: `receipt-${id}` },
+      ],
+    }),
     getDashboardReceipt: builder.query<DashboardReceipt, number>({
       query: (id) => `/dashboard/accounting/receipts/${id}`,
+      providesTags: (_result, _error, id) => [
+        { type: "DashboardAccounting", id: `receipt-${id}` },
+      ],
     }),
     getDashboardPayments: builder.query<
       DashboardPaymentsResponse,
@@ -156,8 +174,25 @@ export const accountingApi = baseApi.injectEndpoints({
         ],
       },
     ),
+    updateDashboardPayment: builder.mutation<
+      DashboardPayment,
+      { id: number; body: SavePaymentBody }
+    >({
+      query: ({ id, body }) => ({
+        url: `/dashboard/accounting/payments/${id}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: (_r, _e, { id }) => [
+        { type: "DashboardAccounting", id: "PAYMENTS" },
+        { type: "DashboardAccounting", id: `payment-${id}` },
+      ],
+    }),
     getDashboardPayment: builder.query<DashboardPayment, number>({
       query: (id) => `/dashboard/accounting/payments/${id}`,
+      providesTags: (_result, _error, id) => [
+        { type: "DashboardAccounting", id: `payment-${id}` },
+      ],
     }),
     getDashboardItemTypes: builder.query<DashboardItemType[], void>({
       query: () => "/dashboard/accounting/item-types",
@@ -216,6 +251,13 @@ export const accountingApi = baseApi.injectEndpoints({
       providesTags: (_r, _e, id) => [
         { type: "DashboardAccounting", id: `package-${id}` },
       ],
+    }),
+    getDashboardPackageClasses: builder.query<
+      DashboardPackageClassOption[],
+      number
+    >({
+      query: (yearId) =>
+        `/dashboard/accounting/registration-packages/available-classes?yearId=${yearId}`,
     }),
     createDashboardRegistrationPackage: builder.mutation<
       DashboardRegistrationPackage,
@@ -323,9 +365,11 @@ export const {
   useSetupDashboardSystemAccountsMutation,
   useGetDashboardReceiptsQuery,
   useCreateDashboardReceiptMutation,
+  useUpdateDashboardReceiptMutation,
   useGetDashboardReceiptQuery,
   useGetDashboardPaymentsQuery,
   useCreateDashboardPaymentMutation,
+  useUpdateDashboardPaymentMutation,
   useGetDashboardPaymentQuery,
   useGetDashboardItemTypesQuery,
   useGetDashboardItemsQuery,
@@ -335,6 +379,7 @@ export const {
   useDeleteDashboardItemMutation,
   useGetDashboardRegistrationPackagesQuery,
   useGetDashboardRegistrationPackageQuery,
+  useGetDashboardPackageClassesQuery,
   useCreateDashboardRegistrationPackageMutation,
   useUpdateDashboardRegistrationPackageMutation,
   useDeleteDashboardRegistrationPackageMutation,

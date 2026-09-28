@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadingDots } from "@/components/dashboard/TableLoading";
+import Link from "next/link";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useGetDashboardPaymentQuery,
@@ -36,10 +37,18 @@ export function AccountingDocumentDetail({
           </p>
           <h1 className="text-2xl font-semibold">#{document.nb}</h1>
         </div>
-        <p className="text-lg font-semibold">
-          {document.currency?.symbol}
-          {Number(document.total).toFixed(2)} {document.currency?.shortCode}
-        </p>
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/accounting/${kind === "receipt" ? "receipts" : "payments"}/${id}/edit`}
+            className="rounded-lg border border-border px-3 py-2 text-sm"
+          >
+            Edit
+          </Link>
+          <p className="text-lg font-semibold">
+            {document.currency?.symbol}
+            {Number(document.total).toFixed(2)} {document.currency?.shortCode}
+          </p>
+        </div>
       </div>
       <dl className="grid gap-4 border-y border-border py-5 sm:grid-cols-2 lg:grid-cols-4">
         <div>

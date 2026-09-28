@@ -1757,6 +1757,7 @@ export type DashboardItemType = { id: number; name: string };
 export type DashboardItem = {
   id: number;
   name: string;
+  price: string;
   itemTypeId: number;
   itemType: DashboardItemType;
   createdAt: string;
@@ -1768,7 +1769,11 @@ export type DashboardItemsResponse = {
   total: number;
   totalPages: number;
 };
-export type SaveDashboardItemBody = { name: string; itemTypeId: number };
+export type SaveDashboardItemBody = {
+  name: string;
+  itemTypeId: number;
+  price: number;
+};
 
 export type DashboardRegistrationPackageItem = {
   id: number;
@@ -1810,6 +1815,22 @@ export type DashboardRegistrationPackagesResponse = {
 export type SaveDashboardRegistrationPackageBody = {
   name: string;
   yearId: number;
+  items: Array<{
+    itemId: number;
+    price: number;
+    mandatory: boolean;
+    currencyId: number;
+  }>;
+  classIds: number[];
+};
+
+export type DashboardPackageClassOption = {
+  id: number;
+  className: string;
+  classLevel: number;
+  position: number;
+  stageId: number;
+  stage: { title: string; position: number };
 };
 
 export type DashboardPaymentsResponse = {
