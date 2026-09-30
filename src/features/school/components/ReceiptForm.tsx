@@ -135,7 +135,10 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
   });
 
   const destinations = useMemo(
-    () => accounts.filter((a) => a.type === "CASH" || a.type === "GENERAL"),
+    () =>
+      accounts.filter(
+        (a) => !a.isGroup && (a.type === "CASH" || a.type === "GENERAL"),
+      ),
     [accounts],
   );
 

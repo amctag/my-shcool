@@ -67,7 +67,9 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
   const [createPayment, mutation] = useCreateDashboardPaymentMutation();
   const [updatePayment, updateState] = useUpdateDashboardPaymentMutation();
   const sources = accounts.filter(
-    (account) => account.type === "CASH" || account.type === "GENERAL",
+    (account) =>
+      !account.isGroup &&
+      (account.type === "CASH" || account.type === "GENERAL"),
   );
   const selectedCurrencyId = currencyId || String(currencies[0]?.id ?? "");
   const total = useMemo(
@@ -152,11 +154,13 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
             onChange={(event) => setDestinationId(event.target.value)}
           >
             <option value="">Select account</option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.code} — {account.name} ({account.type})
-              </option>
-            ))}
+            {accounts
+              .filter((account) => !account.isGroup)
+              .map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.code} — {account.name} ({account.type})
+                </option>
+              ))}
           </select>
         </label>
         <label className="text-sm font-medium">

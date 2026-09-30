@@ -1623,7 +1623,22 @@ export type DashboardAccount = {
   name: string;
   type: DashboardAccountType;
   protected: boolean;
+  /** Hierarchy parent id (accounts.id). NULL = root account. */
+  parentId: number | null;
+  /** GROUP accounts organize the chart and cannot receive postings. */
+  isGroup: boolean;
+  /** Whether this account has direct children in the chart. */
+  hasChildren: boolean;
   relatedPerson: DashboardAccountRelatedPerson | null;
+};
+
+export type DashboardAccountNextCode = {
+  parentId: number;
+  parentCode: string;
+  parentName: string;
+  /** Read-only preview; NULL when the branch uses manual structural codes. */
+  expectedCode: string | null;
+  autoAllocatable: boolean;
 };
 
 export type DashboardAccountsQuery = {
@@ -1643,11 +1658,17 @@ export type DashboardAccountsResponse = {
 
 export type SaveAccountBody = {
   name: string;
-  type: "GENERAL";
+  type: "GENERAL" | "PERSON";
+  /** Hierarchy parent id from the selected tree node. Omit for roots. */
+  parentId?: number;
+  /** Explicit structural code (group levels). Never set for 4111 leaves. */
+  code?: string;
+  isGroup?: boolean;
 };
 
 export type UpdateAccountBody = {
-  name: string;
+  name?: string;
+  isGroup?: boolean;
 };
 
 export type DashboardCurrency = {

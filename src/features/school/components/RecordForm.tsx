@@ -86,7 +86,9 @@ function AccountCell({
     { page: 1, limit: 20, search: debounced },
     { skip: !canSearch },
   );
-  const options = data?.items ?? [];
+  const options = (data?.items ?? []).filter(
+    (account) => !account.isGroup,
+  );
 
   return (
     <div ref={boxRef} className="relative min-w-0">

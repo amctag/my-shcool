@@ -2,6 +2,7 @@ import { baseApi } from "@/store/api/baseApi";
 import { toQueryString } from "@/lib/toQueryString";
 import type {
   DashboardAccount,
+  DashboardAccountNextCode,
   DashboardAccountingDocumentQuery,
   DashboardAccountsQuery,
   DashboardAccountsResponse,
@@ -84,7 +85,26 @@ export const accountingApi = baseApi.injectEndpoints({
           method: "POST",
           body,
         }),
-        invalidatesTags: [{ type: "DashboardAccounting", id: "ACCOUNTS" }],
+        invalidatesTags: (_result, _error, arg) => [
+          { type: "DashboardAccounting", id: "ACCOUNTS" },
+          { type: "DashboardAccounting", id: "ACCOUNT-ROOTS" },
+          ... (arg.parentId
+            ? [
+                {
+                  type: "DashboardAccounting" as const,
+                  id: `account-children-${arg.parentId}`,
+                },
+                {
+                  type: "DashboardAccounting" as const,
+                  id: `account-next-code-${arg.parentId}`,
+                },
+                {
+                  type: "DashboardAccounting" as const,
+                  id: `account-${arg.parentId}`,
+                },
+              ]
+            : []),
+        ],
       },
     ),
     updateDashboardAccount: builder.mutation<
@@ -98,6 +118,7 @@ export const accountingApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { id }) => [
         { type: "DashboardAccounting", id: "ACCOUNTS" },
+        { type: "DashboardAccounting", id: "ACCOUNT-ROOTS" },
         { type: "DashboardAccounting", id: `account-${id}` },
       ],
     }),
@@ -107,6 +128,44 @@ export const accountingApi = baseApi.injectEndpoints({
         method: "POST",
       }),
       invalidatesTags: [{ type: "DashboardAccounting", id: "ACCOUNTS" }],
+    }),
+    getDashboardRootAccounts: builder.query<DashboardAccount[], void>({
+      query: () => "/dashboard/accounting/accounts/roots",
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map((item) => ({
+                type: "DashboardAccounting" as const,
+                id: `account-${item.id}`,
+              })),
+              { type: "DashboardAccounting", id: "ACCOUNT-ROOTS" },
+            ]
+          : [{ type: "DashboardAccounting", id: "ACCOUNT-ROOTS" }],
+    }),
+    getDashboardAccountChildren: builder.query<DashboardAccount[], number>({
+      query: (id) => `/dashboard/accounting/accounts/${id}/children`,
+      providesTags: (_result, _error, id) => [
+        { type: "DashboardAccounting", id: `account-children-${id}` },
+      ],
+    }),
+    getDashboardAccountNextCode: builder.query<DashboardAccountNextCode, number>(
+      {
+        query: (id) => `/dashboard/accounting/accounts/${id}/next-code`,
+        providesTags: (_result, _error, id) => [
+          { type: "DashboardAccounting", id: `account-next-code-${id}` },
+        ],
+      },
+    ),
+    deleteDashboardAccount: builder.mutation<{ id: number }, number>({
+      query: (id) => ({
+        url: `/dashboard/accounting/accounts/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "DashboardAccounting", id: "ACCOUNTS" },
+        { type: "DashboardAccounting", id: "ACCOUNT-ROOTS" },
+        { type: "DashboardAccounting", id: `account-${id}` },
+      ],
     }),
     getDashboardReceipts: builder.query<
       DashboardReceiptsResponse,
@@ -478,6 +537,10 @@ export const {
   useGetDashboardAccountQuery,
   useCreateDashboardAccountMutation,
   useUpdateDashboardAccountMutation,
+  useGetDashboardRootAccountsQuery,
+  useGetDashboardAccountChildrenQuery,
+  useGetDashboardAccountNextCodeQuery,
+  useDeleteDashboardAccountMutation,
   useSetupDashboardSystemAccountsMutation,
   useGetDashboardReceiptsQuery,
   useCreateDashboardReceiptMutation,

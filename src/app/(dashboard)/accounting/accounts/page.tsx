@@ -1,14 +1,14 @@
 import { PageHeader } from "@/components/dashboard/PageHeader";
-import { AccountsList } from "@/features/school/components/AccountsList";
+import { ChartOfAccounts } from "@/features/school/components/ChartOfAccounts";
 
 export default function AccountsPage() {
   return (
     <div>
       <PageHeader
-        title="Accounts"
-        description="Chart of accounts for this school, including person, system, and bank accounts"
+        title="Chart of Accounts"
+        description="Hierarchical chart of accounts for this school: expand roots to reveal children, select an account for details"
       />
-      <AccountsList />
+      <ChartOfAccounts />
     </div>
   );
 }

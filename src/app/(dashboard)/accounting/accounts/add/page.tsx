@@ -1,11 +1,7 @@
-import { BackLink } from "@/components/dashboard/BackLink";
-import { AccountForm } from "@/features/school/components/AccountForm";
+import { redirect } from "next/navigation";
 
+// Root and child accounts are created from the Chart of Accounts tree so the
+// selected node always determines the hierarchy parent.
 export default function AddAccountPage() {
-  return (
-    <div className="space-y-4">
-      <BackLink href="/accounting/accounts">Back to accounts</BackLink>
-      <AccountForm />
-    </div>
-  );
+  redirect("/accounting/accounts");
 }
