@@ -362,7 +362,34 @@ function AddChildForm({
   const [createAccount, { isLoading }] = useCreateDashboardAccountMutation();
 
   const autoAllocatable = preview?.autoAllocatable === true;
-  const expectedCode = autoAllocatable ? (preview?.expectedCode ?? null) : null;
+  const expectedCode = preview?.expectedCode ?? null;
+  const requiredLength = preview?.requiredLength ?? null;
+  const childrenAllowed =
+    !preview || previewLoading || requiredLength !== null;
+
+  // Prefill with the backend suggestion until the user types their own code.
+  const effectiveCode = code !== "" ? code : (expectedCode ?? "");
+
+  function validateCode(raw: string): string | null {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return "An account code is required. Use the suggested code or enter a valid one.";
+    }
+    if (!/^\d+$/.test(trimmed)) {
+      return "Account code must contain only numeric digits.";
+    }
+    if (requiredLength !== null) {
+      if (
+        trimmed.length !== requiredLength ||
+        !trimmed.startsWith(parent.code)
+      ) {
+        return `Account code must be exactly ${requiredLength} digits starting with "${parent.code}".`;
+      }
+    } else if (!trimmed.startsWith(parent.code)) {
+      return `Account code must start with the parent code "${parent.code}".`;
+    }
+    return null;
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -371,9 +398,12 @@ function AddChildForm({
       setError("Account name is required.");
       return;
     }
-    if (!autoAllocatable && !code.trim()) {
-      setError("An explicit account code is required for this branch level.");
-      return;
+    if (!autoAllocatable) {
+      const codeError = validateCode(effectiveCode);
+      if (codeError) {
+        setError(codeError);
+        return;
+      }
     }
     setError(null);
     try {
@@ -381,7 +411,7 @@ function AddChildForm({
         name: trimmedName,
         type: isCustomerBranch ? "PERSON" : "GENERAL",
         parentId: parent.id,
-        code: autoAllocatable ? undefined : code.trim(),
+        code: autoAllocatable ? undefined : effectiveCode.trim(),
         isGroup: isCustomerBranch ? false : isGroup,
       }).unwrap();
       onDone(parent.id);
@@ -413,14 +443,14 @@ function AddChildForm({
         </label>
         <label className="block" htmlFor="child-expected-code">
           <span className="mb-1.5 block text-sm font-medium text-foreground">
-            Expected Account Code
+            Suggested Code
           </span>
           <input
             id="child-expected-code"
             value={
               previewLoading
                 ? "Calculating…"
-                : (expectedCode ?? "Manual code required")
+                : (expectedCode ?? "Not available")
             }
             readOnly
             disabled
@@ -428,6 +458,16 @@ function AddChildForm({
           />
         </label>
       </div>
+      {requiredLength !== null ? (
+        <p className="text-xs text-muted" role="note">
+          Required child format: {requiredLength} digits · Code must start
+          with: <span className="font-semibold tabular-nums">{parent.code}</span>
+        </p>
+      ) : !previewLoading ? (
+        <p className="text-xs text-red-600" role="alert">
+          This account cannot have children (final posting level).
+        </p>
+      ) : null}
       <label className="block" htmlFor="child-name">
         <span className="mb-1.5 block text-sm font-medium text-foreground">
           Account Name *
@@ -449,14 +489,16 @@ function AddChildForm({
           </span>
           <input
             id="child-code"
-            value={autoAllocatable ? (expectedCode ?? "") : code}
+            value={autoAllocatable ? (expectedCode ?? "") : effectiveCode}
             onChange={(event) => setCode(event.target.value)}
             readOnly={autoAllocatable}
             disabled={autoAllocatable || isLoading}
             placeholder={
               autoAllocatable
                 ? "Allocated by the backend"
-                : `Must extend ${parent.code}`
+                : requiredLength !== null
+                  ? `Exactly ${requiredLength} digits starting with ${parent.code}`
+                  : `Must extend ${parent.code}`
             }
             maxLength={255}
             className={`${inputClass} tabular-nums`}
@@ -509,7 +551,11 @@ function AddChildForm({
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={isLoading} className={primaryButtonClass}>
+        <button
+          type="submit"
+          disabled={isLoading || !childrenAllowed}
+          className={primaryButtonClass}
+        >
           {isLoading ? "Saving…" : "Save"}
         </button>
         <button
@@ -547,12 +593,17 @@ function AddRootForm({
       setError("Account name is required.");
       return;
     }
+    const trimmedCode = code.trim();
+    if (!/^\d$/.test(trimmedCode)) {
+      setError("Root account code is required: exactly one numeric digit (0-9).");
+      return;
+    }
     setError(null);
     try {
       await createAccount({
         name: trimmedName,
         type: "GENERAL",
-        code: code.trim() || undefined,
+        code: trimmedCode,
         isGroup,
       }).unwrap();
       onDone();
@@ -586,16 +637,20 @@ function AddRootForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block" htmlFor="root-code">
           <span className="mb-1.5 block text-sm font-medium text-foreground">
-            Account Code
+            Account Code *
           </span>
           <input
             id="root-code"
             value={code}
             onChange={(event) => setCode(event.target.value)}
-            placeholder="Optional — auto-generated when empty"
-            maxLength={255}
+            placeholder="e.g. 9 — exactly one digit"
+            maxLength={1}
+            inputMode="numeric"
             className={`${inputClass} tabular-nums`}
           />
+          <span className="mt-1.5 block text-xs text-muted">
+            Root codes are exactly one numeric digit (0–9).
+          </span>
         </label>
         <label className="block" htmlFor="root-type">
           <span className="mb-1.5 block text-sm font-medium text-foreground">

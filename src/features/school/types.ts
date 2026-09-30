@@ -1636,9 +1636,11 @@ export type DashboardAccountNextCode = {
   parentId: number;
   parentCode: string;
   parentName: string;
-  /** Read-only preview; NULL when the branch uses manual structural codes. */
+  /** Suggested next child code; NULL when the parent cannot have children. */
   expectedCode: string | null;
   autoAllocatable: boolean;
+  /** Exact required digit length for a direct child; NULL when not allowed. */
+  requiredLength: number | null;
 };
 
 export type DashboardAccountsQuery = {
