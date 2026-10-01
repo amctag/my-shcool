@@ -1712,7 +1712,7 @@ export type ReceiptAllocationInput = {
 };
 
 export type SaveReceiptBody = {
-  parentId: number;
+  accountId: number;
   currencyId: number;
   allocations: ReceiptAllocationInput[];
   date?: string;
@@ -1752,7 +1752,7 @@ export type DashboardReceiptCurrency = {
 export type DashboardReceipt = {
   id: number;
   nb: number;
-  parentId: number;
+  parentId: number | null;
   parentName: string;
   accountId: number;
   accountCode: string;

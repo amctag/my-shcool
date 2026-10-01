@@ -16,10 +16,7 @@ import type {
   DashboardPostingLookup,
   DashboardReceipt,
 } from "@/features/school/types";
-import {
-  PostingAccountSelect,
-  postingAccountLabel,
-} from "@/features/school/components/PostingAccountSelect";
+import { PostingAccountSelect } from "@/features/school/components/PostingAccountSelect";
 
 const inputClass =
   "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted/80 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -191,12 +188,6 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
       setFormError("Select a To account first.");
       return;
     }
-    if (!toAccount.parentId) {
-      setFormError(
-        "This account is not linked to a parent. Create the parent account from the Parents page first.",
-      );
-      return;
-    }
     if (!selectedCurrency) {
       setFormError("Select a currency first.");
       return;
@@ -241,7 +232,7 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
     setFormError(null);
     try {
       const body = {
-        parentId: toAccount.parentId,
+        accountId: toAccount.id,
         currencyId: selectedCurrency.id,
         date: date || undefined,
         allocations,
@@ -319,12 +310,6 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
           />
         </Field>
       </div>
-
-      {toAccount ? (
-        <p className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-          {postingAccountLabel(toAccount)}
-        </p>
-      ) : null}
 
       <Field id="receipt-description" label="Description">
         <input
