@@ -17,6 +17,8 @@ import type {
   DashboardParentRegistration,
   DashboardPayment,
   DashboardPaymentsResponse,
+  DashboardPostingLookup,
+  DashboardPostingLookupQuery,
   DashboardReceipt,
   DashboardReceiptsResponse,
   DashboardRecord,
@@ -148,6 +150,15 @@ export const accountingApi = baseApi.injectEndpoints({
         { type: "DashboardAccounting", id: `account-children-${id}` },
       ],
     }),
+    getDashboardPostingLookup: builder.query<
+      DashboardPostingLookup[],
+      DashboardPostingLookupQuery
+    >({
+      query: ({ family, search, limit }) =>
+        `/dashboard/accounting/accounts/posting-lookup${toQueryString({ family, search, limit: limit ?? 20 })}`,
+      keepUnusedDataFor: 60,
+      providesTags: [{ type: "DashboardAccounting", id: "POSTING-LOOKUP" }],
+    }),
     getDashboardAccountNextCode: builder.query<DashboardAccountNextCode, number>(
       {
         query: (id) => `/dashboard/accounting/accounts/${id}/next-code`,
@@ -171,8 +182,8 @@ export const accountingApi = baseApi.injectEndpoints({
       DashboardReceiptsResponse,
       DashboardAccountingDocumentQuery
     >({
-      query: ({ page, limit, search, currencyId, dateFrom, dateTo }) =>
-        `/dashboard/accounting/receipts${toQueryString({ page, limit, search, currencyId, dateFrom, dateTo })}`,
+      query: ({ page, limit, search, currencyId, dateFrom, dateTo, accountId }) =>
+        `/dashboard/accounting/receipts${toQueryString({ page, limit, search, currencyId, dateFrom, dateTo, accountId })}`,
       keepUnusedDataFor: 60,
       providesTags: (result) =>
         result
@@ -219,8 +230,8 @@ export const accountingApi = baseApi.injectEndpoints({
       DashboardPaymentsResponse,
       DashboardAccountingDocumentQuery
     >({
-      query: ({ page, limit, search, currencyId, dateFrom, dateTo }) =>
-        `/dashboard/accounting/payments${toQueryString({ page, limit, search, currencyId, dateFrom, dateTo })}`,
+      query: ({ page, limit, search, currencyId, dateFrom, dateTo, accountId }) =>
+        `/dashboard/accounting/payments${toQueryString({ page, limit, search, currencyId, dateFrom, dateTo, accountId })}`,
       keepUnusedDataFor: 60,
       providesTags: (result) =>
         result
@@ -540,6 +551,7 @@ export const {
   useGetDashboardRootAccountsQuery,
   useGetDashboardAccountChildrenQuery,
   useGetDashboardAccountNextCodeQuery,
+  useGetDashboardPostingLookupQuery,
   useDeleteDashboardAccountMutation,
   useSetupDashboardSystemAccountsMutation,
   useGetDashboardReceiptsQuery,

@@ -1,20 +1,11 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, MinusCircle, PlusCircle } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
-import { useGetParentOptionsQuery } from "@/features/school/api/parentsApi";
 import {
   useCreateDashboardReceiptMutation,
-  useGetDashboardAccountsQuery,
   useGetDashboardCurrenciesQuery,
   useUpdateDashboardReceiptMutation,
 } from "@/features/school/api/accountingApi";
@@ -22,9 +13,13 @@ import { selectAuthReady } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 import type {
   DashboardCurrency,
-  DashboardParentOption,
+  DashboardPostingLookup,
   DashboardReceipt,
 } from "@/features/school/types";
+import {
+  PostingAccountSelect,
+  postingAccountLabel,
+} from "@/features/school/components/PostingAccountSelect";
 
 const inputClass =
   "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted/80 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -34,14 +29,16 @@ function Field({
   label,
   required,
   children,
+  className,
 }: {
   id: string;
   label: string;
   required?: boolean;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <label htmlFor={id} className="block min-w-0">
+    <label htmlFor={id} className={`block min-w-0 ${className ?? ""}`}>
       <span className="mb-1.5 block text-sm font-medium text-foreground">
         {label}
         {required ? " *" : ""}
@@ -49,6 +46,13 @@ function Field({
       {children}
     </label>
   );
+}
+
+function todayLocal(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 function newIdempotencyKey(): string {
@@ -67,13 +71,13 @@ function newRowKey(): string {
 
 type AllocationRow = {
   key: string;
-  accountId: string;
+  account: DashboardPostingLookup | null;
   amount: string;
   description: string;
 };
 
 function emptyRow(): AllocationRow {
-  return { key: newRowKey(), accountId: "", amount: "", description: "" };
+  return { key: newRowKey(), account: null, amount: "", description: "" };
 }
 
 function formatTotal(value: number, shortCode: string): string {
@@ -87,60 +91,52 @@ function formatTotal(value: number, shortCode: string): string {
 export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
   const router = useRouter();
   const ready = useAppSelector(selectAuthReady);
-  const [parentQuery, setParentQuery] = useState(
-    initial ? `${initial.parentName} — Account ${initial.accountCode}` : "",
-  );
-  const [debounced, setDebounced] = useState("");
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [selectedParent, setSelectedParent] =
-    useState<DashboardParentOption | null>(
+  const [toAccount, setToAccount] =
+    useState<DashboardPostingLookup | null>(
       initial
         ? {
-            id: initial.parentId,
-            fullName: initial.parentName,
-            lastName: initial.parentName,
-            accountId: initial.accountId,
-            hasAccountingAccount: true,
-            accountCode: initial.accountCode,
+            id: initial.accountId,
+            code: initial.accountCode,
+            name: initial.parentName,
+            personName: initial.parentName,
+            parentId: initial.parentId,
           }
         : null,
     );
   const [currencyId, setCurrencyId] = useState(
     initial?.currencyId ? String(initial.currencyId) : "",
   );
-  const [date, setDate] = useState(initial?.dateCreated.slice(0, 10) ?? "");
+  const [date, setDate] = useState(
+    initial?.dateCreated.slice(0, 10) ?? todayLocal(),
+  );
   const [rows, setRows] = useState<AllocationRow[]>(
     initial?.allocations.map((row) => ({
       key: newRowKey(),
-      accountId: String(row.accountId),
+      account: {
+        id: row.accountId,
+        code: row.accountCode,
+        name: row.accountName,
+        personName: null,
+        parentId: null,
+      },
       amount: row.amount,
       description: row.description ?? "",
     })) ?? [emptyRow()],
   );
   const [description, setDescription] = useState(initial?.description ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
-  const [comments, setComments] = useState(initial?.comments ?? "");
+  const [internalComment, setInternalComment] = useState(
+    initial?.comments ?? "",
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [created, setCreated] = useState<DashboardReceipt | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
   const [createReceipt, { isLoading }] = useCreateDashboardReceiptMutation();
   const [updateReceipt, updateState] = useUpdateDashboardReceiptMutation();
-  const boxRef = useRef<HTMLDivElement>(null);
 
   const { data: currencies = [] } = useGetDashboardCurrenciesQuery(undefined, {
     skip: !ready,
   });
-  const { data: accounts = [] } = useGetDashboardAccountsQuery(undefined, {
-    skip: !ready,
-  });
-
-  const destinations = useMemo(
-    () =>
-      accounts.filter(
-        (a) => !a.isGroup && (a.type === "CASH" || a.type === "GENERAL"),
-      ),
-    [accounts],
-  );
 
   const selectedCurrency: DashboardCurrency | undefined = useMemo(() => {
     if (currencyId) {
@@ -164,39 +160,6 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
     return Math.round(sum * 100) / 100;
   }, [rows]);
 
-  const canSearch = ready && pickerOpen && debounced.trim().length >= 1;
-  const { data: options = [], isFetching: isSearching } =
-    useGetParentOptionsQuery(debounced.trim(), { skip: !canSearch });
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebounced(parentQuery), 250);
-    return () => window.clearTimeout(timer);
-  }, [parentQuery]);
-
-  useEffect(() => {
-    function onPointerDown(event: MouseEvent) {
-      if (!boxRef.current?.contains(event.target as Node)) {
-        setPickerOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
-  }, []);
-
-  const selectedHasAccount = selectedParent?.hasAccountingAccount === true;
-
-  function pick(parent: DashboardParentOption) {
-    setSelectedParent(parent);
-    setParentQuery(
-      parent.accountCode
-        ? `${parent.fullName} — Account ${parent.accountCode}`
-        : parent.fullName,
-    );
-    setPickerOpen(false);
-    setFormError(null);
-    setCreated(null);
-  }
-
   function updateRow(key: string, patch: Partial<AllocationRow>) {
     setRows((prev) =>
       prev.map((row) => (row.key === key ? { ...row, ...patch } : row)),
@@ -210,14 +173,13 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
   }
 
   function resetForm() {
-    setSelectedParent(null);
-    setParentQuery("");
+    setToAccount(null);
     setCurrencyId("");
-    setDate("");
+    setDate(todayLocal());
     setRows([emptyRow()]);
     setDescription("");
     setNotes("");
-    setComments("");
+    setInternalComment("");
     setCreated(null);
     setFormError(null);
     setIdempotencyKey(newIdempotencyKey());
@@ -225,13 +187,13 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!selectedParent) {
-      setFormError("Select a parent first.");
+    if (!toAccount) {
+      setFormError("Select a To account first.");
       return;
     }
-    if (!selectedHasAccount) {
+    if (!toAccount.parentId) {
       setFormError(
-        "This parent has no accounting account. Create one from the Parents page first.",
+        "This account is not linked to a parent. Create the parent account from the Parents page first.",
       );
       return;
     }
@@ -239,26 +201,26 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
       setFormError("Select a currency first.");
       return;
     }
-    const seen = new Set<string>();
+    const seen = new Set<number>();
     const allocations: Array<{
       accountId: number;
       amount: number;
       description?: string;
     }> = [];
     for (const [index, row] of rows.entries()) {
-      if (!row.accountId) {
+      if (!row.account) {
         setFormError(
           `Allocation row ${index + 1}: choose a destination account.`,
         );
         return;
       }
-      if (seen.has(row.accountId)) {
+      if (seen.has(row.account.id)) {
         setFormError(
           "Each destination account may appear only once per receipt.",
         );
         return;
       }
-      seen.add(row.accountId);
+      seen.add(row.account.id);
       const parsed = Number(row.amount);
       if (!Number.isFinite(parsed) || parsed <= 0) {
         setFormError(
@@ -267,7 +229,7 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
         return;
       }
       allocations.push({
-        accountId: Number(row.accountId),
+        accountId: row.account.id,
         amount: Math.round(parsed * 100) / 100,
         description: row.description.trim() || undefined,
       });
@@ -279,13 +241,13 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
     setFormError(null);
     try {
       const body = {
-        parentId: selectedParent.id,
+        parentId: toAccount.parentId,
         currencyId: selectedCurrency.id,
         date: date || undefined,
         allocations,
         description: description.trim() || undefined,
         notes: notes.trim() || undefined,
-        comments: comments.trim() || undefined,
+        comments: internalComment.trim() || undefined,
         idempotencyKey: initial ? undefined : idempotencyKey,
       };
       const receipt = initial
@@ -298,110 +260,37 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
     }
   }
 
-  const matches = useMemo(() => options, [options]);
   const currencyShortCode = selectedCurrency?.shortCode ?? "";
 
   return (
     <form
       onSubmit={onSubmit}
-      className="mx-auto max-w-2xl space-y-5 rounded-2xl border border-border bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+      className="mx-auto w-full max-w-5xl space-y-6 rounded-2xl border border-border bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-8"
     >
       <div>
         <h1 className="text-xl font-semibold text-foreground">
           {initial ? `Edit receipt #${initial.nb}` : "New receipt"}
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Receive money from a parent and split it across cash and bank
-          accounts. One parent credit is posted for the total.
+          Receive money and split it across financial accounts. Destination
+          account(s) are debited; the To account is credited for the total.
         </p>
       </div>
 
-      <Field id="receipt-parent" label="Parent" required>
-        <div ref={boxRef} className="relative">
-          <input
-            id="receipt-parent"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-expanded={pickerOpen}
-            aria-controls="receipt-parent-list"
-            autoComplete="off"
-            value={parentQuery}
-            placeholder="Type parent first, middle, or last name"
-            onFocus={() => setPickerOpen(true)}
-            onChange={(event) => {
-              setParentQuery(event.target.value);
-              setPickerOpen(true);
-              setSelectedParent(null);
+      <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr_1fr]">
+        <Field id="receipt-to-account" label="To account" required>
+          <PostingAccountSelect
+            id="receipt-to-account"
+            family="4"
+            value={toAccount}
+            onChange={(account) => {
+              setToAccount(account);
+              setFormError(null);
               setCreated(null);
             }}
-            className={inputClass}
+            placeholder="Type person name or account code"
           />
-          {pickerOpen ? (
-            <ul
-              id="receipt-parent-list"
-              role="listbox"
-              className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-border bg-white py-1 shadow-[0_8px_30px_rgb(0,0,0,0.08)]"
-            >
-              {debounced.trim().length < 1 ? (
-                <li className="px-3 py-3 text-sm text-muted">
-                  Type a first, middle, or last name
-                </li>
-              ) : isSearching ? (
-                <li className="px-3 py-3 text-sm text-muted">Searching…</li>
-              ) : matches.length === 0 ? (
-                <li className="px-3 py-3 text-sm text-muted">
-                  No parents match
-                </li>
-              ) : (
-                matches.map((parent) => (
-                  <li
-                    key={parent.id}
-                    role="option"
-                    aria-selected={selectedParent?.id === parent.id}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => pick(parent)}
-                      className="flex w-full cursor-pointer flex-col gap-0.5 px-3 py-2 text-left hover:bg-stone-50"
-                    >
-                      <span className="text-sm font-medium text-foreground">
-                        {parent.accountCode
-                          ? `${parent.fullName} — Account ${parent.accountCode}`
-                          : parent.fullName}
-                      </span>
-                      <span
-                        className={`text-xs ${parent.hasAccountingAccount ? "text-green-700" : "text-stone-500"}`}
-                      >
-                        {parent.hasAccountingAccount
-                          ? `Account ${parent.accountCode}`
-                          : "No accounting account"}
-                      </span>
-                    </button>
-                  </li>
-                ))
-              )}
-            </ul>
-          ) : null}
-        </div>
-      </Field>
-
-      {selectedParent ? (
-        selectedHasAccount ? (
-          <p className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-            {selectedParent.fullName} · Account {selectedParent.accountCode}
-          </p>
-        ) : (
-          <p
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            This parent has no accounting account. Create one from the Parents
-            page first — receipts cannot create accounts.
-          </p>
-        )
-      ) : null}
-
-      <div className="grid gap-5 sm:grid-cols-2">
+        </Field>
         <Field id="receipt-currency" label="Currency" required>
           <select
             id="receipt-currency"
@@ -420,15 +309,6 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
             )}
           </select>
         </Field>
-        <Field id="receipt-description" label="Description">
-          <input
-            id="receipt-description"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="e.g. Tuition installment"
-            className={inputClass}
-          />
-        </Field>
         <Field id="receipt-date" label="Date">
           <input
             id="receipt-date"
@@ -440,6 +320,22 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
         </Field>
       </div>
 
+      {toAccount ? (
+        <p className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+          {postingAccountLabel(toAccount)}
+        </p>
+      ) : null}
+
+      <Field id="receipt-description" label="Description">
+        <input
+          id="receipt-description"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+          placeholder="e.g. Tuition installment"
+          className={inputClass}
+        />
+      </Field>
+
       <fieldset>
         <legend className="mb-1.5 block text-sm font-medium text-foreground">
           Allocations *
@@ -448,28 +344,20 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
           {rows.map((row, index) => (
             <div
               key={row.key}
-              className="grid gap-3 rounded-xl border border-border bg-stone-50/60 p-3 sm:grid-cols-[1fr_9rem_auto]"
+              className="grid gap-3 rounded-xl border border-border bg-stone-50/60 p-3 lg:grid-cols-[1.6fr_10rem_1fr_auto]"
             >
-              <label className="block min-w-0">
+              <div className="min-w-0">
                 <span className="mb-1 block text-xs font-medium text-muted">
                   Destination account
                 </span>
-                <select
-                  aria-label={`Allocation ${index + 1} destination account`}
-                  value={row.accountId}
-                  onChange={(event) =>
-                    updateRow(row.key, { accountId: event.target.value })
-                  }
-                  className={inputClass}
-                >
-                  <option value="">Choose account</option>
-                  {destinations.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.code} — {account.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <PostingAccountSelect
+                  id={`receipt-destination-${row.key}`}
+                  family="5"
+                  value={row.account}
+                  onChange={(account) => updateRow(row.key, { account })}
+                  placeholder="Type account name or code"
+                />
+              </div>
               <label className="block min-w-0">
                 <span className="mb-1 block text-xs font-medium text-muted">
                   Amount
@@ -541,12 +429,12 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
         />
       </Field>
 
-      <Field id="receipt-comments" label="Comments">
+      <Field id="receipt-internal-comment" label="Internal comment">
         <textarea
-          id="receipt-comments"
-          value={comments}
-          onChange={(event) => setComments(event.target.value)}
-          placeholder="Optional comments"
+          id="receipt-internal-comment"
+          value={internalComment}
+          onChange={(event) => setInternalComment(event.target.value)}
+          placeholder="Optional internal comment — never shown on customer documents"
           rows={3}
           className={`${inputClass} min-h-[5rem] resize-y py-3`}
         />
@@ -586,26 +474,17 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
       <div className="flex flex-wrap gap-3 pt-1">
         <button
           type="submit"
-          disabled={
-            isLoading ||
-            updateState.isLoading ||
-            !selectedParent ||
-            !selectedHasAccount
-          }
+          disabled={isLoading || updateState.isLoading || !toAccount}
           className="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-primary px-5 text-sm font-medium text-on-primary hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isLoading || updateState.isLoading
-            ? "Saving…"
-            : initial
-              ? "Save receipt"
-              : "Post receipt"}
+          {isLoading || updateState.isLoading ? "Saving…" : "Save"}
         </button>
         <button
           type="button"
           onClick={() => router.push("/accounting/receipts")}
           className="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg border border-border bg-white px-5 text-sm font-medium text-foreground hover:bg-stone-50"
         >
-          Back to receipts
+          Back
         </button>
       </div>
     </form>

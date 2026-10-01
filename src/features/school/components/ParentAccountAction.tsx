@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Loader2, Plus, Wallet, X } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useCreateParentAccountingAccountMutation } from "@/features/school/api/parentsApi";
 
@@ -212,9 +212,9 @@ export function ParentAccountAction({
           onClick={() => setAccountInformation(accountCode)}
           aria-label={`View accounting account ${accountCode}`}
           title={`Account ${accountCode}`}
-          className="inline-flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-4 text-sm font-medium text-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="inline-flex h-8 cursor-pointer items-center rounded-lg border border-border bg-white px-2.5 font-mono text-xs font-medium tabular-nums text-foreground transition-colors duration-200 hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          Account {accountCode}
+          {accountCode}
         </button>
       ) : (
         <button
@@ -234,10 +234,16 @@ export function ParentAccountAction({
               ? "Accounting account is managed by the parent's school"
               : "Create accounting account"
           }
-          className="inline-flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-on-primary transition-colors duration-200 hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-white text-muted transition-colors duration-200 hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Plus aria-hidden className="h-4 w-4" />
-          Create Account
+          {accountState.isLoading ? (
+            <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+          ) : (
+            <span aria-hidden className="relative inline-flex">
+              <Wallet className="h-4 w-4" />
+              <Plus className="absolute -right-1.5 -top-1.5 h-3 w-3 rounded-full bg-white" />
+            </span>
+          )}
         </button>
       )}
       {pendingAccount ? (

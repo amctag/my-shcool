@@ -1,9 +1,7 @@
 "use client";
 
 import {
-  useEffect,
   useMemo,
-  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -11,7 +9,6 @@ import {
 import { useRouter } from "next/navigation";
 import { CheckCircle2, MinusCircle, PlusCircle } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
-import { useGetParentOptionsQuery } from "@/features/school/api/parentsApi";
 import {
   useCreateDashboardInvoiceMutation,
   useGetDashboardCurrenciesQuery,
@@ -23,8 +20,12 @@ import { useAppSelector } from "@/store/hooks";
 import type {
   DashboardCurrency,
   DashboardInvoice,
-  DashboardParentOption,
+  DashboardPostingLookup,
 } from "@/features/school/types";
+import {
+  PostingAccountSelect,
+  postingAccountLabel,
+} from "@/features/school/components/PostingAccountSelect";
 
 const inputClass =
   "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted/80 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
@@ -93,23 +94,26 @@ function formatTotal(value: number, shortCode: string): string {
   return shortCode ? `Total: ${formatted} ${shortCode}` : `Total: ${formatted}`;
 }
 
+function todayLocal(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 export function InvoiceForm() {
   const router = useRouter();
   const ready = useAppSelector(selectAuthReady);
-  const [parentQuery, setParentQuery] = useState("");
-  const [debounced, setDebounced] = useState("");
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [selectedParent, setSelectedParent] =
-    useState<DashboardParentOption | null>(null);
+  const [toAccount, setToAccount] =
+    useState<DashboardPostingLookup | null>(null);
   const [currencyId, setCurrencyId] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(todayLocal());
   const [rows, setRows] = useState<InvoiceRow[]>([emptyRow()]);
   const [description, setDescription] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [created, setCreated] = useState<DashboardInvoice | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
   const [createInvoice, { isLoading }] = useCreateDashboardInvoiceMutation();
-  const boxRef = useRef<HTMLDivElement>(null);
 
   const { data: currencies = [] } = useGetDashboardCurrenciesQuery(undefined, {
     skip: !ready,
@@ -125,8 +129,8 @@ export function InvoiceForm() {
   );
 
   const { data: parentRegistrations = [] } =
-    useGetDashboardParentRegistrationsQuery(selectedParent?.id ?? 0, {
-      skip: !ready || !selectedParent,
+    useGetDashboardParentRegistrationsQuery(toAccount?.parentId ?? 0, {
+      skip: !ready || !toAccount?.parentId,
     });
 
   const selectedCurrency: DashboardCurrency | undefined = useMemo(() => {
@@ -157,35 +161,8 @@ export function InvoiceForm() {
     return Math.round(sum * 100) / 100;
   }, [rows]);
 
-  const canSearch = ready && pickerOpen && debounced.trim().length >= 1;
-  const { data: options = [], isFetching: isSearching } =
-    useGetParentOptionsQuery(debounced.trim(), { skip: !canSearch });
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebounced(parentQuery), 250);
-    return () => window.clearTimeout(timer);
-  }, [parentQuery]);
-
-  useEffect(() => {
-    function onPointerDown(event: MouseEvent) {
-      if (!boxRef.current?.contains(event.target as Node)) {
-        setPickerOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
-  }, []);
-
-  const selectedHasAccount = selectedParent?.hasAccountingAccount === true;
-
-  function pick(parent: DashboardParentOption) {
-    setSelectedParent(parent);
-    setParentQuery(
-      parent.accountCode
-        ? `${parent.fullName} — Account ${parent.accountCode}`
-        : parent.fullName,
-    );
-    setPickerOpen(false);
+  function pickToAccount(account: DashboardPostingLookup | null) {
+    setToAccount(account);
     setFormError(null);
     setCreated(null);
     setRows([emptyRow()]);
@@ -215,10 +192,9 @@ export function InvoiceForm() {
   }
 
   function resetForm() {
-    setSelectedParent(null);
-    setParentQuery("");
+    setToAccount(null);
     setCurrencyId("");
-    setDate("");
+    setDate(todayLocal());
     setRows([emptyRow()]);
     setDescription("");
     setCreated(null);
@@ -228,13 +204,13 @@ export function InvoiceForm() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!selectedParent) {
-      setFormError("Select a parent first.");
+    if (!toAccount) {
+      setFormError("Select a To account first.");
       return;
     }
-    if (!selectedHasAccount) {
+    if (!toAccount.parentId) {
       setFormError(
-        "This parent has no accounting account. Create one from the Parents page first.",
+        "This account is not linked to a parent. Create the parent account from the Parents page first.",
       );
       return;
     }
@@ -281,7 +257,7 @@ export function InvoiceForm() {
     setFormError(null);
     try {
       const invoice = await createInvoice({
-        parentId: selectedParent.id,
+        parentId: toAccount.parentId,
         currencyId: selectedCurrency.id,
         date: date || undefined,
         details,
@@ -299,103 +275,27 @@ export function InvoiceForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="mx-auto max-w-2xl space-y-5 rounded-2xl border border-border bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+      className="mx-auto w-full max-w-5xl space-y-6 rounded-2xl border border-border bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sm:p-8"
     >
       <div>
         <h1 className="text-xl font-semibold text-foreground">New invoice</h1>
         <p className="mt-1 text-sm text-muted">
-          Bill a parent manually. One parent debit and one sales credit are
+          Bill a To account manually. One entity debit and one sales credit are
           posted for the total. Optionally link each line to a student
           registration.
         </p>
       </div>
 
-      <Field id="invoice-parent" label="Parent" required>
-        <div ref={boxRef} className="relative">
-          <input
-            id="invoice-parent"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-expanded={pickerOpen}
-            aria-controls="invoice-parent-list"
-            autoComplete="off"
-            value={parentQuery}
-            placeholder="Type parent first, middle, or last name"
-            onFocus={() => setPickerOpen(true)}
-            onChange={(event) => {
-              setParentQuery(event.target.value);
-              setPickerOpen(true);
-              setSelectedParent(null);
-              setCreated(null);
-            }}
-            className={inputClass}
+      <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr_1fr]">
+        <Field id="invoice-to-account" label="To account" required>
+          <PostingAccountSelect
+            id="invoice-to-account"
+            family="4"
+            value={toAccount}
+            onChange={pickToAccount}
+            placeholder="Type person name or account code"
           />
-          {pickerOpen ? (
-            <ul
-              id="invoice-parent-list"
-              role="listbox"
-              className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-border bg-white py-1 shadow-[0_8px_30px_rgb(0,0,0,0.08)]"
-            >
-              {debounced.trim().length < 1 ? (
-                <li className="px-3 py-3 text-sm text-muted">
-                  Type a first, middle, or last name
-                </li>
-              ) : isSearching ? (
-                <li className="px-3 py-3 text-sm text-muted">Searching…</li>
-              ) : options.length === 0 ? (
-                <li className="px-3 py-3 text-sm text-muted">
-                  No parents match
-                </li>
-              ) : (
-                options.map((parent) => (
-                  <li
-                    key={parent.id}
-                    role="option"
-                    aria-selected={selectedParent?.id === parent.id}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => pick(parent)}
-                      className="flex w-full cursor-pointer flex-col gap-0.5 px-3 py-2 text-left hover:bg-stone-50"
-                    >
-                      <span className="text-sm font-medium text-foreground">
-                        {parent.accountCode
-                          ? `${parent.fullName} — Account ${parent.accountCode}`
-                          : parent.fullName}
-                      </span>
-                      <span
-                        className={`text-xs ${parent.hasAccountingAccount ? "text-green-700" : "text-stone-500"}`}
-                      >
-                        {parent.hasAccountingAccount
-                          ? `Account ${parent.accountCode}`
-                          : "No accounting account"}
-                      </span>
-                    </button>
-                  </li>
-                ))
-              )}
-            </ul>
-          ) : null}
-        </div>
-      </Field>
-
-      {selectedParent ? (
-        selectedHasAccount ? (
-          <p className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
-            {selectedParent.fullName} · Account {selectedParent.accountCode}
-          </p>
-        ) : (
-          <p
-            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
-            role="alert"
-          >
-            This parent has no accounting account. Create one from the Parents
-            page first — invoices cannot create accounts.
-          </p>
-        )
-      ) : null}
-
-      <div className="grid gap-5 sm:grid-cols-2">
+        </Field>
         <Field id="invoice-currency" label="Currency" required>
           <select
             id="invoice-currency"
@@ -424,6 +324,22 @@ export function InvoiceForm() {
           />
         </Field>
       </div>
+
+      {toAccount ? (
+        toAccount.parentId ? (
+          <p className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+            {postingAccountLabel(toAccount)}
+          </p>
+        ) : (
+          <p
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
+            This account is not linked to a parent. Create the parent account
+            from the Parents page first — invoices cannot create accounts.
+          </p>
+        )
+      ) : null}
 
       <Field id="invoice-description" label="Description">
         <input
@@ -515,7 +431,7 @@ export function InvoiceForm() {
                       })
                     }
                     className={inputClass}
-                    disabled={!selectedParent}
+                    disabled={!toAccount?.parentId}
                   >
                     <option value="">No registration</option>
                     {parentRegistrations.map((registration) => (
@@ -602,10 +518,10 @@ export function InvoiceForm() {
       <div className="flex flex-wrap gap-3 pt-1">
         <button
           type="submit"
-          disabled={isLoading || !selectedParent || !selectedHasAccount}
+          disabled={isLoading || !toAccount?.parentId}
           className="inline-flex h-11 cursor-pointer items-center justify-center rounded-lg bg-primary px-5 text-sm font-medium text-on-primary hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isLoading ? "Saving…" : "Post invoice"}
+          {isLoading ? "Saving…" : "Save"}
         </button>
         <button
           type="button"

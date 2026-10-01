@@ -117,7 +117,7 @@ export function AccountingDocumentDetail({
           <dd>{document.notes ?? "—"}</dd>
         </div>
         <div>
-          <dt className="text-xs uppercase text-muted">Comments</dt>
+          <dt className="text-xs uppercase text-muted">Internal comment</dt>
           <dd>{document.comments ?? "—"}</dd>
         </div>
       </dl>

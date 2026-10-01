@@ -1688,6 +1688,21 @@ export type DashboardAccountingDocumentQuery = {
   currencyId?: number;
   dateFrom?: string;
   dateTo?: string;
+  accountId?: number;
+};
+
+export type DashboardPostingLookupQuery = {
+  family: "4" | "5";
+  search?: string;
+  limit?: number;
+};
+
+export type DashboardPostingLookup = {
+  id: number;
+  code: string;
+  name: string;
+  personName: string | null;
+  parentId: number | null;
 };
 
 export type ReceiptAllocationInput = {

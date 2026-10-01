@@ -1,32 +1,67 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useCreateDashboardPaymentMutation,
-  useGetDashboardAccountsQuery,
   useGetDashboardCurrenciesQuery,
   useUpdateDashboardPaymentMutation,
 } from "@/features/school/api/accountingApi";
 import { selectAccessToken, selectAuthReady } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
-import type { DashboardPayment } from "@/features/school/types";
+import type {
+  DashboardPayment,
+  DashboardPostingLookup,
+} from "@/features/school/types";
+import { PostingAccountSelect } from "@/features/school/components/PostingAccountSelect";
 
 const inputClass =
   "h-11 w-full rounded-xl border border-border bg-white px-3 text-sm text-foreground outline-none focus:border-primary";
+
+function Field({
+  id,
+  label,
+  required,
+  children,
+  className,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <label htmlFor={id} className={`block min-w-0 ${className ?? ""}`}>
+      <span className="mb-1.5 block text-sm font-medium text-foreground">
+        {label}
+        {required ? " *" : ""}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function todayLocal(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 type SourceRow = {
   key: string;
-  accountId: string;
+  account: DashboardPostingLookup | null;
   amount: string;
   description: string;
 };
 const rowKey = () => crypto.randomUUID();
 const emptyRow = (): SourceRow => ({
   key: rowKey(),
-  accountId: "",
+  account: null,
   amount: "",
   description: "",
 });
@@ -36,20 +71,39 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
   const ready = useAppSelector(selectAuthReady);
   const token = useAppSelector(selectAccessToken);
   const canFetch = ready && Boolean(token);
-  const [destinationId, setDestinationId] = useState(
-    initial ? String(initial.accountId) : "",
-  );
+  const [destination, setDestination] =
+    useState<DashboardPostingLookup | null>(
+      initial
+        ? {
+            id: initial.accountId,
+            code: initial.accountCode,
+            name: initial.accountName,
+            personName: null,
+            parentId: null,
+          }
+        : null,
+    );
   const [currencyId, setCurrencyId] = useState(
     initial?.currencyId ? String(initial.currencyId) : "",
   );
-  const [date, setDate] = useState(initial?.dateCreated.slice(0, 10) ?? "");
+  const [date, setDate] = useState(
+    initial?.dateCreated.slice(0, 10) ?? todayLocal(),
+  );
   const [description, setDescription] = useState(initial?.description ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
-  const [comments, setComments] = useState(initial?.comments ?? "");
+  const [internalComment, setInternalComment] = useState(
+    initial?.comments ?? "",
+  );
   const [rows, setRows] = useState<SourceRow[]>(
     initial?.allocations.map((row) => ({
       key: rowKey(),
-      accountId: String(row.accountId),
+      account: {
+        id: row.accountId,
+        code: row.accountCode,
+        name: row.accountName,
+        personName: null,
+        parentId: null,
+      },
       amount: row.amount,
       description: row.description ?? "",
     })) ?? [emptyRow()],
@@ -57,20 +111,12 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<DashboardPayment | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(rowKey);
-  const { data: accounts = [], isLoading } = useGetDashboardAccountsQuery(
-    undefined,
-    { skip: !canFetch },
-  );
-  const { data: currencies = [] } = useGetDashboardCurrenciesQuery(undefined, {
-    skip: !canFetch,
-  });
+  const { data: currencies = [], isLoading: currenciesLoading } =
+    useGetDashboardCurrenciesQuery(undefined, {
+      skip: !canFetch,
+    });
   const [createPayment, mutation] = useCreateDashboardPaymentMutation();
   const [updatePayment, updateState] = useUpdateDashboardPaymentMutation();
-  const sources = accounts.filter(
-    (account) =>
-      !account.isGroup &&
-      (account.type === "CASH" || account.type === "GENERAL"),
-  );
   const selectedCurrencyId = currencyId || String(currencies[0]?.id ?? "");
   const total = useMemo(
     () =>
@@ -89,17 +135,17 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    const sourceIds = rows.map((row) => row.accountId);
-    if (!destinationId || !selectedCurrencyId || sourceIds.some((id) => !id))
+    const sourceIds = rows.map((row) => row.account?.id ?? null);
+    if (!destination || !selectedCurrencyId || sourceIds.some((id) => !id))
       return setError(
         "Complete the destination, currency, and every source row.",
       );
     if (new Set(sourceIds).size !== sourceIds.length)
       return setError("Each funding account can appear only once.");
-    if (sourceIds.includes(destinationId))
+    if (sourceIds.includes(destination.id))
       return setError("The destination cannot also fund the payment.");
     const allocations = rows.map((row) => ({
-      accountId: Number(row.accountId),
+      accountId: Number(row.account?.id),
       amount: Number(row.amount),
       description: row.description.trim() || undefined,
     }));
@@ -109,12 +155,12 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
       return setError("Every amount must be greater than zero.");
     try {
       const body = {
-        accountId: Number(destinationId),
+        accountId: destination.id,
         currencyId: Number(selectedCurrencyId),
         date: date || undefined,
         description: description.trim() || undefined,
         notes: notes.trim() || undefined,
-        comments: comments.trim() || undefined,
+        comments: internalComment.trim() || undefined,
         allocations,
         idempotencyKey: initial ? undefined : idempotencyKey,
       };
@@ -129,44 +175,37 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
     }
   }
 
-  if (!canFetch || isLoading) return <LoadingDots label="Loading accounts" />;
+  if (!canFetch || currenciesLoading)
+    return <LoadingDots label="Loading accounts" />;
 
   return (
     <form
       onSubmit={submit}
-      className="mx-auto max-w-4xl space-y-6 rounded-2xl border border-border bg-white p-6 shadow-sm"
+      className="mx-auto w-full max-w-5xl space-y-6 rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8"
     >
       <div>
         <h1 className="text-xl font-semibold">
           {initial ? `Edit payment #${initial.nb}` : "New payment"}
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Debit one destination and fund it from one or more Cash or General
-          accounts.
+          Debit the To account and fund it from one or more financial accounts.
+          One destination debit and funding credits are posted for the total.
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        <label className="text-sm font-medium">
-          To Account *
+      <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr_1fr]">
+        <Field id="payment-to-account" label="To account" required>
+          <PostingAccountSelect
+            id="payment-to-account"
+            family="4"
+            value={destination}
+            onChange={setDestination}
+            placeholder="Type entity name or account code"
+          />
+        </Field>
+        <Field id="payment-currency" label="Currency" required>
           <select
-            className={`${inputClass} mt-1.5`}
-            value={destinationId}
-            onChange={(event) => setDestinationId(event.target.value)}
-          >
-            <option value="">Select account</option>
-            {accounts
-              .filter((account) => !account.isGroup)
-              .map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.code} — {account.name} ({account.type})
-                </option>
-              ))}
-          </select>
-        </label>
-        <label className="text-sm font-medium">
-          Currency *
-          <select
-            className={`${inputClass} mt-1.5`}
+            id="payment-currency"
+            className={`${inputClass} mt-0`}
             value={selectedCurrencyId}
             onChange={(event) => setCurrencyId(event.target.value)}
           >
@@ -176,50 +215,53 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
               </option>
             ))}
           </select>
-        </label>
-        <label className="text-sm font-medium">
-          Date
+        </Field>
+        <Field id="payment-date" label="Date">
           <input
-            className={`${inputClass} mt-1.5`}
+            id="payment-date"
+            className={inputClass}
             type="date"
             value={date}
             onChange={(event) => setDate(event.target.value)}
           />
-        </label>
+        </Field>
       </div>
-      <label className="block text-sm font-medium">
-        Description
+      <Field id="payment-description" label="Description">
         <input
-          className={`${inputClass} mt-1.5`}
+          id="payment-description"
+          className={inputClass}
           value={description}
           onChange={(event) => setDescription(event.target.value)}
+          placeholder="e.g. Supplier settlement"
         />
-      </label>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="block text-sm font-medium">
-          Notes
-          <input
-            className={`${inputClass} mt-1.5`}
+      </Field>
+      <div className="grid gap-5 md:grid-cols-2">
+        <Field id="payment-notes" label="Notes">
+          <textarea
+            id="payment-notes"
+            className={`${inputClass} min-h-[5rem] resize-y py-3`}
             value={notes}
+            rows={3}
             onChange={(event) => setNotes(event.target.value)}
+            placeholder="Optional notes"
           />
-        </label>
-        <label className="block text-sm font-medium">
-          Comments
-          <input
-            className={`${inputClass} mt-1.5`}
-            value={comments}
-            onChange={(event) => setComments(event.target.value)}
+        </Field>
+        <Field id="payment-internal-comment" label="Internal comment">
+          <textarea
+            id="payment-internal-comment"
+            className={`${inputClass} min-h-[5rem] resize-y py-3`}
+            value={internalComment}
+            rows={3}
+            onChange={(event) => setInternalComment(event.target.value)}
+            placeholder="Optional internal comment — never shown on customer documents"
           />
-        </label>
+        </Field>
       </div>
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-semibold">Payment sources</h2>
-            <p className="text-sm text-muted">
-              Cash and General accounts only.
-            </p>
+            <p className="text-sm text-muted">Financial accounts only.</p>
           </div>
           <button
             type="button"
@@ -232,57 +274,66 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
         {rows.map((row, index) => (
           <div
             key={row.key}
-            className="grid gap-3 rounded-xl border border-border bg-stone-50 p-3 md:grid-cols-[1.5fr_0.7fr_1fr_auto]"
+            className="grid gap-3 rounded-xl border border-border bg-stone-50 p-3 lg:grid-cols-[1.6fr_10rem_1fr_auto]"
           >
-            <select
-              aria-label={`Source account ${index + 1}`}
-              className={inputClass}
-              value={row.accountId}
-              onChange={(event) =>
-                updateRow(row.key, { accountId: event.target.value })
-              }
-            >
-              <option value="">Source account</option>
-              {sources.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.code} — {account.name}
-                </option>
-              ))}
-            </select>
-            <input
-              aria-label={`Amount ${index + 1}`}
-              className={inputClass}
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="Amount"
-              value={row.amount}
-              onChange={(event) =>
-                updateRow(row.key, { amount: event.target.value })
-              }
-            />
-            <input
-              aria-label={`Description ${index + 1}`}
-              className={inputClass}
-              placeholder="Description"
-              value={row.description}
-              onChange={(event) =>
-                updateRow(row.key, { description: event.target.value })
-              }
-            />
-            <button
-              aria-label={`Remove source ${index + 1}`}
-              type="button"
-              disabled={rows.length === 1}
-              onClick={() =>
-                setRows((current) =>
-                  current.filter((candidate) => candidate.key !== row.key),
-                )
-              }
-              className="rounded-lg border border-border p-3 disabled:opacity-40"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <div className="min-w-0">
+              <span className="mb-1 block text-xs font-medium text-muted">
+                Source account
+              </span>
+              <PostingAccountSelect
+                id={`payment-source-${row.key}`}
+                family="5"
+                value={row.account}
+                onChange={(account) => updateRow(row.key, { account })}
+                placeholder="Type account name or code"
+              />
+            </div>
+            <label className="block min-w-0">
+              <span className="mb-1 block text-xs font-medium text-muted">
+                Amount
+              </span>
+              <input
+                aria-label={`Amount ${index + 1}`}
+                className={inputClass}
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="Amount"
+                value={row.amount}
+                onChange={(event) =>
+                  updateRow(row.key, { amount: event.target.value })
+                }
+              />
+            </label>
+            <div className="flex items-end gap-2">
+              <label className="block min-w-0 flex-1">
+                <span className="mb-1 block text-xs font-medium text-muted">
+                  Description
+                </span>
+                <input
+                  aria-label={`Description ${index + 1}`}
+                  className={inputClass}
+                  placeholder="Description"
+                  value={row.description}
+                  onChange={(event) =>
+                    updateRow(row.key, { description: event.target.value })
+                  }
+                />
+              </label>
+              <button
+                aria-label={`Remove source ${index + 1}`}
+                type="button"
+                disabled={rows.length === 1}
+                onClick={() =>
+                  setRows((current) =>
+                    current.filter((candidate) => candidate.key !== row.key),
+                  )
+                }
+                className="rounded-lg border border-border p-3 disabled:opacity-40"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         ))}
       </section>
@@ -316,18 +367,14 @@ export function PaymentForm({ initial }: { initial?: DashboardPayment }) {
           disabled={mutation.isLoading || updateState.isLoading}
           className="rounded-lg bg-primary px-5 py-3 text-sm font-medium text-on-primary"
         >
-          {mutation.isLoading || updateState.isLoading
-            ? "Saving…"
-            : initial
-              ? "Save payment"
-              : "Post payment"}
+          {mutation.isLoading || updateState.isLoading ? "Saving…" : "Save"}
         </button>
         <button
           type="button"
           onClick={() => router.push("/accounting/payments")}
           className="rounded-lg border border-border px-5 py-3 text-sm"
         >
-          Cancel
+          Back
         </button>
         {created && !initial ? (
           <button
