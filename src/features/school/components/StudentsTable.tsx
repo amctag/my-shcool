@@ -163,7 +163,7 @@ export function StudentsTable() {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<StudentsSortBy>("id");
   const [sortOrder, setSortOrder] = useState<StudentsSortOrder>("asc");
-  const limit = 10;
+  const limit = 100;
   const [deleteStudent, deleteState] = useDeleteStudentMutation();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{

@@ -1,5 +1,6 @@
 import { baseApi } from "@/store/api/baseApi";
 import { toQueryString } from "@/lib/toQueryString";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type {
   DashboardActivitiesQuery,
   DashboardActivitiesResponse,
@@ -16,7 +17,7 @@ export const dashboardActivitiesApi = baseApi.injectEndpoints({
       query: (params) =>
         `/dashboard/activities${toQueryString({
           page: params?.page ?? 1,
-          limit: params?.limit ?? 10,
+          limit: params?.limit ?? DEFAULT_PAGE_SIZE,
           search: params?.search,
           yearId: params?.yearId,
         })}`,

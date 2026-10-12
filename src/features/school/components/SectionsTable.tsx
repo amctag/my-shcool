@@ -95,7 +95,7 @@ export function SectionsTable() {
 
   const [sortBy, setSortBy] = useState<SectionsSortBy>("id");
   const [sortOrder, setSortOrder] = useState<SectionsSortOrder>("asc");
-  const limit = 10;
+  const limit = 100;
   const canFetch = ready && Boolean(accessToken);
   const { yearId } = useSchoolYearFilter(canFetch);
   useEffect(() => {

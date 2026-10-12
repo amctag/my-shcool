@@ -38,7 +38,7 @@ export function AccountingDocumentsList({
 
   const query = {
     page,
-    limit: 10,
+    limit: 100,
     ...applied,
   };
   const receipts = useGetDashboardReceiptsQuery(query, {

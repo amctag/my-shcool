@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { DEFAULT_PAGE_SIZE } from "@/lib/pagination";
 import type {
   ChildrenCountFilter,
   AccountingAccountFilter,
@@ -35,7 +36,7 @@ const initialState: ParentsUiState = {
   appliedMiddleName: "",
   appliedLastName: "",
   page: 1,
-  limit: 10,
+  limit: DEFAULT_PAGE_SIZE,
   sortBy: "id",
   sortOrder: "asc",
   statusFilterInput: "all",

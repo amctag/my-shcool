@@ -196,7 +196,7 @@ export function TeachersTable() {
   const [statusFilterInput, setStatusFilterInput] =
     useState<PersonStatusFilter>("all");
   const [statusFilter, setStatusFilter] = useState<PersonStatusFilter>("all");
-  const limit = 10;
+  const limit = 100;
   const [deleteTeacher, deleteState] = useDeleteTeacherMutation();
   const [updateTeacherStatus, statusState] = useUpdateTeacherStatusMutation();
   const [resetTeacherPassword, resetPasswordState] =

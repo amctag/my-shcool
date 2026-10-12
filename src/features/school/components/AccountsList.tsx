@@ -11,7 +11,7 @@ import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 import type { DashboardAccountType } from "@/features/school/types";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 100;
 
 const TYPE_FILTERS: Array<"ALL" | DashboardAccountType> = [
   "ALL",

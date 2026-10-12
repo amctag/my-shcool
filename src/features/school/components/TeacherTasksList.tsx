@@ -12,7 +12,7 @@ import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 import type { DashboardTeacherTasksQuery } from "@/features/school/types";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 100;
 
 function formatDateTime(value: string): string {
   return new Intl.DateTimeFormat("en", {

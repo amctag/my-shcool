@@ -18,7 +18,7 @@ export function ItemsTable() {
   const [message, setMessage] = useState<string | null>(null);
   const query = useGetDashboardItemsQuery({
     page,
-    limit: 10,
+    limit: 100,
     search: search || undefined,
     itemTypeId: itemTypeId ? Number(itemTypeId) : undefined,
   });

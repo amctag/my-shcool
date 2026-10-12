@@ -17,7 +17,7 @@ export function RegistrationPackagesTable() {
   const [error, setError] = useState<string | null>(null);
   const packages = useGetDashboardRegistrationPackagesQuery({
     page,
-    limit: 10,
+    limit: 100,
     search: search || undefined,
     yearId: yearId ? Number(yearId) : undefined,
   });

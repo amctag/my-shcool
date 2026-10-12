@@ -24,7 +24,7 @@ import type {
   DashboardClassesQuery,
 } from "@/features/school/types";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 100;
 
 function buildQuery(
   page: number,

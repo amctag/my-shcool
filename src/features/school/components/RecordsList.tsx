@@ -18,7 +18,7 @@ export function RecordsList() {
   const [dateTo, setDateTo] = useState("");
   const response = useGetDashboardRecordsQuery({
     page,
-    limit: 10,
+    limit: 100,
     search: search || undefined,
     currencyId: currencyId ? Number(currencyId) : undefined,
     dateFrom: dateFrom || undefined,

@@ -217,7 +217,7 @@ export function TeacherSupervisorsTable() {
   );
   const [classesDrawer, setClassesDrawer] =
     useState<DashboardTeacherSupervisorGroup | null>(null);
-  const limit = 10;
+  const limit = 100;
   const canFetch = ready && Boolean(accessToken);
   const { yearId } = useSchoolYearFilter(canFetch);
   useEffect(() => {

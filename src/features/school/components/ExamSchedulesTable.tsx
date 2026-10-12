@@ -31,7 +31,7 @@ import type {
   ExamSchedulesSortOrder,
 } from "@/features/school/types";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 100;
 
 function formatExamDate(value: string | null): string {
   if (!value) {
