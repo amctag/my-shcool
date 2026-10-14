@@ -38,16 +38,22 @@ import type {
 } from "@/features/school/types";
 
 function fullName(student: DashboardStudentDetail) {
-  return [student.firstName, student.middleName, student.lastName]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(" ");
+  // Canonical: student first name + father's names from the Parent record.
+  return (
+    [student.firstName?.trim(), student.parentName?.trim()]
+      .filter(Boolean)
+      .join(" ") || "—"
+  );
 }
 
 function initials(student: DashboardStudentDetail) {
   const first = student.firstName?.trim().charAt(0) ?? "";
-  const last = student.lastName?.trim().charAt(0) ?? "";
-  return `${first}${last}`.toUpperCase() || "?";
+  const parentTokens = student.parentName?.trim().split(/\s+/).filter(Boolean);
+  const familyInitial =
+    parentTokens && parentTokens.length > 0
+      ? (parentTokens[parentTokens.length - 1].charAt(0) ?? "")
+      : (student.lastName?.trim().charAt(0) ?? "");
+  return `${first}${familyInitial}`.toUpperCase() || "?";
 }
 
 function formatBirthday(value?: string | null): string {

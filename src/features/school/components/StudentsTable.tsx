@@ -21,9 +21,11 @@ import { selectAuthReady, selectAccessToken } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 import type {
   DashboardChildrenQuery,
+  DashboardParentChild,
   StudentsSortBy,
   StudentsSortOrder,
 } from "@/features/school/types";
+import { getStudentFullName } from "@/features/school/studentName";
 
 const STUDENT_EXPORT_COLUMNS = [
   { key: "id", header: "ID" },
@@ -68,8 +70,16 @@ function buildStudentsQuery(
   return query;
 }
 
-function studentName(firstName?: string, lastName?: string, fullName?: string): string {
-  return fullName?.trim() || `${firstName?.trim() ?? ""} ${lastName?.trim() ?? ""}`.trim() || "—";
+function studentName(student: {
+  studentFirstName?: string | null;
+  fatherFirstName?: string | null;
+  familyName?: string | null;
+  studentFullName?: string | null;
+  fullName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+}): string {
+  return getStudentFullName(student);
 }
 
 const MONTHS = [
@@ -216,7 +226,7 @@ export function StudentsTable() {
     return items.map((student) => ({
       id: student.id,
       personId: student.personId ?? "",
-      name: studentName(student.firstName, student.lastName, student.fullName),
+      name: studentName(student),
       parent: student.parentName ?? "",
       phone: student.phoneNumber ?? "",
       birthday: formatBirthday(student.birthday),
@@ -261,16 +271,11 @@ export function StudentsTable() {
   const pagination = data?.pagination;
   const totalPages = pagination?.totalPages ?? 0;
 
-  function askDeleteStudent(student: {
-    id: number;
-    firstName?: string;
-    lastName?: string;
-    fullName: string;
-  }) {
+  function askDeleteStudent(student: DashboardParentChild) {
     setDeleteError(null);
     setPendingDelete({
       id: student.id,
-      name: studentName(student.firstName, student.lastName, student.fullName),
+      name: studentName(student),
     });
   }
 
@@ -303,12 +308,12 @@ export function StudentsTable() {
             />
           </label>
           <label className="relative w-full min-w-0 shrink-0 sm:w-36">
-            <span className="sr-only">Middle name</span>
+            <span className="sr-only">Father&apos;s name</span>
             <input
               type="search"
               value={middleNameInput}
               onChange={(event) => setMiddleNameInput(event.target.value)}
-              placeholder="Middle name"
+              placeholder="Father's name"
               className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             />
           </label>
@@ -456,11 +461,7 @@ export function StudentsTable() {
                         <NameWithInitials
                           firstName={student.firstName}
                           lastName={student.lastName}
-                          name={studentName(
-                            student.firstName,
-                            student.lastName,
-                            student.fullName,
-                          )}
+                          name={studentName(student)}
                         />
                       </Link>
                     </td>

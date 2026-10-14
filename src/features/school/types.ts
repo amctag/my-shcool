@@ -47,6 +47,10 @@ export type DashboardParentChild = {
   id: number;
   personId: number | null;
   fullName: string;
+  studentFirstName?: string | null;
+  fatherFirstName?: string | null;
+  familyName?: string | null;
+  studentFullName?: string | null;
   firstName?: string;
   lastName?: string;
   username?: string;
@@ -934,6 +938,10 @@ export type DashboardRegistration = {
   id: number;
   studentId: number;
   studentName: string;
+  studentFirstName?: string | null;
+  fatherFirstName?: string | null;
+  familyName?: string | null;
+  studentFullName?: string | null;
   classId: number;
   className: string;
   classLevel: number;

@@ -409,12 +409,12 @@ export function RegistrationsTable() {
             />
           </label>
           <label className="relative w-full min-w-0 shrink-0 sm:w-36">
-            <span className="sr-only">Middle name</span>
+            <span className="sr-only">Father&apos;s name</span>
             <input
               type="search"
               value={middleNameInput}
               onChange={(event) => setMiddleNameInput(event.target.value)}
-              placeholder="Middle name"
+              placeholder="Father's name"
               className="h-11 w-full min-w-28 rounded-lg border border-border bg-white px-3 text-sm outline-none transition-colors duration-200 focus:border-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             />
           </label>

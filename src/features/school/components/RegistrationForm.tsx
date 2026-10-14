@@ -23,6 +23,7 @@ import { useGetSectionsQuery } from "@/features/school/api/sectionsApi";
 import { useSchoolYearFilter } from "@/features/school/useSchoolYearFilter";
 import { useAppSelector } from "@/store/hooks";
 import type { DashboardParentChild } from "@/features/school/types";
+import { getStudentFullName } from "@/features/school/studentName";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 
 const inputClass =
@@ -54,14 +55,18 @@ function Field({
 }
 
 function formatStudentLabel(student: DashboardParentChild): string {
-  return student.fullName.trim();
+  return getStudentFullName(student);
 }
 
 function studentMatches(student: DashboardParentChild, query: string): boolean {
   return personNameMatches(query, [
+    getStudentFullName(student),
+    student.studentFullName,
     student.fullName,
     student.firstName,
-    student.lastName,
+    student.studentFirstName,
+    student.fatherFirstName,
+    student.familyName,
   ]);
 }
 
