@@ -246,6 +246,7 @@ export function TeachersTable() {
 
     return items.map((teacher) => ({
       id: teacher.id,
+      personId: teacher.personId ?? "",
       name: teacherName(teacher.firstName, teacher.lastName, teacher.fullName),
       phone: teacher.phoneNumber ?? "",
       address: teacher.address ?? "",
@@ -374,6 +375,7 @@ export function TeachersTable() {
             filename="teachers"
             columns={[
               { key: "id", header: "ID" },
+              { key: "personId", header: "Person ID" },
               { key: "name", header: "Name" },
               { key: "phone", header: "Phone" },
               { key: "address", header: "Address" },
@@ -409,6 +411,9 @@ export function TeachersTable() {
                   sortOrder={sortOrder}
                   onSort={onSort}
                 />
+                <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Person ID
+                </th>
                 <SortHeader
                   label="Name"
                   column="name"
@@ -447,11 +452,11 @@ export function TeachersTable() {
             </thead>
             <tbody>
               {isLoading ? (
-                <TableLoadingRow colSpan={7} label="Loading teachers" />
+                <TableLoadingRow colSpan={8} label="Loading teachers" />
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
@@ -461,7 +466,7 @@ export function TeachersTable() {
               ) : teachers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     No teachers match this search.
@@ -477,6 +482,9 @@ export function TeachersTable() {
                   >
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
                       {teacher.id}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 tabular-nums text-foreground">
+                      {teacher.personId ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
                       <Link

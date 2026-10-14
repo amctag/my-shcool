@@ -27,6 +27,7 @@ import type {
 
 const STUDENT_EXPORT_COLUMNS = [
   { key: "id", header: "ID" },
+  { key: "personId", header: "Person ID" },
   { key: "name", header: "Name" },
   { key: "parent", header: "Parent" },
   { key: "phone", header: "Phone" },
@@ -214,6 +215,7 @@ export function StudentsTable() {
 
     return items.map((student) => ({
       id: student.id,
+      personId: student.personId ?? "",
       name: studentName(student.firstName, student.lastName, student.fullName),
       parent: student.parentName ?? "",
       phone: student.phoneNumber ?? "",
@@ -360,6 +362,9 @@ export function StudentsTable() {
                   sortOrder={sortOrder}
                   onSort={onSort}
                 />
+                <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Person ID
+                </th>
                 <SortHeader
                   label="Name"
                   column="name"
@@ -409,11 +414,11 @@ export function StudentsTable() {
             </thead>
             <tbody>
               {isLoading ? (
-                <TableLoadingRow colSpan={8} label="Loading students" />
+                <TableLoadingRow colSpan={9} label="Loading students" />
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
@@ -423,7 +428,7 @@ export function StudentsTable() {
               ) : students.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     No students match this search.
@@ -439,6 +444,9 @@ export function StudentsTable() {
                   >
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
                       {student.id}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 tabular-nums text-foreground">
+                      {student.personId ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
                       <Link

@@ -496,6 +496,7 @@ export function ParentsTable() {
 
     return items.map((parent) => ({
       id: parent.id,
+      personId: parent.personId ?? "",
       name: parent.fullName,
       phone: parent.phoneNumber ?? "",
       address: parent.address ?? "",
@@ -614,6 +615,7 @@ export function ParentsTable() {
             filename="parents"
             columns={[
               { key: "id", header: "ID" },
+              { key: "personId", header: "Person ID" },
               { key: "name", header: "Name" },
               { key: "phone", header: "Phone" },
               { key: "address", header: "Address" },
@@ -651,6 +653,9 @@ export function ParentsTable() {
                   sortOrder={sortOrder}
                   onSort={(column) => dispatch(setParentsSort(column))}
                 />
+                <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                  Person ID
+                </th>
                 <SortHeader
                   label="Full name"
                   column="name"
@@ -695,11 +700,11 @@ export function ParentsTable() {
             </thead>
             <tbody>
               {isLoading ? (
-                <TableLoadingRow colSpan={9} label="Loading parents" />
+                <TableLoadingRow colSpan={10} label="Loading parents" />
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
@@ -709,7 +714,7 @@ export function ParentsTable() {
               ) : parents.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     No parents match this search.
@@ -725,6 +730,9 @@ export function ParentsTable() {
                   >
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
                       {parent.id}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 tabular-nums text-foreground">
+                      {parent.personId ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 font-semibold text-foreground">
                       <Link

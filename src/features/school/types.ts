@@ -1,5 +1,6 @@
 export type DashboardParent = {
   id: number;
+  personId: number | null;
   fullName: string;
   firstName?: string;
   lastName?: string;
@@ -44,6 +45,7 @@ export type StudentsSortOrder = "asc" | "desc";
 
 export type DashboardParentChild = {
   id: number;
+  personId: number | null;
   fullName: string;
   firstName?: string;
   lastName?: string;
@@ -189,6 +191,7 @@ export type TeachersSortOrder = "asc" | "desc";
 
 export type DashboardTeacher = {
   id: number;
+  personId: number | null;
   fullName: string;
   firstName?: string;
   lastName?: string;
