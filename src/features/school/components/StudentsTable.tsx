@@ -29,7 +29,7 @@ import { getStudentFullName } from "@/features/school/studentName";
 
 const STUDENT_EXPORT_COLUMNS = [
   { key: "id", header: "ID" },
-  { key: "personId", header: "Person ID" },
+  { key: "personId", header: "Ref ID" },
   { key: "name", header: "Name" },
   { key: "parent", header: "Parent" },
   { key: "phone", header: "Phone" },

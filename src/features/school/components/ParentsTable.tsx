@@ -615,7 +615,7 @@ export function ParentsTable() {
             filename="parents"
             columns={[
               { key: "id", header: "ID" },
-              { key: "personId", header: "Person ID" },
+              { key: "personId", header: "Ref ID" },
               { key: "name", header: "Name" },
               { key: "phone", header: "Phone" },
               { key: "address", header: "Address" },
