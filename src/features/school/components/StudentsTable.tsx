@@ -368,7 +368,7 @@ export function StudentsTable() {
                   onSort={onSort}
                 />
                 <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
-                  Person ID
+                  Ref ID
                 </th>
                 <SortHeader
                   label="Name"
