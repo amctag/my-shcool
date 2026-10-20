@@ -63,6 +63,7 @@ export const navGroups: NavGroup[] = [
         icon: Landmark,
         children: [
           { href: "/accounting/receipts", label: "Receipt", icon: Receipt },
+          { href: "/accounting/installments", label: "Installments", icon: ListOrdered },
           { href: "/accounting/payments", label: "Payment", icon: Wallet },
           { href: "/accounting/records", label: "Record", icon: BookMarked },
           { href: "/accounting/invoices", label: "Invoice", icon: FileSpreadsheet },

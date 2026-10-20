@@ -98,6 +98,10 @@ export const teachersApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    createTeacherAccountingAccount: builder.mutation<{ id: number; code: string }, number>({
+      query: (id) => ({ url: `/dashboard/teachers/${id}/accounting-account`, method: 'POST' }),
+      invalidatesTags: [{ type: 'Teachers', id: 'LIST' }, { type: 'DashboardAccounting', id: 'ACCOUNTS' }],
+    }),
     deleteTeacher: builder.mutation<void, number>({
       query: (id) => ({
         url: `/dashboard/teachers/${id}`,
@@ -120,5 +124,6 @@ export const {
   useUpdateTeacherMutation,
   useUpdateTeacherStatusMutation,
   useResetTeacherPasswordMutation,
+  useCreateTeacherAccountingAccountMutation,
   useDeleteTeacherMutation,
 } = teachersApi;

@@ -25,6 +25,7 @@ import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { fetchAllPaginatedItems } from "@/lib/exportTable";
 import {
   useDeleteTeacherMutation,
+  useCreateTeacherAccountingAccountMutation,
   useGetTeachersQuery,
   useLazyGetTeachersQuery,
   useResetTeacherPasswordMutation,
@@ -198,6 +199,7 @@ export function TeachersTable() {
   const [statusFilter, setStatusFilter] = useState<PersonStatusFilter>("all");
   const limit = 100;
   const [deleteTeacher, deleteState] = useDeleteTeacherMutation();
+  const [createTeacherAccount, createTeacherAccountState] = useCreateTeacherAccountingAccountMutation();
   const [updateTeacherStatus, statusState] = useUpdateTeacherStatusMutation();
   const [resetTeacherPassword, resetPasswordState] =
     useResetTeacherPasswordMutation();
@@ -445,6 +447,7 @@ export function TeachersTable() {
                 <IconColumnHeader label="Status">
                   <Pause aria-hidden className="h-4 w-4" />
                 </IconColumnHeader>
+                <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">Accounting Account</th>
                 <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-muted">
                   Action
                 </th>
@@ -452,11 +455,11 @@ export function TeachersTable() {
             </thead>
             <tbody>
               {isLoading ? (
-                <TableLoadingRow colSpan={8} label="Loading teachers" />
+            <TableLoadingRow colSpan={9} label="Loading teachers" />
               ) : error ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-5 py-10 text-center text-sm text-red-600"
                     role="alert"
                   >
@@ -466,7 +469,7 @@ export function TeachersTable() {
               ) : teachers.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-5 py-10 text-center text-sm text-muted"
                   >
                     No teachers match this search.
@@ -540,6 +543,9 @@ export function TeachersTable() {
                           </span>
                         )}
                       </button>
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4">
+                      {teacher.hasAccountingAccount ? <span className="font-semibold text-emerald-700">{teacher.accountCode}</span> : <button type="button" disabled={createTeacherAccountState.isLoading} onClick={() => void createTeacherAccount(teacher.id)} className="rounded-xl border border-border px-3 py-2 text-xs font-semibold text-primary hover:bg-primary-soft">Create account</button>}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">

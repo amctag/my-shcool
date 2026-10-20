@@ -203,6 +203,10 @@ export type DashboardTeacher = {
   address: string | null;
   birthday?: string | null;
   status?: boolean;
+  accountId?: number | null;
+  accountCode?: string | null;
+  hasAccountingAccount?: boolean;
+  canCreateAccountingAccount?: boolean;
 };
 
 export type DashboardTeachersQuery = {
@@ -1731,6 +1735,7 @@ export type SaveReceiptBody = {
   notes?: string;
   comments?: string;
   idempotencyKey?: string;
+  installmentId?: number;
 };
 
 export type SavePaymentBody = {
@@ -1778,6 +1783,21 @@ export type DashboardReceipt = {
   comments: string | null;
   dateCreated: string;
 };
+
+export type DashboardInstallment = {
+  id: number;
+  accountId: number;
+  account: { id: number; code: string; name: string };
+  amount: string;
+  yearId: number;
+  year: { id: number; title: string };
+  date: string | null;
+  paid: boolean;
+  receiptId: number | null;
+  dateCreated: string;
+};
+export type DashboardInstallmentsResponse = { items: DashboardInstallment[]; page: number; limit: number; total: number; totalPages: number };
+export type InstallmentRowInput = { amount: number; date?: string };
 
 export type DashboardReceiptsResponse = {
   items: DashboardReceipt[];

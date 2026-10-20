@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useMemo, useState, useEffect, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, MinusCircle, PlusCircle } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useCreateDashboardReceiptMutation,
   useGetDashboardCurrenciesQuery,
   useUpdateDashboardReceiptMutation,
+  useGetDashboardAccountQuery,
 } from "@/features/school/api/accountingApi";
 import { selectAuthReady } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
@@ -87,6 +89,10 @@ function formatTotal(value: number, shortCode: string): string {
 
 export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const installmentId = Number(searchParams.get("installmentId") || 0) || null;
+  const initialAccountId = Number(searchParams.get("accountId") || 0) || null;
+  const initialAmount = searchParams.get("amount") || "";
   const ready = useAppSelector(selectAuthReady);
   const [toAccount, setToAccount] =
     useState<DashboardPostingLookup | null>(
@@ -118,7 +124,7 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
       },
       amount: row.amount,
       description: row.description ?? "",
-    })) ?? [emptyRow()],
+    })) ?? [{ ...emptyRow(), amount: initialAmount }],
   );
   const [description, setDescription] = useState(initial?.description ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
@@ -130,6 +136,12 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
   const [createReceipt, { isLoading }] = useCreateDashboardReceiptMutation();
   const [updateReceipt, updateState] = useUpdateDashboardReceiptMutation();
+  const { data: linkedAccount } = useGetDashboardAccountQuery(initialAccountId ?? 0, { skip: !initialAccountId || Boolean(initial) });
+
+  useEffect(() => {
+    if (!linkedAccount || toAccount) return;
+    setToAccount({ id: linkedAccount.id, code: linkedAccount.code, name: linkedAccount.name, personName: linkedAccount.name, parentId: linkedAccount.parentId });
+  }, [linkedAccount, toAccount]);
 
   const { data: currencies = [] } = useGetDashboardCurrenciesQuery(undefined, {
     skip: !ready,
@@ -240,6 +252,7 @@ export function ReceiptForm({ initial }: { initial?: DashboardReceipt }) {
         notes: notes.trim() || undefined,
         comments: internalComment.trim() || undefined,
         idempotencyKey: initial ? undefined : idempotencyKey,
+        installmentId: installmentId ?? undefined,
       };
       const receipt = initial
         ? await updateReceipt({ id: initial.id, body }).unwrap()

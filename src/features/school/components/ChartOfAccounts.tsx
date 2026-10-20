@@ -398,7 +398,7 @@ function AddChildForm({
       setError("Account name is required.");
       return;
     }
-    if (!autoAllocatable) {
+    if (code.trim() || !autoAllocatable) {
       const codeError = validateCode(effectiveCode);
       if (codeError) {
         setError(codeError);
@@ -411,7 +411,7 @@ function AddChildForm({
         name: trimmedName,
         type: isCustomerBranch ? "PERSON" : "GENERAL",
         parentId: parent.id,
-        code: autoAllocatable ? undefined : effectiveCode.trim(),
+        code: code.trim() ? effectiveCode.trim() : undefined,
         isGroup: isCustomerBranch ? false : isGroup,
       }).unwrap();
       onDone(parent.id);
@@ -489,10 +489,10 @@ function AddChildForm({
           </span>
           <input
             id="child-code"
-            value={autoAllocatable ? (expectedCode ?? "") : effectiveCode}
+              value={effectiveCode}
             onChange={(event) => setCode(event.target.value)}
-            readOnly={autoAllocatable}
-            disabled={autoAllocatable || isLoading}
+            readOnly={isCustomerBranch}
+            disabled={isCustomerBranch || isLoading}
             placeholder={
               autoAllocatable
                 ? "Allocated by the backend"

@@ -20,6 +20,8 @@ import type {
   DashboardPostingLookup,
   DashboardPostingLookupQuery,
   DashboardReceipt,
+  DashboardInstallmentsResponse,
+  DashboardInstallment,
   DashboardReceiptsResponse,
   DashboardRecord,
   DashboardRecordsResponse,
@@ -195,6 +197,34 @@ export const accountingApi = baseApi.injectEndpoints({
               { type: "DashboardAccounting", id: "RECEIPTS" },
             ]
           : [{ type: "DashboardAccounting", id: "RECEIPTS" }],
+    }),
+    getDashboardInstallments: builder.query<DashboardInstallmentsResponse, { page?: number; limit?: number; accountId?: number; yearId?: number; paid?: boolean; date?: string; dateFrom?: string; dateTo?: string }>({
+      query: ({ page = 1, limit = 100, ...filters }) => `/dashboard/accounting/installments${toQueryString({ page, limit, ...filters })}`,
+      providesTags: [{ type: "DashboardAccounting", id: "INSTALLMENTS" }],
+    }),
+    createDashboardInstallment: builder.mutation<DashboardInstallment, { accountId: number; amount: number; yearId: number; date?: string }>({
+      query: (body) => ({ url: "/dashboard/accounting/installments", method: "POST", body }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "INSTALLMENTS" }],
+    }),
+    createDashboardInstallmentBatch: builder.mutation<DashboardInstallment[], { rows: Array<{ accountId: number; amount: number; yearId: number; date?: string }> }>({
+      query: (body) => ({ url: "/dashboard/accounting/installments/batch", method: "POST", body }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "INSTALLMENTS" }],
+    }),
+    updateDashboardInstallment: builder.mutation<DashboardInstallment, { id: number; body: { accountId: number; amount: number; yearId: number; date?: string } }>({
+      query: ({ id, body }) => ({ url: `/dashboard/accounting/installments/${id}`, method: "PATCH", body }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "INSTALLMENTS" }],
+    }),
+    deleteDashboardInstallment: builder.mutation<{ id: number }, number>({
+      query: (id) => ({ url: `/dashboard/accounting/installments/${id}`, method: "DELETE" }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "INSTALLMENTS" }],
+    }),
+    linkDashboardInstallmentReceipt: builder.mutation<DashboardInstallment, { id: number; receiptId: number }>({
+      query: ({ id, receiptId }) => ({ url: `/dashboard/accounting/installments/${id}/link-receipt`, method: "POST", body: { receiptId } }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "INSTALLMENTS" }],
+    }),
+    unlinkDashboardInstallmentReceipt: builder.mutation<DashboardInstallment, number>({
+      query: (id) => ({ url: `/dashboard/accounting/installments/${id}/unlink-receipt`, method: "POST" }),
+      invalidatesTags: [{ type: "DashboardAccounting", id: "INSTALLMENTS" }],
     }),
     createDashboardReceipt: builder.mutation<DashboardReceipt, SaveReceiptBody>(
       {
@@ -555,6 +585,13 @@ export const {
   useDeleteDashboardAccountMutation,
   useSetupDashboardSystemAccountsMutation,
   useGetDashboardReceiptsQuery,
+  useGetDashboardInstallmentsQuery,
+  useCreateDashboardInstallmentMutation,
+  useCreateDashboardInstallmentBatchMutation,
+  useUpdateDashboardInstallmentMutation,
+  useDeleteDashboardInstallmentMutation,
+  useLinkDashboardInstallmentReceiptMutation,
+  useUnlinkDashboardInstallmentReceiptMutation,
   useCreateDashboardReceiptMutation,
   useUpdateDashboardReceiptMutation,
   useGetDashboardReceiptQuery,
