@@ -6,6 +6,7 @@ import { CheckCircle2, MinusCircle, PlusCircle, Search } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useCreateDashboardRecordMutation,
+  useUpdateDashboardRecordMutation,
   useGetDashboardAccountsPageQuery,
   useGetDashboardCurrenciesQuery,
 } from "@/features/school/api/accountingApi";
@@ -158,18 +159,19 @@ function formatMoney(value: number): string {
   }).format(value);
 }
 
-export function RecordForm() {
+export function RecordForm({ initial }: { initial?: DashboardRecord }) {
   const router = useRouter();
   const ready = useAppSelector(selectAuthReady);
-  const [currencyId, setCurrencyId] = useState("");
-  const [date, setDate] = useState("");
-  const [description, setDescription] = useState("");
+  const [currencyId, setCurrencyId] = useState(initial?.currencyId ? String(initial.currencyId) : "");
+  const [date, setDate] = useState(initial?.dateCreated.slice(0, 10) ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
   const [notes, setNotes] = useState("");
-  const [rows, setRows] = useState<RecordRow[]>([emptyRow(), emptyRow()]);
+  const [rows, setRows] = useState<RecordRow[]>(initial?.rows.map((r) => ({ key: newRowKey(), account: { id: r.accountId, code: r.accountCode, name: r.accountName, type: "GENERAL", isGroup: false } as DashboardAccount, query: `${r.accountCode} — ${r.accountName}`, debit: Number(r.debit) ? r.debit : "", credit: Number(r.credit) ? r.credit : "", description: r.description ?? "" })) ?? [emptyRow(), emptyRow()]);
   const [formError, setFormError] = useState<string | null>(null);
   const [created, setCreated] = useState<DashboardRecord | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
   const [createRecord, { isLoading }] = useCreateDashboardRecordMutation();
+  const [updateRecord, { isLoading: isUpdating }] = useUpdateDashboardRecordMutation();
 
   const { data: currencies = [] } = useGetDashboardCurrenciesQuery(undefined, {
     skip: !ready,
@@ -288,14 +290,15 @@ export function RecordForm() {
     }
     setFormError(null);
     try {
-      const record = await createRecord({
+      const payload = {
         currencyId: selectedCurrency.id,
         date: date || undefined,
         description: description.trim() || undefined,
         notes: notes.trim() || undefined,
         rows: postings,
         idempotencyKey,
-      }).unwrap();
+      };
+      const record = await (initial ? updateRecord({ id: initial.id, body: payload }) : createRecord(payload)).unwrap();
       setCreated(record);
     } catch (error) {
       setFormError(getApiErrorMessage(error, "Could not post record"));

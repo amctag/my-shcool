@@ -335,6 +335,10 @@ export const accountingApi = baseApi.injectEndpoints({
         invalidatesTags: [{ type: "DashboardAccounting", id: "INVOICES" }],
       },
     ),
+    updateDashboardInvoice: builder.mutation<DashboardInvoice, { id: number; body: SaveInvoiceBody }>({
+      query: ({ id, body }) => ({ url: `/dashboard/accounting/invoices/${id}`, method: "PATCH", body }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: "DashboardAccounting", id: "INVOICES" }, { type: "DashboardAccounting", id: `invoice-${id}` }],
+    }),
     getDashboardInvoice: builder.query<DashboardInvoice, number>({
       query: (id) => `/dashboard/accounting/invoices/${id}`,
       providesTags: (_result, _error, id) => [
@@ -395,6 +399,10 @@ export const accountingApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: [{ type: "DashboardAccounting", id: "RECORDS" }],
+    }),
+    updateDashboardRecord: builder.mutation<DashboardRecord, { id: number; body: SaveRecordBody }>({
+      query: ({ id, body }) => ({ url: `/dashboard/accounting/records/${id}`, method: "PATCH", body }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: "DashboardAccounting", id: "RECORDS" }, { type: "DashboardAccounting", id: `record-${id}` }],
     }),
     getDashboardRecord: builder.query<DashboardRecord, number>({
       query: (id) => `/dashboard/accounting/records/${id}`,
@@ -601,12 +609,14 @@ export const {
   useGetDashboardPaymentQuery,
   useGetDashboardInvoicesQuery,
   useCreateDashboardInvoiceMutation,
+  useUpdateDashboardInvoiceMutation,
   useGetDashboardInvoiceQuery,
   useGetDashboardParentRegistrationsQuery,
   useGetDashboardPackagePreviewQuery,
   useCreateRegistrationWithInvoiceMutation,
   useGetDashboardRecordsQuery,
   useCreateDashboardRecordMutation,
+  useUpdateDashboardRecordMutation,
   useGetDashboardRecordQuery,
   useGetDashboardStatementQuery,
   useGetDashboardItemTypesQuery,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, Plus, Search } from "lucide-react";
+import { Eye, Pencil, Plus, Search } from "lucide-react";
 import { TablePagination } from "@/components/dashboard/TablePagination";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
@@ -155,6 +155,7 @@ export function InvoicesList() {
                       >
                         <Eye className="h-3.5 w-3.5" /> View
                       </Link>
+                      <Link aria-label={`Edit invoice ${row.nb}`} href={`/accounting/invoices/${row.id}/edit`} className="ml-2 inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-xs font-medium"><Pencil className="h-3.5 w-3.5" /> Edit</Link>
                     </td>
                   </tr>
                 ))

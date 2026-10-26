@@ -11,6 +11,7 @@ import { CheckCircle2, MinusCircle, PlusCircle } from "lucide-react";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useCreateDashboardInvoiceMutation,
+  useUpdateDashboardInvoiceMutation,
   useGetDashboardCurrenciesQuery,
   useGetDashboardItemsQuery,
   useGetDashboardParentRegistrationsQuery,
@@ -101,19 +102,19 @@ function todayLocal(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-export function InvoiceForm() {
+export function InvoiceForm({ initial }: { initial?: DashboardInvoice }) {
   const router = useRouter();
   const ready = useAppSelector(selectAuthReady);
-  const [toAccount, setToAccount] =
-    useState<DashboardPostingLookup | null>(null);
-  const [currencyId, setCurrencyId] = useState("");
-  const [date, setDate] = useState(todayLocal());
-  const [rows, setRows] = useState<InvoiceRow[]>([emptyRow()]);
-  const [description, setDescription] = useState("");
+  const [toAccount, setToAccount] = useState<DashboardPostingLookup | null>(initial ? { id: initial.accountId, code: initial.accountCode, name: initial.parentName, parentId: initial.parentId, personName: initial.parentName } : null);
+  const [currencyId, setCurrencyId] = useState(initial?.currencyId ? String(initial.currencyId) : "");
+  const [date, setDate] = useState(initial?.dateCreated.slice(0, 10) ?? todayLocal());
+  const [rows, setRows] = useState<InvoiceRow[]>(initial?.details.map((d) => ({ key: newRowKey(), itemId: String(d.itemId), price: d.unitPrice, quantity: d.quantity, forRegistrationId: d.forRegistrationId ? String(d.forRegistrationId) : "", description: d.description ?? "" })) ?? [emptyRow()]);
+  const [description, setDescription] = useState(initial?.description ?? "");
   const [formError, setFormError] = useState<string | null>(null);
   const [created, setCreated] = useState<DashboardInvoice | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(newIdempotencyKey);
   const [createInvoice, { isLoading }] = useCreateDashboardInvoiceMutation();
+  const [updateInvoice] = useUpdateDashboardInvoiceMutation();
 
   const { data: currencies = [] } = useGetDashboardCurrenciesQuery(undefined, {
     skip: !ready,
@@ -256,14 +257,15 @@ export function InvoiceForm() {
     }
     setFormError(null);
     try {
-      const invoice = await createInvoice({
+      const payload = {
         parentId: toAccount.parentId,
         currencyId: selectedCurrency.id,
         date: date || undefined,
         details,
         description: description.trim() || undefined,
         idempotencyKey,
-      }).unwrap();
+      };
+      const invoice = await (initial ? updateInvoice({ id: initial.id, body: payload }) : createInvoice(payload)).unwrap();
       setCreated(invoice);
     } catch (error) {
       setFormError(getApiErrorMessage(error, "Could not create invoice"));
