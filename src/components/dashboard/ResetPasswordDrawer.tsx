@@ -15,7 +15,7 @@ export function ResetPasswordDrawer({
   onSubmit,
 }: {
   personName: string;
-  roleLabel: "teacher" | "parent";
+  roleLabel: "teacher" | "parent" | "director";
   busy?: boolean;
   onClose: () => void;
   onSubmit: (payload: {

@@ -18,6 +18,7 @@ import {
   BookUser,
   UserRound,
   UserPlus,
+  UserCog,
   Users,
   Wallet,
   Presentation,
@@ -56,6 +57,7 @@ export const navGroups: NavGroup[] = [
           { href: "/parents", label: "Parent", icon: UserRound },
           { href: "/students", label: "Student", icon: GraduationCap },
           { href: "/teachers", label: "Teacher", icon: Presentation },
+          { href: "/directors", label: "Director", icon: UserCog },
         ],
       },
       {

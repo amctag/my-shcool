@@ -34,3 +34,26 @@ export function getApiErrorMessage(
 
   return fallback;
 }
+
+/**
+ * Reads the `fieldErrors` map returned by the API validation pipe so a form can
+ * show each message under its input instead of one generic banner.
+ */
+export function getApiFieldErrors(error: unknown): Record<string, string> {
+  if (!isFetchBaseQueryError(error) || typeof error.data !== "object" || !error.data) {
+    return {};
+  }
+
+  const fieldErrors = (error.data as { fieldErrors?: unknown }).fieldErrors;
+  if (!fieldErrors || typeof fieldErrors !== "object") {
+    return {};
+  }
+
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(fieldErrors)) {
+    if (typeof value === "string" && value.trim()) {
+      result[key] = value;
+    }
+  }
+  return result;
+}

@@ -271,6 +271,60 @@ export type SaveTeacherBody = {
   birthday?: string;
 };
 
+export type DirectorsSortBy =
+  | "id"
+  | "name"
+  | "phone"
+  | "email"
+  | "address"
+  | "birthday";
+export type DirectorsSortOrder = "asc" | "desc";
+
+export type DashboardDirector = {
+  id: number;
+  personId: number;
+  fullName: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber: string | null;
+  email: string | null;
+  address: string | null;
+  birthday?: string | null;
+  status?: boolean;
+  schoolId?: number;
+  schoolName?: string;
+  isActiveInSchool?: boolean;
+};
+
+export type DashboardDirectorsQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  name?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  id?: number;
+  status?: "active" | "closed";
+  sortBy?: DirectorsSortBy;
+  sortOrder?: DirectorsSortOrder;
+};
+
+export type DashboardDirectorsResponse = {
+  items: DashboardDirector[];
+  pagination: PaginationMeta;
+};
+
+export type DashboardDirectorDetail = DashboardTeacherDetail & {
+  personId: number;
+  directorId: number;
+  schoolId: number;
+  schoolName: string;
+  isActiveInSchool: boolean;
+};
+
+export type SaveDirectorBody = SaveTeacherBody;
+
 export type DashboardStudentDetail = {
   id: number;
   parentId: number;

@@ -15,6 +15,7 @@ export const apiTagTypes = [
   "Students",
   "Lookups",
   "Teachers",
+  "Directors",
   "Classes",
   "Courses",
   "Teaches",
