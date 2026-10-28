@@ -118,8 +118,9 @@ export function TeachForm({
   );
   const { years, yearId: globalYearId, setYearId } =
     useSchoolYearFilter(authReady);
+  const [teacherSearch, setTeacherSearch] = useState("");
   const { data: teachersData } = useGetTeachersQuery(
-    { page: 1, limit: 20, sortBy: "name", sortOrder: "asc" },
+    { page: 1, limit: 100, sortBy: "name", sortOrder: "asc", search: teacherSearch },
     { skip: !authReady },
   );
   const { data: sectionsData } = useGetSectionsQuery(
@@ -382,6 +383,15 @@ export function TeachForm({
                 </option>
               ))}
             </select>
+          </Field>
+          <Field id="teacherSearch" label="Search teacher">
+            <input
+              type="text"
+              value={teacherSearch}
+              onChange={(event) => setTeacherSearch(event.target.value)}
+              placeholder="Teacher name"
+              className={`${inputClass} cursor-pointer`}
+            />
           </Field>
           <Field id="teacherId" label="Teacher" required>
             <select
