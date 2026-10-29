@@ -25,6 +25,7 @@ type FormState = {
   numberOfHours: string;
   coefficient: string;
   status: string;
+  position: string;
 };
 
 function emptyForm(): FormState {
@@ -35,6 +36,7 @@ function emptyForm(): FormState {
     numberOfHours: "",
     coefficient: "1",
     status: "1",
+    position: "",
   };
 }
 
@@ -119,6 +121,7 @@ export function ClassCourseForm({
       numberOfHours: item.numberOfHours == null ? "" : String(item.numberOfHours),
       coefficient: String(item.coefficient),
       status: item.status ? "1" : "0",
+      position: String((item as any).position ?? 0),
     });
   }, [item]);
 
@@ -140,6 +143,7 @@ export function ClassCourseForm({
       coefficient: Number(form.coefficient) || 1,
       numberOfHours: hours === "" ? null : Number(hours),
       status: form.status !== "0",
+      position: form.position.trim() === "" ? undefined : Number(form.position),
     };
 
     try {

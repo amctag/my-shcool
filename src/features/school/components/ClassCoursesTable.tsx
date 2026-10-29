@@ -256,6 +256,7 @@ export function ClassCoursesTable() {
                 <SortHeader label="Course" column="course" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort} />
                 <SortHeader label="Hours" column="hours" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort} />
                 <SortHeader label="Year" column="year" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort} />
+                <SortHeader label="Position" column="position" sortBy={sortBy} sortOrder={sortOrder} onSort={onSort} />
                 <th className="px-5 py-3.5 text-xs font-semibold uppercase tracking-wide text-muted">
                   Status
                 </th>
@@ -266,16 +267,16 @@ export function ClassCoursesTable() {
             </thead>
             <tbody>
               {isLoading || !yearId ? (
-                <TableLoadingRow colSpan={7} label="Loading class courses" />
+                <TableLoadingRow colSpan={8} label="Loading class courses" />
               ) : error ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-red-600" role="alert">
+                  <td colSpan={8} className="px-5 py-10 text-center text-sm text-red-600" role="alert">
                     {getApiErrorMessage(error, "Could not load class courses")}
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center text-sm text-muted">
+                  <td colSpan={8} className="px-5 py-10 text-center text-sm text-muted">
                     No class courses for this year.
                   </td>
                 </tr>
@@ -292,6 +293,7 @@ export function ClassCoursesTable() {
                       {item.numberOfHours ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4">{item.yearTitle}</td>
+                    <td className="whitespace-nowrap px-5 py-4 tabular-nums">{(item as any).position ?? 0}</td>
                     <td className="whitespace-nowrap px-5 py-4">
                       {item.status ? "Active" : "Inactive"}
                     </td>

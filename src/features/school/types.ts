@@ -474,7 +474,7 @@ export type SaveCourseBody = {
   status?: boolean;
 };
 
-export type ClassCoursesSortBy = "id" | "class" | "course" | "year" | "hours";
+export type ClassCoursesSortBy = "id" | "class" | "course" | "year" | "hours" | "position";
 export type ClassCoursesSortOrder = "asc" | "desc";
 
 export type DashboardClassCourse = {
@@ -515,6 +515,7 @@ export type SaveClassCourseBody = {
   coefficient?: number;
   numberOfHours?: number | null;
   status?: boolean;
+  position?: number;
 };
 
 export type TeachesSortBy =
