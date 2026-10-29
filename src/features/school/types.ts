@@ -489,6 +489,7 @@ export type DashboardClassCourse = {
   coefficient: number;
   numberOfHours: number | null;
   status: boolean;
+  position: number;
 };
 
 export type DashboardClassCoursesQuery = {

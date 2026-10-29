@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -19,6 +19,7 @@ import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
   useDeleteClassCourseMutation,
+  useUpdateClassCourseMutation,
   useGetClassCoursesQuery,
   useGetCoursesQuery,
 } from "@/features/school/api/coursesApi";
@@ -126,16 +127,49 @@ export function ClassCoursesTable() {
   const [sortBy, setSortBy] = useState<ClassCoursesSortBy>("id");
   const [sortOrder, setSortOrder] = useState<ClassCoursesSortOrder>("asc");
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [positionError, setPositionError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{
     id: number;
     label: string;
   } | null>(null);
+  // Per-row position editing state, keyed by ClassCourse ID
+  const [positionDrafts, setPositionDrafts] = useState<Record<number, string>>({});
+  const [savingPosition, setSavingPosition] = useState<Record<number, boolean>>({});
+  const savingPositionRef = useRef<Set<number>>(new Set());
+  const savedPositionsRef = useRef<Record<number, number>>({});
   const limit = 100;
   const canFetch = ready && Boolean(accessToken);
   const { yearId } = useSchoolYearFilter(canFetch);
   useEffect(() => {
     setPage(1);
   }, [yearId]);
+
+  async function savePosition(id: number, newPosition: number) {
+    if (savingPositionRef.current.has(id)) return;
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+    savingPositionRef.current.add(id);
+    setPositionError(null);
+    setSavingPosition((current) => ({ ...current, [id]: true }));
+    try {
+      const body = {
+        classId: item.classId,
+        courseId: item.courseId,
+        position: newPosition,
+      };
+      const saved = await updateClassCourseMutation({ id, body }).unwrap();
+      savedPositionsRef.current[id] = saved.position;
+      setPositionDrafts((current) => ({ ...current, [id]: String(saved.position) }));
+      await refetch();
+    } catch (caught) {
+      const restored = savedPositionsRef.current[id] ?? item.position;
+      setPositionDrafts((current) => ({ ...current, [id]: String(restored) }));
+      setPositionError(getApiErrorMessage(caught, "Could not update position"));
+    } finally {
+      savingPositionRef.current.delete(id);
+      setSavingPosition((current) => ({ ...current, [id]: false }));
+    }
+  }
 
   const query = buildQuery(
     page,
@@ -145,7 +179,7 @@ export function ClassCoursesTable() {
     yearId,
     appliedFilters,
   );
-  const { data, error, isLoading, isFetching } = useGetClassCoursesQuery(query, {
+  const { data, error, isLoading, isFetching, refetch } = useGetClassCoursesQuery(query, {
     skip: !canFetch || !yearId,
   });
   const { data: classesData } = useGetClassesQuery(
@@ -157,6 +191,7 @@ export function ClassCoursesTable() {
   });
   const classes = classesData?.items ?? [];
   const [deleteClassCourse, deleteState] = useDeleteClassCourseMutation();
+  const [updateClassCourseMutation] = useUpdateClassCourseMutation();
 
   function applySearch() {
     if (filtersEqual(draftFilters, appliedFilters)) {
@@ -177,6 +212,16 @@ export function ClassCoursesTable() {
   }
 
   const items = data?.items ?? [];
+  useEffect(() => {
+    setPositionDrafts((current) => {
+      const next = { ...current };
+      for (const item of items) {
+        savedPositionsRef.current[item.id] = item.position;
+        if (!savingPositionRef.current.has(item.id)) next[item.id] = String(item.position);
+      }
+      return next;
+    });
+  }, [items]);
   const pagination = data?.pagination;
   const totalPages = pagination?.totalPages ?? 0;
 
@@ -293,7 +338,60 @@ export function ClassCoursesTable() {
                       {item.numberOfHours ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-5 py-4">{item.yearTitle}</td>
-                    <td className="whitespace-nowrap px-5 py-4 tabular-nums">{(item as any).position ?? 0}</td>
+                    <td className="whitespace-nowrap px-5 py-4 tabular-nums" title="Position">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-ghost circle"
+                          aria-label="Decrease position"
+                          onClick={() => {
+                            const current = Number(positionDrafts[item.id] ?? item.position);
+                            void savePosition(item.id, Math.max(0, current - 1));
+                          }}
+                          disabled={savingPosition[item.id]}
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          value={positionDrafts[item.id] ?? String(item.position)}
+                          onChange={(e) => setPositionDrafts((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                          onKeyDown={(e) => {
+                            if (e.key !== "Enter") return;
+                            e.preventDefault();
+                            const value = Number(positionDrafts[item.id]);
+                            if (Number.isInteger(value) && value >= 0 && value <= 32767) void savePosition(item.id, value);
+                            else setPositionError("Position must be an integer from 0 to 32767");
+                          }}
+                          onBlur={() => {
+                            const value = Number(positionDrafts[item.id]);
+                            if (Number.isInteger(value) && value >= 0 && value <= 32767) void savePosition(item.id, value);
+                            else setPositionDrafts((prev) => ({ ...prev, [item.id]: String(savedPositionsRef.current[item.id] ?? item.position) }));
+                          }}
+                          min={0}
+                          max={32767}
+                          style={{ width: 56, textAlign: 'center' }}
+                          className="btn btn-sm border rounded placeholder:text-muted/80 cursor-pointer"
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-ghost circle"
+                          aria-label="Increase position"
+                          onClick={() => {
+                            const current = Number(positionDrafts[item.id] ?? item.position);
+                            void savePosition(item.id, Math.min(32767, current + 1));
+                          }}
+                          disabled={savingPosition[item.id]}
+                        >
+                          +
+                        </button>
+                      </div>
+                      {positionError ? (
+                        <div className="mt-1 text-xs text-red-600" role="alert">
+                          {positionError}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="whitespace-nowrap px-5 py-4">
                       {item.status ? "Active" : "Inactive"}
                     </td>
