@@ -8,7 +8,6 @@ import { selectAuthReady } from "@/features/auth/authSlice";
 import { useGetClassesQuery } from "@/features/school/api/classesApi";
 import {
   useGetClassCoursesQuery,
-  useGetCoursesQuery,
 } from "@/features/school/api/coursesApi";
 import { useGetSectionsQuery } from "@/features/school/api/sectionsApi";
 import { useGetTeachersQuery } from "@/features/school/api/teachersApi";
@@ -101,16 +100,12 @@ export function TeachForm({
     { page: 1, limit: 20 },
     { skip: !authReady },
   );
-  const { data: schoolCourses = [] } = useGetCoursesQuery(undefined, {
-    skip: !authReady,
-  });
   const { data: classCoursesData } = useGetClassCoursesQuery(
     {
       page: 1,
-      limit: 20,
+      limit: 100,
       classId,
       yearId,
-      status: "active",
       sortBy: "course",
       sortOrder: "asc",
     },
@@ -151,15 +146,14 @@ export function TeachForm({
   const sections = sectionsData?.items ?? [];
   const classes = classesData?.items ?? [];
   const classCourses = classCoursesData?.items ?? [];
-  const courses = useMemo(() => {
-    if (classCourses.length > 0) {
-      return classCourses.map((item) => ({
+  const courses = useMemo(
+    () =>
+      classCourses.map((item) => ({
         id: item.courseId,
         title: item.courseTitle,
-      }));
-    }
-    return schoolCourses.map((item) => ({ id: item.id, title: item.title }));
-  }, [classCourses, schoolCourses]);
+      })),
+    [classCourses],
+  );
 
   const targetSectionIds = useMemo(() => {
     if (sectionId) {
