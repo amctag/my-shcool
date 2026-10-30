@@ -31,7 +31,7 @@ export function AccountingDocumentDetail({
   const fromName =
     "parentName" in document ? document.parentName : document.accountName;
   return (
-    <div className="print-document space-y-5 rounded-2xl border border-border bg-white p-6 shadow-sm">
+    <div className="print-document space-y-5 rounded-2xl border border-border bg-white p-6 shadow-sm" dir="auto">
       <AccountingPrintStyles />
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -43,11 +43,11 @@ export function AccountingDocumentDetail({
         <div className="flex items-center gap-3"><PrintButton />
           <Link
             href={`/accounting/${kind === "receipt" ? "receipts" : "payments"}/${id}/edit`}
-            className="rounded-lg border border-border px-3 py-2 text-sm"
+            className="print-hidden rounded-lg border border-border px-3 py-2 text-sm"
           >
             Edit
           </Link>
-          <p className="text-lg font-semibold">
+          <p className="print-amount text-lg font-semibold">
             {document.currency?.symbol}
             {Number(document.total).toFixed(2)} {document.currency?.shortCode}
           </p>

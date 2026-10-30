@@ -23,7 +23,7 @@ export function RecordDetail({ id }: { id: number }) {
     );
   }
   return (
-    <div className="print-document mx-auto max-w-3xl space-y-5">
+    <div className="print-document mx-auto max-w-3xl space-y-5" dir="auto">
       <AccountingPrintStyles />
       <div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-border bg-white p-6">
         <div>

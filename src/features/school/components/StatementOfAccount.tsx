@@ -186,12 +186,12 @@ export function StatementOfAccount() {
       <AccountingPrintStyles />
       {account ? <div className="flex justify-end print:hidden"><button type="button" onClick={() => void printAll()} disabled={printing} className="rounded-lg border px-3 py-2 text-sm">{printing ? "Preparing…" : "Print"}</button></div> : null}
       {printError ? <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{printError}</p> : null}
-      <p className="text-sm text-muted">
+      <p className="print-hidden text-sm text-muted">
         Every movement comes from the posted journal, so invoices, receipts,
         payments, and manual records all appear here. Balance = running credit
         − debit: amounts owed display as negative.
       </p>
-      <div className="flex flex-wrap gap-3 rounded-2xl border border-border bg-white p-4">
+      <div className="print-hidden flex flex-wrap gap-3 rounded-2xl border border-border bg-white p-4">
         <AccountPicker selected={account} onSelect={(next) => { setAccount(next); resetPage(); }} />
         <input
           aria-label="From date"
