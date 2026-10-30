@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
@@ -9,8 +9,11 @@ import {
   type AttendanceMode,
   type DashboardSchoolSettings,
 } from "@/features/school/api/schoolSettingsApi";
+import { useUploadSchoolLogoMutation } from "@/features/school/api/schoolSettingsApi";
 import { selectAccessToken, selectAuthReady } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
+
+const inputClass = "h-11 w-full rounded-lg border border-border px-3 text-sm";
 
 function SettingSwitch({
   enabled,
@@ -87,6 +90,14 @@ export function SchoolSettingsForm() {
   );
   const [updateSettings, updateState] = useUpdateSchoolSettingsMutation();
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [logo, setLogo] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [uploadLogo, uploadState] = useUploadSchoolLogoMutation();
+
+  useEffect(() => { if (data) { setName(data.name ?? ""); setPhone(data.phone ?? ""); setAddress(data.address ?? ""); setLogo(data.logo); } }, [data]);
 
   async function patch(body: Partial<DashboardSchoolSettings>) {
     setSaveError(null);
@@ -104,6 +115,13 @@ export function SchoolSettingsForm() {
       return;
     }
     void patch({ attendanceMode: mode });
+  }
+
+  async function selectLogo(file: File) {
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) { setSaveError('Logo must be PNG, JPG, or WebP and no larger than 5 MB.'); return; }
+    setPreview(URL.createObjectURL(file));
+    const form = new FormData(); form.append('file', file); form.append('kind', 'image');
+    try { const result = await uploadLogo(form).unwrap(); setLogo(result.url); await patch({ logo: result.url }); } catch (caught) { setSaveError(getApiErrorMessage(caught, 'Could not upload logo')); }
   }
 
   if (!canFetch || isLoading) {
@@ -134,6 +152,16 @@ export function SchoolSettingsForm() {
           {saveError}
         </p>
       ) : null}
+      <article className="rounded-2xl border border-border bg-white p-6 space-y-4">
+        <h2 className="text-lg font-semibold">School information</h2>
+        <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="School name" />
+        <input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
+        <textarea className="min-h-24 w-full rounded-lg border border-border p-3 text-sm" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
+        {(preview || logo) ? <img src={preview || logo || ''} alt="School logo preview" className="max-h-24 max-w-48 object-contain" /> : null}
+        <div className="flex flex-wrap gap-3"><input type="file" accept="image/png,image/jpeg,image/webp" disabled={uploadState.isLoading} onChange={(e) => { const file = e.target.files?.[0]; if (file) void selectLogo(file); }} />
+          {logo ? <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={() => { setLogo(null); setPreview(null); void patch({ logo: "" }); }}>Remove logo</button> : null}
+          <button type="button" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white" disabled={updateState.isLoading} onClick={() => void patch({ name, phone, address })}>Save information</button></div>
+      </article>
       <article className="rounded-2xl border border-border bg-white p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="max-w-xl">

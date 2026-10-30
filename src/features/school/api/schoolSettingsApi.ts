@@ -4,6 +4,10 @@ export type AttendanceMode = "school" | "teacher" | "teacher_course";
 
 export type DashboardSchoolSettings = {
   schoolId: number;
+  name: string | null;
+  logo: string | null;
+  phone: string | null;
+  address: string | null;
   teachersSeeAllClassCourses: boolean;
   attendanceMode: AttendanceMode;
   teachersCanPublishAgenda: boolean;
@@ -25,6 +29,7 @@ export const schoolSettingsApi = baseApi.injectEndpoints({
           | "attendanceMode"
           | "teachersCanPublishAgenda"
           | "teachersCanPublishGrades"
+          | "name" | "logo" | "phone" | "address"
         >
       >
     >({
@@ -35,10 +40,14 @@ export const schoolSettingsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [{ type: "DashboardSettings", id: "CURRENT" }],
     }),
+    uploadSchoolLogo: builder.mutation<{ url: string }, FormData>({
+      query: (body) => ({ url: "/dashboard/uploads?kind=image", method: "POST", body }),
+    }),
   }),
 });
 
 export const {
   useGetSchoolSettingsQuery,
   useUpdateSchoolSettingsMutation,
+  useUploadSchoolLogoMutation,
 } = schoolSettingsApi;

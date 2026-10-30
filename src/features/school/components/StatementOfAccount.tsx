@@ -8,10 +8,12 @@ import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import {
   useGetDashboardAccountsPageQuery,
   useGetDashboardStatementQuery,
+  useLazyGetDashboardStatementQuery,
 } from "@/features/school/api/accountingApi";
 import { selectAuthReady } from "@/features/auth/authSlice";
 import { useAppSelector } from "@/store/hooks";
 import type { DashboardAccount } from "@/features/school/types";
+import { AccountingPrintStyles } from "./AccountingPrintStyles";
 
 const inputClass =
   "h-11 rounded-lg border border-border bg-white px-3 text-sm text-foreground";
@@ -151,6 +153,10 @@ export function StatementOfAccount() {
   const statement = useGetDashboardStatementQuery(query, {
     skip: !ready || !account,
   });
+  const [fetchStatement] = useLazyGetDashboardStatementQuery();
+  const [printing, setPrinting] = useState(false);
+  const [printRows, setPrintRows] = useState<typeof rows>([]);
+  const [printError, setPrintError] = useState<string | null>(null);
   const rows = statement.data?.rows ?? [];
   const summaries = statement.data?.summaries ?? [];
 
@@ -158,8 +164,28 @@ export function StatementOfAccount() {
     setPage(1);
   }
 
+  async function printAll() {
+    if (!account) return;
+    setPrinting(true);
+    try {
+      const all = [] as typeof rows;
+      let current = 1;
+      while (true) {
+        const pageResult = await fetchStatement({ ...query, page: current, limit: 1000 }).unwrap();
+        all.push(...pageResult.rows);
+        if (pageResult.rows.length < 1000) break;
+        current += 1;
+      }
+      setPrintRows(all);
+      window.setTimeout(() => { window.print(); setPrinting(false); }, 250);
+    } catch (caught) { setPrintError(getApiErrorMessage(caught, "Could not load complete statement")); setPrinting(false); }
+  }
+
   return (
-    <div className="space-y-5">
+    <div className="print-document space-y-5">
+      <AccountingPrintStyles />
+      {account ? <div className="flex justify-end print:hidden"><button type="button" onClick={() => void printAll()} disabled={printing} className="rounded-lg border px-3 py-2 text-sm">{printing ? "Preparing…" : "Print"}</button></div> : null}
+      {printError ? <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{printError}</p> : null}
       <p className="text-sm text-muted">
         Every movement comes from the posted journal, so invoices, receipts,
         payments, and manual records all appear here. Balance = running credit
@@ -290,7 +316,7 @@ export function StatementOfAccount() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.length === 0 ? (
+                  {(printRows.length ? printRows : rows).length === 0 ? (
                     <tr>
                       <td
                         colSpan={7}
@@ -300,7 +326,7 @@ export function StatementOfAccount() {
                       </td>
                     </tr>
                   ) : (
-                    rows.map((row, index) => (
+                    (printRows.length ? printRows : rows).map((row, index) => (
                       <tr key={`${row.date}-${index}`} className="border-t border-border">
                         <td className="px-5 py-4">
                           {new Date(row.date).toLocaleDateString()}

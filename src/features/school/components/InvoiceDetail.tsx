@@ -4,6 +4,8 @@ import Link from "next/link";
 import { getApiErrorMessage } from "@/lib/getApiErrorMessage";
 import { LoadingDots } from "@/components/dashboard/TableLoading";
 import { useGetDashboardInvoiceQuery } from "@/features/school/api/accountingApi";
+import { PrintButton } from "./PrintButton";
+import { AccountingPrintStyles } from "./AccountingPrintStyles";
 
 export function InvoiceDetail({ id }: { id: number }) {
   const { data: document, error, isLoading } = useGetDashboardInvoiceQuery(id);
@@ -21,7 +23,8 @@ export function InvoiceDetail({ id }: { id: number }) {
     );
   }
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="print-document mx-auto max-w-3xl space-y-5">
+      <AccountingPrintStyles />
       <div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-border bg-white p-6">
         <div>
           <p className="text-sm text-muted">
@@ -30,10 +33,10 @@ export function InvoiceDetail({ id }: { id: number }) {
           </p>
           <h1 className="text-2xl font-semibold">#{document.nb}</h1>
         </div>
-        <p className="text-lg font-semibold">
+        <div className="flex items-center gap-3"><PrintButton /><p className="text-lg font-semibold">
           {document.currency?.symbol}
           {Number(document.total).toFixed(2)} {document.currency?.shortCode}
-        </p>
+        </p></div>
       </div>
       <dl className="grid gap-4 border-y border-border py-5 sm:grid-cols-2 lg:grid-cols-4">
         <div>

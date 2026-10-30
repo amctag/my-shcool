@@ -619,6 +619,7 @@ export const {
   useUpdateDashboardRecordMutation,
   useGetDashboardRecordQuery,
   useGetDashboardStatementQuery,
+  useLazyGetDashboardStatementQuery,
   useGetDashboardItemTypesQuery,
   useGetDashboardItemsQuery,
   useGetDashboardItemQuery,

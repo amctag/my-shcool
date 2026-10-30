@@ -20,6 +20,9 @@ export type SchoolMe = {
   name: string;
   email: string;
   role: "school";
+  logo: string | null;
+  phone: string | null;
+  address: string | null;
 };
 
 export type MessageResponse = {

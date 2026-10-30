@@ -7,6 +7,8 @@ import {
   useGetDashboardPaymentQuery,
   useGetDashboardReceiptQuery,
 } from "@/features/school/api/accountingApi";
+import { PrintButton } from "./PrintButton";
+import { AccountingPrintStyles } from "./AccountingPrintStyles";
 
 export function AccountingDocumentDetail({
   kind,
@@ -29,7 +31,8 @@ export function AccountingDocumentDetail({
   const fromName =
     "parentName" in document ? document.parentName : document.accountName;
   return (
-    <div className="space-y-5 rounded-2xl border border-border bg-white p-6 shadow-sm">
+    <div className="print-document space-y-5 rounded-2xl border border-border bg-white p-6 shadow-sm">
+      <AccountingPrintStyles />
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm text-muted">
@@ -37,7 +40,7 @@ export function AccountingDocumentDetail({
           </p>
           <h1 className="text-2xl font-semibold">#{document.nb}</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3"><PrintButton />
           <Link
             href={`/accounting/${kind === "receipt" ? "receipts" : "payments"}/${id}/edit`}
             className="rounded-lg border border-border px-3 py-2 text-sm"

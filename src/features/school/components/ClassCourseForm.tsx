@@ -140,7 +140,7 @@ export function ClassCourseForm({
       classId,
       courseId,
       yearId,
-      coefficient: Number(form.coefficient) || 1,
+      coefficient: form.coefficient.trim() === "" ? 1 : Number(form.coefficient),
       numberOfHours: hours === "" ? null : Number(hours),
       status: form.status !== "0",
       position: form.position.trim() === "" ? undefined : Number(form.position),
@@ -263,7 +263,6 @@ export function ClassCourseForm({
               id="coefficient"
               type="number"
               min={0}
-              max={99}
               step="0.25"
               value={form.coefficient}
               onChange={(event) =>
